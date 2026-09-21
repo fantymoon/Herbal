@@ -13,11 +13,13 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkNewFilm } from "./lib/compliance.ts";
+import { checkNewFilm, isDraft } from "./lib/compliance.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
-import { readFilmId } from "./lib/film-files.ts";
-import { findRepeats, formatRepeats } from "./lib/repeat-scan.ts";
+import { readFilmId, readKnownPhotos } from "./lib/film-files.ts";
+import { loadContent } from "./lib/film-content.ts";
+import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
+import { planFilm, visibleText } from "../src/layout.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.join(root, "..");
@@ -45,12 +47,26 @@ if (!fs.existsSync(filmFile)) {
 }
 const filmSource = fs.readFileSync(filmFile, "utf8");
 
+// A data-driven film carries no geometry of its own: duration and scene breaks come
+// from the same plan the renderer uses, so verify never has to guess. A film whose
+// content module still has placeholders is a draft, and a draft is not renderable.
+const { content, error } = await loadContent(filmSource, path.join(repo, "src", "films"));
+if (error) {
+  fail(`${kebab}.tsx: ${error}`);
+}
+if (isDraft(content)) {
+  fail(`${kebab} is still a draft (fill in the TODOs in its content module, then npm run gen)`);
+}
+const plan = content ? planFilm(content) : null;
+
 const compositionSource = fs.readFileSync(path.join(repo, "src", "Composition.tsx"), "utf8");
 if (!compositionSource.includes(`id="${film}"`)) {
   fail(`${film} is not registered in src/Composition.tsx (run npm run gen)`);
 }
 
-const duration = Number(filmSource.match(/durationInFrames=\{(\d+)\}/)?.[1] ?? 0);
+const duration = plan
+  ? plan.durationInFrames
+  : Number(filmSource.match(/durationInFrames=\{(\d+)\}/)?.[1] ?? 0);
 if (!duration) {
   fail(`${kebab}.tsx has no durationInFrames literal`);
 }
@@ -59,12 +75,11 @@ if (!duration) {
 if (isFrozen(`${kebab}.tsx`)) {
   console.log(`pre-flight: ${kebab} is a published film (frozen) — rules not re-applied`);
 } else {
+  const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
+  const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(filmSource);
   const problems = [
-    ...checkNewFilm(filmSource).map((v) => `[${v.rule}] ${v.detail}`),
-    ...(() => {
-      const repeats = findRepeats(filmSource);
-      return repeats.length > 0 ? [formatRepeats(`${kebab}.tsx`, repeats)] : [];
-    })(),
+    ...checkNewFilm(filmSource, content, knownPhotos).map((v) => `[${v.rule}] ${v.detail}`),
+    ...(repeats.length > 0 ? [formatRepeats(`${kebab}.tsx`, repeats)] : []),
   ];
   const filmId = readFilmId(filmSource);
   const ledger = path.join(repo, "upload", `${kebab}.md`);
@@ -85,11 +100,19 @@ if (isFrozen(`${kebab}.tsx`)) {
   console.log(`pre-flight: ${kebab} satisfies the current rules`);
 }
 
+// Scene mids, generalised past the old three-scene assumption: hero, the last
+// classical scene, and the closing scene. A 4-scene film has 4 intervals, so the
+// hard-coded [0, 1, 2] indexing used to sample the wrong frames.
+const bounds = plan ? [0, ...plan.breaks, plan.durationInFrames] : null;
 const breaks = filmSource.match(/breaks=\{\[(\d+),\s*(\d+)\]\}/);
-const bounds = breaks
+const legacyBounds = breaks
   ? [0, Number(breaks[1]), Number(breaks[2]), duration]
   : [0, Math.round(duration / 3), Math.round((2 * duration) / 3), duration];
-const mids = [0, 1, 2].map((i) => Math.floor((bounds[i] + bounds[i + 1]) / 2));
+const sceneBounds = bounds ?? legacyBounds;
+const intervals = sceneBounds.length - 1;
+const midOf = (index) => Math.floor((sceneBounds[index] + sceneBounds[index + 1]) / 2);
+const sampleIndices = [0, Math.max(0, intervals - 2), intervals - 1];
+const mids = sampleIndices.map(midOf);
 const [heroFrame, sourceFrame, closingFrame] = mids;
 
 const run = (cmd, cmdArgs, opts = {}) => {
@@ -110,7 +133,9 @@ const run = (cmd, cmdArgs, opts = {}) => {
 const stillsDir = path.join(repo, "out", "stills");
 fs.mkdirSync(stillsDir, { recursive: true });
 
-console.log(`verifying ${film} (${duration} frames; stills at ${mids.join("/")})`);
+console.log(
+  `verifying ${film} (${duration} frames, ${intervals} scene(s); stills at ${mids.join("/")})`,
+);
 const stills = [
   ["hero", heroFrame],
   ["source", sourceFrame],

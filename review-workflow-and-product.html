@@ -92,15 +92,16 @@
 
 <table>
   <tr><th>问题</th><th>处理</th><th>落地位置</th></tr>
-  <tr><td class="k">合规规范零执行</td><td class="good">已修</td><td>纯函数检查器 <code>scripts/lib/compliance.ts</code>；<code>tests/compliance.test.ts</code> 先用 11 个反向样本自证它会失败，再扫描新片。<code>verify</code> 渲染前强制跑闸门，不合规直接拒绝渲染。</td></tr>
-  <tr><td class="k">资产无版本控制</td><td class="good">已修</td><td>纳入 152 个文件 / 28,835 行；<code>.gitattributes</code> 规范化行尾。</td></tr>
+  <tr><td class="k">合规规范零执行</td><td class="good">已修</td><td>纯函数检查器 <code>scripts/lib/compliance.ts</code>；<code>tests/compliance.test.ts</code> 先用反向样本自证它会失败，再扫描新片。<code>verify</code> 渲染前强制跑闸门，不合规直接拒绝渲染。</td></tr>
+  <tr><td class="k">资产无版本控制</td><td class="good">已修</td><td>仓库上移到工作区根（<code>828752b</code>）：SKILL.md、AGENTS.md、703 个语料文件、音乐、印章全部纳管，<code>.gitattributes</code> 规范化行尾。</td></tr>
   <tr><td class="k">母版仅存单机</td><td class="warn">部分修</td><td><code>npm run manifest</code> → <code>masters-manifest.json</code> 记录母版存在性与大小（可发现丢失）。<code>out/</code> 本体仍需你另存一份。</td></tr>
-  <tr><td class="k">重复文本靠手抄清单</td><td class="good">已修</td><td><code>scripts/lib/repeat-scan.ts</code> 自动扫描影片自身 JSX；白名单仅免责声明与书名卷次引用。</td></tr>
-  <tr><td class="k">发布无台账</td><td class="good">已修</td><td><code>tests/upload-ledger.test.ts</code> 要求新片必须有 <code>upload/&lt;kebab&gt;.md</code> 及七个字段。</td></tr>
+  <tr><td class="k">重复文本靠手抄清单</td><td class="good">已修</td><td><code>scripts/lib/repeat-scan.ts</code> 自动扫描影片可见文本（数据化影片读内容模块 + 布局计划，手写影片读 JSX）；白名单仅免责声明与书名卷次引用。</td></tr>
+  <tr><td class="k">发布无台账</td><td class="good">已修</td><td><code>tests/upload-ledger.test.ts</code> 要求新片必须有 <code>upload/&lt;kebab&gt;.md</code> 及七个字段；<code>npm run new-film</code> 会自动生成。</td></tr>
   <tr><td class="k">测试锁魔法数字</td><td class="good">已修</td><td>去掉 <code>credits==53</code> / <code>images&gt;40</code> / <code>files&gt;50</code>，改为派生断言；<code>tests/suite.test.ts</code> 防止测试文件漏跑。</td></tr>
-  <tr><td class="k">校验深度不足</td><td class="good">已修</td><td>ffprobe 增加时长一致性与体积区间校验；新增 <code>--sheet</code> 抽样。</td></tr>
+  <tr><td class="k">校验深度不足</td><td class="good">已修</td><td>ffprobe 增加时长一致性与体积区间校验；新增 <code>--sheet</code> 抽样；静帧采样点改从布局计划推导，不再假设"固定三场景"。</td></tr>
   <tr><td class="k">无 CI</td><td class="good">已修</td><td><code>.github/workflows/ci.yml</code>：test + lint + check + 注册表漂移 + manifest。</td></tr>
-  <tr><td class="k">命名启发式 + 五处手工维护</td><td class="good">已修</td><td>film id 改由影片自身 <code>export const</code> 派生；按书配置移入 <code>scripts/books/</code>。改造后 <code>progress.json</code> 与 <code>Composition.tsx</code> 逐字节一致。</td></tr>
+  <tr><td class="k">命名启发式 + 五处手工维护</td><td class="good">已修</td><td>film id 改由影片自身 <code>export const</code> 派生；按书配置移入 <code>scripts/books/</code>；<code>npm run new-film</code> 一次生成内容模块 + 影片文件 + 台账。改造后 <code>progress.json</code> 与 <code>Composition.tsx</code> 逐字节一致。</td></tr>
+  <tr><td class="k">内容与排版焊死（303 行/部）</td><td class="good">已修</td><td>拆成三层：内容数据 <code>src/films/&lt;kebab&gt;.ts</code> + 布局引擎 <code>src/layout.ts</code> + 渲染器 <code>src/entry-film.tsx</code>。新片影片文件降到 5 行，字号只能取自 <code>TYPE</code> 刻度。</td></tr>
   <tr><td class="k">文档保护死代码</td><td class="warn">部分修</td><td>SKILL.md 已改口：明确三个模板是 legacy 脚手架、不得作为新片起点；新增测试禁止影片从 <code>../HerbalVisuals</code> 导入。是否删除仍待你确认。</td></tr>
   <tr><td class="k">今译字号 42px</td><td class="warn">新片已修</td><td>56px 已写成硬下限并进入闸门；55 部存量按冻结决定保留原样。</td></tr>
   <tr><td class="k">时长焊死 12 秒</td><td class="good">已修</td><td>开放为 360 / 450 / 540，<code>FinishedFilm</code> 支持任意场景数（<code>breaks.length === scenes.length - 1</code>）。</td></tr>
@@ -114,20 +115,50 @@
 </div>
 <p>结论：<code>FinishedFilm</code> 的场景数泛化对已发布影片零影响。这个"重渲染比对哈希"应当成为今后任何共享层改动的标准动作。</p>
 
+<h3>脚手架不能把仓库搞红：draft 状态</h3>
+<p>写完 <code>npm run new-film</code> 后发现一个设计陷阱：脚手架<strong>故意</strong>产出带 TODO 的未完成影片，而闸门与测试会扫描 <code>src/finished/</code>——也就是说，用一次脚手架就把测试搞红。一个"用一次就破坏 CI"的工具不算工具。</p>
+<p>于是把"未完成"做成机器可判定的状态：内容模块仍含 TODO 的数据化影片是 <strong>draft</strong>。</p>
+<table>
+  <tr><th>命令</th><th>对 draft 的行为</th></tr>
+  <tr><td class="k"><code>npm run gen</code></td><td>不注册 → 没有 Composition → <strong>不可渲染、不可发布</strong></td></tr>
+  <tr><td class="k"><code>npm run verify</code></td><td>直接拒绝，报"still a draft"</td></tr>
+  <tr><td class="k"><code>npm run check</code></td><td>报 <code>draft</code> 行，退出码 0</td></tr>
+  <tr><td class="k"><code>npm run progress</code></td><td>不计入 done，该条目保持 todo</td></tr>
+  <tr><td class="k"><code>npm test</code></td><td>跳过成品断言；另有一条测试断言 <strong>draft 绝不出现在 Composition.tsx 里</strong></td></tr>
+</table>
+<p>关键在于最后一行：draft 是<strong>严格更弱</strong>的状态——放宽容忍度的前提是 draft 根本渲染不出来。因此"能渲染的必然合规"这条约束仍然闭合，draft 不是绕过闸门的后门。</p>
+
+<h3>静帧冒烟验证发现的三个真实缺陷</h3>
+<p>渲染引擎写完不算完成——用一部完整影片（临时 fixture，渲染后已删除）跑 <code>npm run verify --skip-render</code>，再与已发布影片同帧静帧并排比对，暴露了三处光靠测试发现不了的问题：</p>
+<table>
+  <tr><th>缺陷</th><th>现象</th><th>修法</th></tr>
+  <tr><td class="k">预留高度与实际行高不符</td><td>hero 标题按 1.5 行高预留 225px，实际渲染 0.92 行高只有 138px，整段 hero 比已发布影片低了约 87px</td><td>行高按角色区分（标题 0.92 / 副标题 1.15 / 古籍 1.35 / 正文 1.5），并加测试断言"预留高度必须跟随实际行高"</td></tr>
+  <tr><td class="k">错峰出场太慢</td><td>第 8 个块 delay=69，到第 95 帧才淡入完，而场景只有 120 帧——大半个场景看起来像没搭好</td><td>改为前重后轻的 2 + index×4（最晚第 56 帧完成），对齐已发布影片节奏</td></tr>
+  <tr><td class="k">文字裸排在装饰山水上</td><td>hero 的原文摘句落在 y≈1240 起的山峦上，低对比、像一团灰渍；印章也悬在画面中段</td><td>原文与书目引文合并成一个带边框面板（衬底 + 顶部强调线）；印章改为锚定画框底部</td></tr>
+</table>
+<p>顺带发现并修掉两处规则/引擎不一致：引擎输出的书目引文漏了书名号 <code>《》</code>，导致重复扫描把"书名 · 卷次"判成内容重复（豁免规则要求书名号）；已发布影片顶部标签是书名的罗马字（<code>SHENNONG BENCAO JING</code>），引擎却渲染中文书名。两者都对齐了已发布影片的写法。</p>
+
 <h3>终检状态</h3>
 <div class="grid3">
-  <div class="card"><div class="n">104</div><div class="t">测试通过 / 0 失败</div><div class="d">改造前 75，新增 29 条（合规、重复扫描、台账、ffprobe、套件自检）</div></div>
-  <div class="card"><div class="n">55</div><div class="t">影片通过闸门</div><div class="d">0 部需按新规检查，55 部冻结；<code>npm run lint</code> 通过</div></div>
-  <div class="card"><div class="n">2</div><div class="t">提交</div><div class="d"><code>03b92f9</code> 纳管与闸门，<code>e855964</code> 多场景与模板守卫</div></div>
+  <div class="card"><div class="n">127</div><div class="t">测试通过 / 0 失败</div><div class="d">改造前 75；新增合规、布局、重复扫描、台账、ffprobe、套件自检</div></div>
+  <div class="card"><div class="n">55+1</div><div class="t">影片通过闸门</div><div class="d">55 部冻结 + 1 部 draft（黄芝脚手架）；<code>npm run lint</code> 通过</div></div>
+  <div class="card"><div class="n">0</div><div class="t">生成物漂移</div><div class="d"><code>Composition.tsx</code> 与 <code>progress.json</code> 重跑后逐字节一致</div></div>
 </div>
 
-<h3>仍待你决策的四件事</h3>
+<h3>仍待你决策的两件事</h3>
 <ul>
-  <li><strong>仓库边界（建议优先处理）。</strong>git 仓库只在 <code>remotion-video/</code>，而 <code>SKILL.md</code>、<code>AGENTS.md</code>、<code>music/</code>、<code>sign-1.png</code> 都在仓库外——<strong>最权威的工作流文档和品牌资产至今没有版本控制</strong>；而且 CI 全新检出时找不到 <code>../../.agents/…</code>，skill 一致性测试会直接失败。建议把仓库上移到工作区根目录。</li>
-  <li><strong>配置远程仓库。</strong>本机 <code>gh</code> 未登录、无 remote，目前仍是单机单副本，备份问题只解决了一半。</li>
+  <li><strong>配置远程仓库。</strong>本机 <code>gh</code> 未登录、无 remote，目前仍是单机单副本，备份问题只解决了一半。这是现在唯一还敞开的风险口子。</li>
   <li><strong>legacy 模板是否归档。</strong><code>HerbalFeature</code> / <code>HerbProfileTemplate</code> / <code>FormulaShortTemplate</code> 及 <code>RootIllustration</code> / <code>HerbChip</code> / <code>IngredientList</code> 无人引用。如果横版 1280×720 还打算用，就保留；否则可以清掉约 600 行。</li>
-  <li><strong>内容数据化（收益最大的一项）。</strong>把影片拆成"结构化内容 + 渲染器"（<code>src/films/&lt;kebab&gt;.ts</code> + <code>&lt;EntryFilm data layout&gt;</code>），单部影片从 303 行降到约 20 行，版式可迭代、可 A/B。我没有盲做，因为它需要一个真实影片作为验证对象——黄芝正是那部影片，建议做黄芝时一并落地。</li>
 </ul>
+
+<h3>黄芝：脚手架已就绪，等你定稿</h3>
+<p><code>npm run new-film -- --id=HuangzhiFirstFilm --latin="HUANG ZHI"</code> 已经跑过一次，产出：</p>
+<ul>
+  <li><code>src/films/huangzhi-first-film.ts</code> — 原文已从语料正确读出（<code>味甘，平。主心腹五邪，益脾气，安神，忠信和乐。久食，轻身、不老、延年、神仙。一名金芝。</code>，与底本逐字一致），今译/注释/配图留空待填</li>
+  <li><code>src/finished/huangzhi-first-film.tsx</code> — 5 行，渲染 <code>&lt;EntryFilm&gt;</code></li>
+  <li><code>upload/huangzhi-first-film.md</code> — 保留了你原先写好的台账骨架，未被覆盖</li>
+</ul>
+<p>我没有替你写今译与注释：黄芝是新规范第一集，功效句的框定措辞正是平台处罚的落点，这一稿应当由你定。填完后 <code>npm run check</code> 会从 <code>draft</code> 转 <code>ok</code>，<code>npm run gen</code> 才把它注册为可渲染影片。配图也需你选定（黄芝目前 <code>public/images/</code> 下无对应照片；Flickr 通道实测可用，Wikimedia/Openverse 被网络策略拦）。</p>
 
 <h2><span class="num">EVIDENCE</span>关键证据速查</h2>
 <table>

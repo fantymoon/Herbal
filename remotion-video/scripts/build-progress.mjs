@@ -10,6 +10,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFilmId } from "./lib/film-files.ts";
+import { loadContent } from "./lib/film-content.ts";
+import { isDraft } from "./lib/compliance.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.join(root, "..");
@@ -118,14 +120,24 @@ console.log(`ledger: ${out.doneCount}/${out.entryCount} done`);
 console.log(`next: ${next.name} [${next.volume}]`);
 
 // Cross-check both directions, using each film's own exported component name
-// instead of guessing it from the filename.
+// instead of guessing it from the filename. A draft (content module still carrying
+// TODOs) is not a finished film: it stays `todo` in the ledger and is reported
+// separately rather than being demanded of the book config.
 const finishedDir = path.join(repo, "src", "finished");
+const filmsDir = path.join(repo, "src", "films");
 const onDisk = new Set();
+const drafts = [];
 for (const file of fs.readdirSync(finishedDir).filter((f) => f.endsWith(".tsx"))) {
-  const id = readFilmId(fs.readFileSync(path.join(finishedDir, file), "utf8"));
+  const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
+  const id = readFilmId(source);
   if (!id) {
     console.error(`no exported film component in ${file}`);
     process.exit(1);
+  }
+  const { content } = await loadContent(source, filmsDir);
+  if (isDraft(content)) {
+    drafts.push(id);
+    continue;
   }
   onDisk.add(id);
 }
@@ -139,4 +151,7 @@ const stale = [...mapped].filter((f) => !onDisk.has(f));
 if (stale.length > 0) {
   console.error("book config references films that no longer exist: " + stale.join(", "));
   process.exit(1);
+}
+if (drafts.length > 0) {
+  console.log(`draft(s) in progress, still todo: ${drafts.join(", ")}`);
 }

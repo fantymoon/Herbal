@@ -40,16 +40,35 @@ The seal is a single large glyph, never the herb or formula name. Use a glyph sc
 <Seal text={mode === "single-herb" ? "药" : "方"} glyphScale={0.55} />
 ```
 
+## How A New Film Is Built
+
+A new film is **data, not JSX**. Three files, and only one of them holds prose:
+
+| File | Holds |
+| --- | --- |
+| `src/films/<kebab>.ts` | the `FilmContent` object — the only place prose is written |
+| `src/finished/<kebab>.tsx` | a ~5-line wrapper: `<EntryFilm content={content} />` |
+| `upload/<kebab>.md` | the upload ledger (platform copy, once written) |
+
+`npm run new-film -- --id=<CompositionId> [--latin=...] [--entry=...]` writes all three at once, reading the entry's 原文 straight out of the corpus and marking the rest as `TODO`. Do not hand-edit the wrapper: geometry, type scale, scene split, duration and pacing all come from `src/layout.ts`, which `tests/layout.test.ts` covers.
+
+- **Draft state.** While the content module still contains `TODO` placeholders the film is a *draft*: `npm run check` reports it, `npm run gen` does not register it, and `npm run verify` refuses to render it. A draft therefore has no Composition and cannot reach a platform — that is what makes it safe for the gate to report a draft without failing. Clear every placeholder and the film becomes renderable.
+- **Never hand-position a block or hand-pick a font size.** A film file that carries its own `position: "absolute"` fails the gate, and every size must come from `TYPE` in `src/layout.ts`. The 55 published films drifted to 46 distinct font sizes and 11–14 hand-placed blocks each, which is exactly the maintenance this replaces.
+- Text heights are reserved from each block's own line-height, so a block never reserves more space than it renders. `tests/layout.test.ts` asserts this — a 1.5 line box on the 150px hero title once pushed the whole hero ~87px below where the published films put it.
+- The reveal is front-loaded: blocks finish appearing by roughly frame 56 of a 120-frame scene, matching the published films.
+
 ## Mobile-First Layout
 
 - Compose at `1080×1920`. Inspect frames at phone scale before export.
 - Pace for reading, not skimming: at least 4 seconds per scene, and a total length of 12, 15, or 18 seconds (360 / 450 / 540 frames at 30 fps). These three durations are the only accepted ones; `tests/compliance.test.ts` enforces the set, the per-scene minimum, and that the number of `breaks` is one less than the number of scenes. Choose the longer durations instead of shrinking type. On-screen text must be readable at a normal pace without forcing the viewer to pause; entrance animations should be gentle (around one second of fade/rise).
-- Plan block geometry before writing scenes: a CJK glyph is about as wide as its font size, so estimate every block's height, keep at least 50px of vertical clearance between stacked blocks, and never let two absolutely-positioned blocks overlap. Recheck the hero, source, and closing stills for overlap before rendering.
+- The geometry invariants are machine-checked, not eyeballed: `src/layout.ts` stacks every block with at least 50px of vertical clearance, and `npm run check` fails a film whose plan has an overlap, an overflow past the bottom reserve, or a scene shorter than 4 seconds. You still inspect the stills — the checker cannot judge whether a photo shows the right species.
 - Keep the title dominant. Two floors are enforced by tests and are not negotiable: the `今译` body must be at least 56px, and any element that renders Chinese must be at least 24px. ASCII-only photo credits are exempt from the 24px floor. Aim for secondary Chinese at least 34px and pinyin/English labels at least 24px. Keep photo credits concise and subordinate.
-- Do not solve a full screen by shrinking the translation. The original quotation is allowed to be large, but the `今译` — the part that makes the entry readable — must never end up smaller than the classical text. When the material does not fit, split the translation across two scenes or move the duration up to 450/540 frames.
+- Do not solve a full screen by shrinking the translation. The original quotation is allowed to be large, but the `今译` — the part that makes the entry readable — must never end up smaller than the classical text. When the material does not fit, the layout splits the translation across two scenes; if it still overflows, that is a content problem and `npm run check` reports it rather than hiding it behind smaller type.
 - Fill the vertical story with meaningful material: identity, a short quote, photo or factual strip, continuation from the source, and a closing/source note. Calm spacing is good; an unoccupied middle third is not.
 - Do not nest cards. Use a few paper rules, framed inserts, and aligned strips instead of unrelated floating boxes.
 - Put the long original quotation, aliases, habitat, and bibliographic details into later scenes to prevent both tiny type and empty screens.
+- Text that lands on the decorative landscape needs its own backing. The hero's 原文 excerpt and its citation share one bordered panel for exactly this reason; a bare line over the hills reads as a grey smudge.
+- The brand mark is anchored to the bottom of the closing frame, not stacked after the disclaimer, so it does not float in the middle of the empty lower half.
 
 ## Content Repetition
 
@@ -57,7 +76,7 @@ The seal is a single large glyph, never the herb or formula name. Use a glyph sc
 - Do not repeat the herb/formula name, an alias, habitat, or a short source phrase across hero, source, closing, and post copy unless a required source credit or disclaimer needs it.
 - Fill a source scene with a **longer contiguous original quote** or a previously unused supporting detail. Do not recycle the hero line merely to fill space.
 - Keep direct quotations faithful, but split a long entry into distinct, non-overlapping excerpts when it serves the pacing.
-- Before rendering, run `npm run check`, which performs the **repeated-string scan** across all visible on-screen text automatically. It reads each film's own JSX rather than a hand-written list, so a phrase you forgot to declare is still caught. Credits and the required disclaimer are the only normal exceptions; bibliographic citations (`《…》…卷/篇/部`) are allowed to repeat.
+- Before rendering, run `npm run check`, which performs the **repeated-string scan** across all visible on-screen text automatically. It reads the film's rendered text — the content module and its layout plan for a data-driven film, the JSX for the frozen hand-written ones — rather than a hand-written list, so a phrase you forgot to declare is still caught. Credits and the required disclaimer are the only normal exceptions; bibliographic citations (`《…》…卷/篇/部`) are allowed to repeat, which is why the citation is printed as `《书名》· 卷 · 篇` rather than concatenated bare.
 
 ## Original And Modern Reading
 
@@ -71,13 +90,13 @@ The seal is a single large glyph, never the herb or formula name. Use a glyph sc
 
 ## Template And Audio Boundaries
 
-- Create or edit only the finished composition and its focused tests. The shared layer a finished film may build on is `src/finished-shell.tsx` (`FinishedFilm`, `FinishedMusic`), `src/herbal-stage.tsx` (`SceneShell`, `Seal`, palette) and `src/herbal-cards.tsx` (`fade`, `rise`). Extend that layer only in backward-compatible ways — a new optional prop is fine, a changed default is not, because 55 published films render through it.
+- Create or edit only the finished composition and its focused tests. The shared layer a finished film may build on is `src/entry-film.tsx` (`EntryFilm`), `src/layout.ts` (geometry and type scale), `src/finished-shell.tsx` (`FinishedFilm`, `FinishedMusic`), `src/herbal-stage.tsx` (`SceneShell`, `Seal`, palette) and `src/herbal-cards.tsx` (`fade`, `rise`). Extend that layer only in backward-compatible ways — a new optional prop is fine, a changed default is not, because 55 published films render through it. After touching the shared layer, render a frozen film's still and confirm it is byte-identical to the pre-change still before committing.
 - `HerbalFeature`, `HerbProfileTemplate` and `FormulaShortTemplate` are legacy scaffolding: no finished film references them, and code-drawn illustration (`RootIllustration`) is forbidden. Do not use them as a starting point for a new film.
-- Build the finished component on the shared shell: define `HeroScene` / `ClassicalScene` / `ClosingScene` as `React.FC<{ frame: number }>` scene parts, then render them through `FinishedFilm` from `src/finished-shell.tsx`. Never copy a `BackgroundMusic` / `SceneShell` wrapper into the film file. Keep `music={staticFile("music/…")}`, a `durationInFrames` literal (360 / 450 / 540) and the matching `breaks` array in the film file so tests, `npm run check` and `npm run gen` keep working.
-- Register the film with `npm run gen` instead of hand-editing `src/Composition.tsx`.
-- When a film needs more room, raise the duration and add a scene plus its break. `FinishedFilm` takes any number of scenes as long as `breaks.length === scenes.length - 1`.
-- Store music under `public/music`; use `Audio` with `staticFile`, `trimAfter={durationInFrames}`, and gentle fade-in/out at a low background volume.
-- Keep a disclaimer such as `古籍内容展示，不构成诊疗建议` whenever a historical source describes medicinal use.
+- A new film renders through `EntryFilm`; that is what the gate checks for. `FinishedFilm` takes any number of scenes as long as `breaks.length === scenes.length - 1`, and the plan supplies both, so a data-driven film never writes a `durationInFrames` or `breaks` literal of its own.
+- Register the film with `npm run gen` instead of hand-editing `src/Composition.tsx`. `gen` reads the duration from the plan and skips drafts.
+- Store music under `public/music`; name it as `music/<file>.mp3` in the content module. The shell plays it through `Audio` with `staticFile`, `trimAfter={durationInFrames}`, and gentle fade-in/out at a low background volume.
+- The disclaimer `古籍内容展示，不构成诊疗建议` is part of the closing scene by construction, and the gate fails a plan that lost it. It is required whenever a historical source describes medicinal use — which, for this corpus, is always.
+- The block below is the **frozen hand-written shape** — it is what the 55 published films look like and what a retired film would be re-made from, not a template for a new one. A new film must not copy it.
 
 ```tsx
 export const XFirstFilm: React.FC = () => (
@@ -118,9 +137,9 @@ Prepare upload copy after the final visual and media checks. When the user does 
 
 1. Add a focused test before implementation and run it until it fails for the missing behavior.
 2. Implement the smallest change, then run `npm test` and `npm run lint`.
-3. Run `npm run check` (or `npm run check -- --film=<CompositionId>`). It applies the compliance rules, the repeated-text scan, and the upload-ledger check. A new film that fails any of these cannot be rendered.
-4. Run `npm run verify -- --film=<CompositionId>`: it re-runs the rule check as a pre-flight, renders hero/source/closing stills to `out/stills/`, exports `out/<name>.mp4`, and asserts the container facts via `npx remotion ffprobe` — 1080x1920, 30fps, H.264 video, AAC audio, a duration matching the composition, and a plausible file size. Add `--sheet` (optionally `--sheet=20`) to sample a contact sheet instead of three frames; three frames out of 360 is a thin sample for a film whose main failure mode is text crowding mid-scene.
-5. Inspect the stills yourself for subject, seal, pinyin, English, and Chinese readability on mobile; the script cannot judge that for you.
+3. Run `npm run check` (or `npm run check -- --film=<CompositionId>`). It applies the compliance rules, the repeated-text scan, and the upload-ledger check. A new film that fails any of these cannot be rendered. A `draft` line is not a failure: it means placeholders are still open, and the film is not renderable until they are cleared.
+4. Run `npm run verify -- --film=<CompositionId>`: it re-runs the rule check as a pre-flight (and refuses a draft), renders hero/source/closing stills to `out/stills/`, exports `out/<name>.mp4`, and asserts the container facts via `npx remotion ffprobe` — 1080x1920, 30fps, H.264 video, AAC audio, a duration matching the composition, and a plausible file size. The three still frames are sampled from the plan, so they are true scene mids whatever the scene count. Add `--sheet` (optionally `--sheet=20`) to sample a contact sheet instead of three frames; three frames out of 360 is a thin sample for a film whose main failure mode is text crowding mid-scene.
+5. Inspect the stills yourself for subject, seal, pinyin, English, and Chinese readability on mobile; the script cannot judge that for you. Compare a new film's hero and closing against a frozen film's at the same frame — that is the only reliable way to catch a departure from the series' visual language.
 6. Refresh Studio and leave the final composition previewable.
 
 ## Published Films Are Frozen

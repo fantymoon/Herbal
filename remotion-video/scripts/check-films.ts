@@ -4,19 +4,29 @@
 //   npm run check -- --film=DanshaFirstFilm
 //   npm run check -- --verbose         # also list the frozen films' known issues
 //
-// New films must pass the compliance rules, contain no repeated on-screen text,
-// and ship with an upload ledger. Published films are frozen: their known issues
-// are reported for information but never fail the run.
+// Three states, and only one of them is a failure:
+//
+//   ok      a renderable film that satisfies every current rule
+//   draft   a data-driven film whose content module still carries TODO placeholders.
+//           Reported, never a failure — a draft has no Composition, so it cannot be
+//           rendered or published. Clearing the placeholders is what makes it `ok`.
+//   FAIL    anything else: a rule broken, repeated on-screen text, a missing ledger.
+//
+// Published films are frozen: their known issues are reported for information but
+// never fail the run.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkNewFilm } from "./lib/compliance.ts";
+import { checkNewFilm, isDraft } from "./lib/compliance.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
-import { readFilmId, toKebab } from "./lib/film-files.ts";
-import { findRepeats, formatRepeats } from "./lib/repeat-scan.ts";
+import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
+import { loadContent } from "./lib/film-content.ts";
+import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
+import { visibleText } from "../src/layout.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
+const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload");
 
 const args = Object.fromEntries(
@@ -25,6 +35,8 @@ const args = Object.fromEntries(
     return [m?.[1] ?? a, m?.[2] ?? true];
   }),
 );
+
+const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
 
 const ledgerProblems = (kebab: string, filmId: string): string[] => {
   const ledger = path.join(uploadDir, `${kebab}.md`);
@@ -59,13 +71,15 @@ if (typeof args.film === "string") {
 
 const failures: string[] = [];
 let frozenCount = 0;
+let draftCount = 0;
 
 for (const file of all) {
   const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
   const kebab = file.replace(/\.tsx$/, "");
   const frozen = isFrozen(file);
-  const violations = checkNewFilm(source);
-  const repeats = findRepeats(source);
+  const { content, error } = await loadContent(source, filmsDir);
+  const violations = checkNewFilm(source, content, knownPhotos);
+  const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
 
   if (frozen) {
     frozenCount += 1;
@@ -73,6 +87,26 @@ for (const file of all) {
       console.log(
         `frozen ${file}: ${violations.length} known compliance gap(s), ${repeats.length} repeated phrase(s)`,
       );
+    }
+    continue;
+  }
+
+  // A content module that is named but missing/unloadable is a hard failure: the
+  // rules cannot be verified at all.
+  if (error) {
+    failures.push(`${file}: ${error}`);
+    console.error(`FAIL ${file}\n  ${error}`);
+    continue;
+  }
+
+  if (isDraft(content)) {
+    draftCount += 1;
+    const unfinished = violations.filter((v) => v.rule === "unfinished").map((v) => v.detail);
+    console.log(`draft ${file}: ${unfinished.length} placeholder(s) left — not renderable yet`);
+    if (args.verbose) {
+      for (const detail of unfinished) {
+        console.log(`        ${detail}`);
+      }
     }
     continue;
   }
@@ -94,8 +128,9 @@ for (const file of all) {
   }
 }
 
+const renderable = all.length - frozenCount - draftCount;
 console.log(
-  `\nchecked ${all.length} film(s): ${all.length - frozenCount} under the current rules, ${frozenCount} frozen`,
+  `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ${frozenCount} frozen`,
 );
 if (failures.length > 0) {
   console.error(`\n${failures.length} problem(s) found.`);

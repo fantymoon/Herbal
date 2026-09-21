@@ -3,12 +3,20 @@
 // - Scans finished films, parses the exported component name and duration.
 // - Preserves the existing registration order; appends new films (sorted) at the end.
 // - Emits static <Composition id="..." ... /> literals so source-string tests keep passing.
+//
+// A film whose content module still carries TODO placeholders is a draft: it is not
+// registered, so it has no Composition and cannot be rendered or published. Clearing
+// the placeholders is what makes a film renderable.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadContent } from "./lib/film-content.ts";
+import { isDraft } from "./lib/compliance.ts";
+import { planFilm } from "../src/layout.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const finishedDir = path.join(root, "..", "src", "finished");
+const filmsDir = path.join(root, "..", "src", "films");
 const outFile = path.join(root, "..", "src", "Composition.tsx");
 
 const toKebab = (name) =>
@@ -48,6 +56,25 @@ for (const file of files) {
     duration: fileDuration ?? null,
     source,
   });
+}
+
+// A data-driven film computes its own duration from the content, so there is no
+// literal to read. Take it from the same plan the renderer uses.
+const drafts = [];
+for (const [component, entry] of discovered) {
+  const { content, error } = await loadContent(entry.source, filmsDir);
+  if (error) {
+    console.error(`FAIL ${entry.kebab}.tsx: ${error}`);
+    process.exit(1);
+  }
+  if (isDraft(content)) {
+    drafts.push(entry.kebab);
+    discovered.delete(component);
+    continue;
+  }
+  if (content && !entry.duration) {
+    entry.duration = String(planFilm(content).durationInFrames);
+  }
 }
 
 // Second pass: resolve durations for wrappers with no literal of their own.
@@ -101,7 +128,7 @@ for (const [id, info] of discovered) {
 
 const missing = orderedIds.filter((id) => !discovered.has(id));
 for (const id of missing) {
-  console.warn(`pruning ${id}: file removed from src/finished/`);
+  console.warn(`pruning ${id}: not a renderable film (removed, or still a draft)`);
 }
 const registeredIds = orderedIds.filter((id) => discovered.has(id));
 
@@ -174,3 +201,6 @@ ${compositions}
 
 fs.writeFileSync(outFile, output);
 console.log(`registered ${registeredIds.length} finished films -> src/Composition.tsx`);
+if (drafts.length > 0) {
+  console.log(`skipped ${drafts.length} draft(s) (fill in the TODOs to register): ${drafts.join(", ")}`);
+}

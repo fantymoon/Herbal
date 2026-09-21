@@ -6,6 +6,8 @@
 export default {
   key: "shennong-bencao-jing",
   book: "神农本草经",
+  /** Romanised title, printed as the hero's top label (matches the published films). */
+  bookLatin: "SHENNONG BENCAO JING",
   source: "TCM-Ancient-Books-master/000-神农本草经.txt",
 
   // Entry name in the txt -> Composition id. Composition ids cannot be derived from

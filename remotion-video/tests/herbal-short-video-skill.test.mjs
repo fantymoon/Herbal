@@ -53,4 +53,14 @@ test("the herbal short-video skill captures the production guardrails", () => {
   assert.equal(source.includes("--sheet"), true);
   assert.equal(source.includes("tests/compliance.test.ts"), true);
   assert.equal(source.includes("`FinishedFilm` takes any number of scenes"), true);
+
+  // The data-driven workflow. A new film is content data + a thin wrapper, and the
+  // draft state is what lets the gate report an unfinished film without failing.
+  assert.equal(source.includes("How A New Film Is Built"), true);
+  assert.equal(source.includes("src/films/<kebab>.ts"), true);
+  assert.equal(source.includes("npm run new-film"), true);
+  assert.equal(source.includes("Draft state"), true);
+  assert.equal(source.includes("src/layout.ts"), true);
+  assert.equal(source.includes("Never hand-position a block or hand-pick a font size"), true);
+  assert.equal(source.includes("refuses a draft"), true);
 });

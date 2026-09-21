@@ -26,10 +26,10 @@ export const extractVisibleText = (source: string): string[] =>
 
 export type Repeat = { text: string; count: number };
 
-/** Repeated visible strings within a single film, excluding allowed repeats. */
-export const findRepeats = (source: string): Repeat[] => {
+/** Count repeats in an explicit list of on-screen strings. */
+export const findRepeatsIn = (texts: string[]): Repeat[] => {
   const counts = new Map<string, number>();
-  for (const text of extractVisibleText(source)) {
+  for (const text of texts) {
     counts.set(text, (counts.get(text) ?? 0) + 1);
   }
   return [...counts.entries()]
@@ -37,6 +37,10 @@ export const findRepeats = (source: string): Repeat[] => {
     .map(([text, count]) => ({ text, count }))
     .sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 };
+
+/** Repeated visible strings within a single hand-written film's JSX. */
+export const findRepeats = (source: string): Repeat[] => findRepeatsIn(extractVisibleText(source));
+
 
 export const formatRepeats = (file: string, repeats: Repeat[]): string =>
   repeats.map((r) => `${file}: "${r.text}" appears ${r.count} times`).join("\n");
