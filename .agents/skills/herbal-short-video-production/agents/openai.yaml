@@ -1,0 +1,4 @@
+interface:
+  display_name: "中草药短视频制作"
+  short_description: "将古籍内容、真实素材与移动端版式制作成中草药竖屏视频"
+  default_prompt: "Use $herbal-short-video-production to create a mobile-first Chinese herbal video from supplied book content."

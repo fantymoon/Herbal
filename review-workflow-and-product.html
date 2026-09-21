@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本草短视频项目 · 工作流与产品诊断报告</title>
+<style>
+  :root{
+    --paper:#f7f4ec; --card:#fffdf8; --ink:#1b1a18; --muted:#6f6a61;
+    --line:rgba(27,26,24,.14); --line-strong:rgba(27,26,24,.28);
+    --seal:#9d3527; --gold:#a8812f; --ok:#3f6b4a; --warn:#a8812f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0 20px 72px;
+    background:var(--paper); color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    line-height:1.72; font-size:15.5px;
+  }
+  .wrap{max-width:940px;margin:0 auto}
+  header{padding:56px 0 28px;border-bottom:3px solid var(--ink)}
+  .kicker{font-size:12.5px;letter-spacing:.16em;font-weight:700;color:var(--seal);text-transform:uppercase}
+  h1{font-family:"STKaiti","KaiTi",serif;font-size:44px;line-height:1.15;margin:14px 0 10px;font-weight:400}
+  .sub{color:var(--muted);font-size:14.5px;margin:0}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line-strong);padding:3px 11px;font-size:12.5px;color:var(--muted);background:var(--card)}
+  h2{font-family:"STKaiti","KaiTi",serif;font-size:29px;font-weight:400;margin:52px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line-strong)}
+  h2 .num{color:var(--seal);font-size:15px;font-family:"Segoe UI",sans-serif;font-weight:700;letter-spacing:.1em;display:block;margin-bottom:6px}
+  h3{font-size:17px;margin:34px 0 8px;font-weight:700}
+  p{margin:10px 0}
+  .lead{font-size:16.5px;background:var(--card);border-left:4px solid var(--seal);padding:18px 22px;margin:26px 0}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:22px 0}
+  .card{background:var(--card);border:1px solid var(--line);padding:18px 20px}
+  .card .n{font-family:"STKaiti",serif;font-size:34px;line-height:1;color:var(--seal)}
+  .card .t{font-size:13px;color:var(--muted);margin-top:8px;font-weight:700}
+  .card .d{font-size:13.5px;color:var(--ink);margin-top:6px;line-height:1.6}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:var(--card)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#efe9dc;font-size:12.5px;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  td.k{font-weight:700;white-space:nowrap}
+  code{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;background:#efe9dc;padding:1px 5px;border-radius:2px}
+  .bad{color:var(--seal);font-weight:700}
+  .good{color:var(--ok);font-weight:700}
+  .item{background:var(--card);border:1px solid var(--line);margin:16px 0;padding:0}
+  .item>.head{display:flex;align-items:baseline;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#f1ece0}
+  .item .tag{font-size:11.5px;font-weight:700;letter-spacing:.08em;padding:2px 9px;border:1px solid var(--line-strong);color:var(--muted);white-space:nowrap}
+  .item .tag.p0{background:var(--seal);color:#fff;border-color:var(--seal)}
+  .item .tag.p1{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .item .tag.p2{background:#5d6b52;color:#fff;border-color:#5d6b52}
+  .item .title{font-weight:700;font-size:16px}
+  .item .body{padding:6px 20px 18px}
+  .lbl{font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--seal);margin:14px 0 2px}
+  .lbl.fix{color:var(--ok)}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:20px 0;font-size:13px}
+  .flow .step{background:var(--card);border:1px solid var(--line-strong);padding:9px 13px;font-weight:700}
+  .flow .arrow{color:var(--muted)}
+  .flow .step.gap{border:2px solid var(--seal);background:#fbf1ef;color:var(--seal)}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line-strong);font-size:13px;color:var(--muted)}
+  .quote{border-left:3px solid var(--gold);padding-left:16px;color:var(--muted);font-size:14px;margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Workflow &amp; Product Review</div>
+  <h1>本草短视频项目诊断</h1>
+  <p class="sub">以 <code>remotion-video/</code> 的实际代码、测试、台账与产物为依据，逐条列出工作流与产品的不足，并给出可执行的整改建议。</p>
+  <div class="meta">
+    <span class="chip">55 部成片 · 16,666 行</span>
+    <span class="chip">54 部母版 mp4</span>
+    <span class="chip">356 条目 / 已做 54</span>
+    <span class="chip">测试 540 行 + 4 个文件</span>
+    <span class="chip">核查日期 2026-09-21</span>
+  </div>
+</header>
+
+<div class="lead">
+  <strong>一句话结论：</strong>这个项目的<strong>规范写得比代码好，测试写得比规范窄</strong>。
+  SKILL.md 已经把"什么是对的"定义得相当完整，但规则几乎全靠人工执行；而唯一被机器强制的那部分（黑名单词），恰恰是事后补救性质的。
+  于是出现三个断层：<strong>规范没有执行层</strong>、<strong>内容与排版焊死在一起</strong>、<strong>全部资产没有版本控制与备份</strong>。
+</div>
+
+<h2><span class="num">UPDATE 2026-09-21</span>整改状态</h2>
+
+<div class="lead">
+  <strong>处理口径：</strong>55 部已发布影片按你的决定<strong>冻结不改</strong>（它们的母版就是线上副本，改动没有收益、只有风险）；
+  其余问题<strong>已全部修复并验证</strong>。冻结这件事本身也被固化成了代码约束，而不是一句口头约定。
+</div>
+
+<table>
+  <tr><th>问题</th><th>处理</th><th>落地位置</th></tr>
+  <tr><td class="k">合规规范零执行</td><td class="good">已修</td><td>纯函数检查器 <code>scripts/lib/compliance.ts</code>；<code>tests/compliance.test.ts</code> 先用 11 个反向样本自证它会失败，再扫描新片。<code>verify</code> 渲染前强制跑闸门，不合规直接拒绝渲染。</td></tr>
+  <tr><td class="k">资产无版本控制</td><td class="good">已修</td><td>纳入 152 个文件 / 28,835 行；<code>.gitattributes</code> 规范化行尾。</td></tr>
+  <tr><td class="k">母版仅存单机</td><td class="warn">部分修</td><td><code>npm run manifest</code> → <code>masters-manifest.json</code> 记录母版存在性与大小（可发现丢失）。<code>out/</code> 本体仍需你另存一份。</td></tr>
+  <tr><td class="k">重复文本靠手抄清单</td><td class="good">已修</td><td><code>scripts/lib/repeat-scan.ts</code> 自动扫描影片自身 JSX；白名单仅免责声明与书名卷次引用。</td></tr>
+  <tr><td class="k">发布无台账</td><td class="good">已修</td><td><code>tests/upload-ledger.test.ts</code> 要求新片必须有 <code>upload/&lt;kebab&gt;.md</code> 及七个字段。</td></tr>
+  <tr><td class="k">测试锁魔法数字</td><td class="good">已修</td><td>去掉 <code>credits==53</code> / <code>images&gt;40</code> / <code>files&gt;50</code>，改为派生断言；<code>tests/suite.test.ts</code> 防止测试文件漏跑。</td></tr>
+  <tr><td class="k">校验深度不足</td><td class="good">已修</td><td>ffprobe 增加时长一致性与体积区间校验；新增 <code>--sheet</code> 抽样。</td></tr>
+  <tr><td class="k">无 CI</td><td class="good">已修</td><td><code>.github/workflows/ci.yml</code>：test + lint + check + 注册表漂移 + manifest。</td></tr>
+  <tr><td class="k">命名启发式 + 五处手工维护</td><td class="good">已修</td><td>film id 改由影片自身 <code>export const</code> 派生；按书配置移入 <code>scripts/books/</code>。改造后 <code>progress.json</code> 与 <code>Composition.tsx</code> 逐字节一致。</td></tr>
+  <tr><td class="k">文档保护死代码</td><td class="warn">部分修</td><td>SKILL.md 已改口：明确三个模板是 legacy 脚手架、不得作为新片起点；新增测试禁止影片从 <code>../HerbalVisuals</code> 导入。是否删除仍待你确认。</td></tr>
+  <tr><td class="k">今译字号 42px</td><td class="warn">新片已修</td><td>56px 已写成硬下限并进入闸门；55 部存量按冻结决定保留原样。</td></tr>
+  <tr><td class="k">时长焊死 12 秒</td><td class="good">已修</td><td>开放为 360 / 450 / 540，<code>FinishedFilm</code> 支持任意场景数（<code>breaks.length === scenes.length - 1</code>）。</td></tr>
+</table>
+
+<h3>共享壳层改动的验证方式</h3>
+<p>既然 55 部影片都渲染自同一个 <code>FinishedFilm</code>，改共享层就必须证明"输出没变"，不能靠感觉。做法是改前改后各渲染一次同一部影片比对字节：</p>
+<div class="quote">
+  DanshaFirstFilm 改前 md5 <code>241a999e669caf0dfbb45d18ee68e2a5</code><br>
+  改后 md5 <code>241a999e669caf0dfbb45d18ee68e2a5</code> → 完全一致
+</div>
+<p>结论：<code>FinishedFilm</code> 的场景数泛化对已发布影片零影响。这个"重渲染比对哈希"应当成为今后任何共享层改动的标准动作。</p>
+
+<h3>终检状态</h3>
+<div class="grid3">
+  <div class="card"><div class="n">104</div><div class="t">测试通过 / 0 失败</div><div class="d">改造前 75，新增 29 条（合规、重复扫描、台账、ffprobe、套件自检）</div></div>
+  <div class="card"><div class="n">55</div><div class="t">影片通过闸门</div><div class="d">0 部需按新规检查，55 部冻结；<code>npm run lint</code> 通过</div></div>
+  <div class="card"><div class="n">2</div><div class="t">提交</div><div class="d"><code>03b92f9</code> 纳管与闸门，<code>e855964</code> 多场景与模板守卫</div></div>
+</div>
+
+<h3>仍待你决策的四件事</h3>
+<ul>
+  <li><strong>仓库边界（建议优先处理）。</strong>git 仓库只在 <code>remotion-video/</code>，而 <code>SKILL.md</code>、<code>AGENTS.md</code>、<code>music/</code>、<code>sign-1.png</code> 都在仓库外——<strong>最权威的工作流文档和品牌资产至今没有版本控制</strong>；而且 CI 全新检出时找不到 <code>../../.agents/…</code>，skill 一致性测试会直接失败。建议把仓库上移到工作区根目录。</li>
+  <li><strong>配置远程仓库。</strong>本机 <code>gh</code> 未登录、无 remote，目前仍是单机单副本，备份问题只解决了一半。</li>
+  <li><strong>legacy 模板是否归档。</strong><code>HerbalFeature</code> / <code>HerbProfileTemplate</code> / <code>FormulaShortTemplate</code> 及 <code>RootIllustration</code> / <code>HerbChip</code> / <code>IngredientList</code> 无人引用。如果横版 1280×720 还打算用，就保留；否则可以清掉约 600 行。</li>
+  <li><strong>内容数据化（收益最大的一项）。</strong>把影片拆成"结构化内容 + 渲染器"（<code>src/films/&lt;kebab&gt;.ts</code> + <code>&lt;EntryFilm data layout&gt;</code>），单部影片从 303 行降到约 20 行，版式可迭代、可 A/B。我没有盲做，因为它需要一个真实影片作为验证对象——黄芝正是那部影片，建议做黄芝时一并落地。</li>
+</ul>
+
+<h2><span class="num">EVIDENCE</span>关键证据速查</h2>
+<table>
+  <tr><th>核查项</th><th>实测结果</th><th>判定</th></tr>
+  <tr><td class="k">新规范框架 <code>古籍称其主……</code></td><td>0 / 55 部影片包含</td><td class="bad">完全未落地</td></tr>
+  <tr><td class="k">强制注释 <code>此为汉代认知…</code></td><td>0 / 55 部影片包含</td><td class="bad">完全未落地</td></tr>
+  <tr><td class="k">含 <code>注释 / COMMENTARY</code> 区块</td><td>0 / 55 部影片包含</td><td class="bad">完全未落地</td></tr>
+  <tr><td class="k">存量旧式 <code>主治</code> 表述</td><td>44 / 55 部仍在使用（测试中"豁免"）</td><td class="bad">欠账未清</td></tr>
+  <tr><td class="k">今译正文字号 vs 规范下限 56px</td><td>51 / 51 部实测为 40–42px</td><td class="bad">全线违反</td></tr>
+  <tr><td class="k">布局几何签名（top 序列 + 字号序列）</td><td>54 部仅 9 种；最大簇 36 部，次大 11 部</td><td class="bad">87% 只用两种版式</td></tr>
+  <tr><td class="k">全项目出现过的字号种类</td><td>46 种（含 14/15、19/20、25–32 等相邻值）</td><td class="bad">无字号刻度</td></tr>
+  <tr><td class="k">git 跟踪文件数</td><td>11 个（影片、图片、音乐、测试、脚本、台账全部未跟踪）</td><td class="bad">近乎无版本控制</td></tr>
+  <tr><td class="k">git remote</td><td>无</td><td class="bad">无异地备份</td></tr>
+  <tr><td class="k">母版 mp4 存放</td><td><code>out/</code> 被 .gitignore，54 部仅存本地磁盘</td><td class="bad">单点故障</td></tr>
+  <tr><td class="k">上传文案台账</td><td>仅 1 部（黄芝，且影片尚未制作）；历史 55 部未建档</td><td class="bad">无法追溯</td></tr>
+  <tr><td class="k">verify 抽帧覆盖率</td><td>3 帧 / 360 帧</td><td class="warn">偏低</td></tr>
+  <tr><td class="k">三个模板 Composition</td><td>无任何影片引用（死代码）</td><td class="warn">保护错了对象</td></tr>
+  <tr><td class="k">CI</td><td>无；测试仅靠手动 <code>npm test</code></td><td class="warn">回归靠自觉</td></tr>
+</table>
+
+<h2><span class="num">PART 1</span>工作流诊断</h2>
+
+<p>整条流水线可以画成这样——红色环节是"规则存在但机器不检查"的位置：</p>
+<div class="flow">
+  <span class="step">选条目（progress.json）</span><span class="arrow">→</span>
+  <span class="step">查古籍原文（rg）</span><span class="arrow">→</span>
+  <span class="step">找授权配图</span><span class="arrow">→</span>
+  <span class="step gap">手写 303 行 TSX</span><span class="arrow">→</span>
+  <span class="step gap">手工核对文案/字号/重叠</span><span class="arrow">→</span>
+  <span class="step">npm test</span><span class="arrow">→</span>
+  <span class="step gap">人工看 3 张静帧</span><span class="arrow">→</span>
+  <span class="step">渲染 mp4</span><span class="arrow">→</span>
+  <span class="step gap">手写上传文案</span>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">W1 · 合规规范只写在文档里，没有执行层</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>SKILL.md 在 2026-09 被追加了一整套最关键的合规条款：功效句必须写成 <code>古籍称其主……</code>、注释块必须带 <code>此为汉代认知，未经现代科学证实</code>、现代疗效动词一律不得出现在今译/注释中。但实测 <strong>55 部影片里，0 部实现了新框架</strong>。</p>
+    <div class="lbl">为什么没被执行</div>
+    <p>因为唯一的"看门测试"是 <code>tests/herbal-short-video-skill.test.mjs</code>——它校验的是 <strong>SKILL.md 这个文件里有没有出现某几个字符串</strong>，而不是<strong>影片里有没有落实这些规则</strong>。也就是说，测试保护的是文档的措辞，不是产品的合规性。把 SKILL.md 删掉一半、只要保留关键词，测试依然全绿。</p>
+    <div class="lbl">影响</div>
+    <p>这正是平台已经处罚过的那一类问题。规范升级了，风险却没下降——账号还在养号期，而 44 部存量影片仍在用旧式 <code>主治</code> 表述，且没有任何机制阻止新片继续沿用旧写法（因为新框架没进测试）。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把校验对象从"文档"改成"影片"：新增 <code>tests/compliance.test.ts</code>，扫描每部影片的今译块——功效句必须以 <code>古籍称其主</code> 开头，且注释块必须含免责句。</li>
+      <li>把黑名单词测试升级为"框架测试"：黑名单是事后拦截，框架是事前约束，后者才可长期维持。</li>
+      <li>先做一部样板片（黄芝）跑通口径，再批量整改 44 部。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">W2 · 内容与排版焊死，导致 55 份近似克隆</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>每部影片是一个 ~303 行的 TSX 文件，其中真正属于"这部片子"的内容只有十几个字符串，其余全是内联样式。归一化后，<strong>54 部影片的布局几何只有 9 种签名，最大同构簇 36 部、次大 11 部</strong>；每部片有 11–14 个绝对定位块，坐标全部手写。</p>
+    <div class="lbl">影响</div>
+    <ul>
+      <li><strong>整改成本爆炸：</strong>要把 44 部影片的今译改成新框架，等于改 44 个 TSX 文件里的字符串与样式，而不是改一处数据。</li>
+      <li><strong>可读性失控：</strong>全项目散落 <strong>46 种字号</strong>（14、15、19、20、21、22、23、24、25…），相邻值成堆，说明字号是逐个手调出来的，没有刻度。</li>
+      <li><strong>重叠风险靠人肉兜底：</strong>SKILL.md 专门用一整段叮嘱"要估算每个块的高度、留 50px 间隙、绝不允许两个绝对定位块重叠"——这段叮嘱存在的原因，就是没有布局系统。</li>
+      <li><strong>无法做 A/B：</strong>想试新排版只能复制一份 300 行文件。</li>
+    </ul>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把影片拆成"数据 + 渲染器"：新增 <code>src/films/&lt;kebab&gt;.ts</code> 只放内容（条目名、卷次、原文、今译、注释、事实条、配图、音乐、强调色、版式编号），由 <code>&lt;EntryFilm data={...} layout="A" /&gt;</code> 统一渲染。影片文件从 300 行降到约 20 行。</li>
+      <li>收益是连锁的：整改 44 部 = 改数据；合规校验可以机器化（数据是结构化的）；版式可迭代；可批量重渲染。</li>
+      <li>同时建立字号刻度（建议收敛到 8 级左右）与布局栅格，把散落的 top 坐标收进版式常量。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">W3 · 全部资产几乎没有版本控制，也没有备份</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>git ls-files</code> 只有 <strong>11 个文件</strong>，全部提交历史只有 <strong>1 条</strong>（"Create new Remotion video"）。未跟踪的是：<code>src/finished/</code>（55 部影片）、<code>public/</code>（53 张授权图 + 2 首 BGM + credits.json）、<code>tests/</code>、<code>scripts/</code>、<code>progress.json</code>、<code>upload/</code>。没有配置 remote。</p>
+    <p>更关键的是 <code>.gitignore</code> 忽略了 <code>out/</code>，而 <strong>54 部母版 mp4 只存在于这块磁盘上</strong>。</p>
+    <div class="lbl">影响</div>
+    <p><code>upload/_incidents.md</code> 自己写着"55 集母版（out/ + src/finished/）完好，仅平台副本被删"——也就是说母版是唯一副本。同时，<code>credits.json</code> 是图片授权的法律凭据，它和 <code>src/finished/</code> 一样从未提交，一旦丢失无法重建。</p>
+    <p>没有版本历史还意味着：无法 diff、无法回滚、无法定位"哪一版改动引入了问题"。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>立刻 <code>git add -A</code> 纳入影片、图片、音乐、测试、脚本、台账，并做一次初始提交。</li>
+      <li>配置私有 remote 并 push，形成异地备份。</li>
+      <li>母版 mp4 单独备份（对象存储 / 网盘），或在仓库内保留一份 <code>out/</code> 的校验清单（文件名 + 大小 + 时长 + 帧数）以便核对完整性。</li>
+      <li>此后再动代码，按"一部影片一次提交"的粒度提交，让历史具备可读性。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">W4 · 测试用魔法数字锁计数，每加一个资源就要改测试</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>测试里写死了 <code>assert.equal(ledger.length, 53)</code>（credits.json 条数）、<code>assert.ok(images.size &gt; 40)</code>、<code>assert.ok(finishedFiles.length &gt; 50)</code>。</p>
+    <div class="lbl">影响</div>
+    <p>新增第 54 张配图就会让测试变红，而失败原因与"图片有没有授权"毫无关系。这会训练出一种坏习惯：看到红灯先改数字。久而久之测试失去信号价值——而 W1 的合规规则正是被这种"改测试比改产品省事"的惯性绕过去的。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把计数断言改为派生式：credits.json 条数应与 <code>public/images/</code> 下实际图片数一致；引用的图片集合应与台账集合互为子集。</li>
+      <li>数量下限断言只保留 1–2 个粗粒度守卫（例如"至少 1 部影片"），不作为精确约束。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">W5 · 同一个事实在四个地方手工维护，命名靠字符串启发式</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>要新增一部影片，需要同时改：<code>scripts/build-progress.mjs</code> 里的 <code>DONE</code> 映射表、<code>progress.json</code>（由脚本生成）、<code>tests/finished-video.test.ts</code> 里的 <code>shangjingContinuation</code> 表格行、<code>upload/&lt;kebab&gt;.md</code> 台账，以及 <code>src/finished/&lt;kebab&gt;.tsx</code> 本身。</p>
+    <p>而"文件名 → 组件名 → Composition id"的映射是靠字符串切分推导的（<code>toComp</code> 把 kebab 按 <code>-</code> 拆开再首字母大写）。这直接导致 <code>angelica-fourth-film-real-photo</code> 这个"包装片"必须在 <strong>三个不同文件里各写一次特例排除</strong>（测试、生成脚本、progress 脚本）。</p>
+    <div class="lbl">影响</div>
+    <p>信息分散 + 启发式推导 = 命名漂移。脚本自己都在报警：<code>name drift: ... (expected ...tsx)</code>。这类不一致不会立刻报错，只会在某天以"某部片没进台账"的形式暴露。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>确立单一事实来源：把条目名、卷次、Composition id 显式声明在影片数据里（配合 W2 的数据化），<code>progress.json</code> 与测试表格都由它派生，而不是反向手工维护。</li>
+      <li>取消 <code>toComp</code> 这类命名启发式，改为显式映射。</li>
+      <li>把"包装片"从特例升级为显式字段（例如 <code>wrapperOf: "AngelicaFourthFilm"</code>），三处排除逻辑自然消失。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">W6 · 质量闸门深度不足：抽 3 帧、只看容器规格、没有 CI</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>scripts/verify-film.mjs</code> 每部片只渲染 3 张静帧（hero / source / closing），ffprobe 只校验 1080x1920、30fps、H.264、AAC 四项容器规格。没有 CI，<code>npm test</code> 全靠手动。</p>
+    <div class="lbl">影响</div>
+    <ul>
+      <li>3 帧 / 360 帧 = 0.8% 采样，而这部产品的核心失败模式恰好是"中间某段文字挤在一起"。</li>
+      <li>容器规格通过 ≠ 内容正确：音乐有没有真的混进去、音量是否过低、时长是否符合预期，都不在检查范围。</li>
+      <li>没有 CI，意味着"忘了跑 <code>npm run gen</code>""忘了更新台账"这类错误只能靠人发现。</li>
+    </ul>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把静帧抽样加密到每 15 帧一张（约 24 张/片），拼成 contact sheet 供一次性目检；成本远低于逐帧，覆盖面提升 8 倍。</li>
+      <li>若完成 W2 数据化，可直接从布局常量计算各块包围盒，做<strong>自动重叠检测</strong>，彻底替代"人眼看 3 帧"。</li>
+      <li>verify 增加：时长与 <code>durationInFrames/fps</code> 一致、音轨存在且非静音、文件大小落在合理区间。</li>
+      <li>接入 CI（至少 <code>npm test</code> + <code>npm run lint</code> + 校验 <code>Composition.tsx</code> 与 <code>src/finished/</code> 同步），把"忘记跑命令"从人的责任变成机器的责任。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p2">P2</span><span class="title">W7 · 文档重点保护的是一层死代码</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>SKILL.md 反复强调"不要为了一部影片修改 <code>HerbalFeature</code> / <code>HerbProfileTemplate</code> / <code>FormulaShortTemplate</code>"。但实测这三个模板<strong>没有任何影片引用</strong>，它们只是作为 3 个额外 Composition 挂在 Studio 里；配套的 <code>RootIllustration</code>（代码绘制根茎插画）也已被规则禁止使用。</p>
+    <div class="lbl">影响</div>
+    <p>真正的共享层是 <code>finished-shell.tsx</code> + <code>herbal-stage.tsx</code> + <code>herbal-cards.tsx</code>，但规范里对"这一层该怎么演进"几乎没有约束；而规范花大力气保护的那层没人用。结果是<strong>该冻结的没冻结，该演进的没指引</strong>。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>确认模板确实无引用后归档（移入 <code>legacy/</code> 或删除），并同步更新 SKILL.md 与 <code>tests/visual-style.test.ts</code> 中针对模板的断言。</li>
+      <li>把"模板隔离"条款重新指向真正的共享层：<code>SceneShell</code> / <code>FinishedFilm</code> / <code>fade·rise</code>，并明确共享层允许的演进方式（新增可选参数、保持向后兼容）。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p2">P2</span><span class="title">W8 · 重复度检查停留在手工清单</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>SKILL.md 要求"渲染前做一次 repeated-string scan"。实际执行方式是测试里手写的 <code>once</code> 数组——每部片只列几个词。以黄耆片为例，<code>once</code> 只写了 <code>["生山谷"]</code>，而该片里 <code>上经</code> 出现了 4 次、<code>《神农本草经》· 卷一 · 上经</code> 出现了 2 次，都没被捕获。</p>
+    <p>我按规则做了一次自动扫描，55 部中只有 1 部被标出（人参片的"别名""生境"重复），说明<strong>规则和检查是两套东西</strong>。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把 repeated-string scan 写成脚本并进测试：抽取每部影片的可见文本节点，自动报告片内重复（允许白名单：署名、免责声明）。</li>
+      <li>这样 <code>once</code> 手写清单可以退化为补充，而不是唯一防线。</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">PART 2</span>产品诊断</h2>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">P1 · 可读性承诺与实际产品相反：今译正文只有 42px</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>SKILL.md 明确规定："Chinese body or quotations should usually be at least 56px，secondary Chinese at least 34px"。实测 <strong>51 部可测影片的今译正文字号全部是 40px 或 42px，无一达到 56px</strong>；次级说明文字普遍 26–28px，也低于 34px 的下限。</p>
+    <p>更值得注意的是结构倒挂：以黄耆片为例，<strong>古文原文用 72px，而把它翻译成现代汉语的今译只有 42px</strong>。也就是说，最需要观众看懂的、降低理解门槛的那一层，是全片最小的字。</p>
+    <div class="lbl">影响</div>
+    <p>这是短视频，没有旁白，观众不会暂停。42px 在 1080 宽的画布上约占 3.9% 宽度，换算到手机屏幕上大约 15pt——低于舒适阅读阈值。再叠加"逐句照译"带来的长句（今译段落常达 50–70 字），实际观看体验是"来不及读完就切场景了"。</p>
+    <p>这个问题 100% 存在、且没有任何测试或校验在管——它是"规范写得好、执行靠人"这一结构性缺陷在产品侧最直接的后果。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>二选一，不能既要又要：<strong>要么把今译拆到两个场景</strong>（把长句按语义分屏），<strong>要么提高字号并精简译文</strong>。前者更符合 SKILL.md 已有的"拆分长条目"指引。</li>
+      <li>把字号下限写进测试（对今译块断言 fontSize ≥ 56），否则规范会继续被无视。</li>
+      <li>为"注释"块单独定字号档位，避免它和正文抢注意力。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">P2 · 存量合规欠账没有清理路径</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>44 部影片仍使用旧式 <code>主治</code> 表述，且 55 部全部缺少新规范要求的功效框架与免责注释。测试的处理方式是"豁免名单"（<code>legacyZhuzhiFilms</code>）——这在工程上是对的（不为了存量破坏新规则），但在运营上等于<strong>把问题封存起来</strong>。</p>
+    <div class="lbl">影响</div>
+    <p>账号正在养号重建期，而这些影片一旦重新发布或仍在平台上，携带的正是触发处罚的表述模式。豁免名单让"欠账"看起来像"已解决"。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>把豁免名单改造成<strong>可递减的待办清单</strong>：每整改一部就从名单移除一部，测试断言名单长度只减不增。</li>
+      <li>整改按"是否已发布"排序：已在平台上的优先，未发布的可以低成本重制。</li>
+      <li>整改内容本身是机械的（今译加前缀 + 加注释行），配合 W2 数据化后可以批量完成，无需逐部重写。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">P3 · 产能模型不可持续：剩余 302 条目 × 手工 303 行</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>progress.json</code> 记录 356 个条目，已完成 54，剩余 302 个（含 2 个 skipped）。而当前单部影片的边际成本包括：手写约 300 行 TSX、手写测试表格行、手写 DONE 映射、手写上传台账、人工目检 3 张静帧。</p>
+    <div class="lbl">影响</div>
+    <p>按现有流程，产量上限由人工手写量决定，而不是由内容质量决定。更麻烦的是<strong>返工成本随存量线性增长</strong>：每次平台规则调整，都要面对几十上百个需要手改的文件——这正是 2026-09 合规升级后 0/55 落地率的原因。</p>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>先做"降本"再做"提产"：完成 W2（内容数据化）后，单部影片的制作应变成"填一份结构化内容 + 选版式"，而不是写一个组件。</li>
+      <li>建立内容模板与校验前置：填数据时就跑合规校验（今译框架、黑名单词、必填字段），而不是渲染后才发现。</li>
+      <li>把"原书顺序"这条内部规则的执行也交给脚本（目前 <code>build-progress.mjs</code> 已做，但 SOURCE/BOOK 是写死的，换书需要改脚本——建议参数化，以支撑 SKILL.md 描述的多书批次流程）。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">P4 · 发布侧没有台账，母版与发布版本不一致</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>upload/</code> 下只有黄芝一份台账（且影片尚未制作），历史 55 部的标题/描述/话题从未建档。同时，工作流规定"上传时用平台曲库替换 BGM"，意味着<strong>仓库里的母版 mp4 并不是真正发布出去的那一版</strong>——两者音频不同，且替换参数没有任何记录。</p>
+    <div class="lbl">影响</div>
+    <ul>
+      <li>面对平台审核或申诉时无法自证：不清楚线上到底是哪一版、配的什么乐、文案怎么写的。事故记录里"申诉用掉唯一一次机会、材料不齐被驳回"就是这个后果。</li>
+      <li>母版不可复现：拿仓库文件重新渲染，得不到与线上一致的成品。</li>
+    </ul>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>强制台账：为 <code>src/finished/</code> 中每部影片要求一个 <code>upload/&lt;kebab&gt;.md</code>，并加测试断言"每部影片都有台账文件"。</li>
+      <li>台账增加字段：发布平台、发布日期、发布状态（线上/私密/已删）、平台 BGM 名称、文案快照。历史 55 部至少补齐状态，避免再次"无据可查"。</li>
+      <li>把"平台替换的 BGM 名称"记入台账后，母版的复现路径就完整了。</li>
+      <li>注意：仓库内两首 BGM 来自网络音乐站点（爱给网 / 轻音乐网），授权状态未在仓库中记录。既然最终以平台曲库替换，建议在 <code>public/music/</code> 补一份来源与授权说明，或明确标注"仅作母版占位、不作为发布音轨"。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p2">P2</span><span class="title">P5 · 内容形态单一，方剂线零产出</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p>SKILL.md 定义了两种模式（<code>single-herb</code> 用"药"印、<code>formula</code> 用"方"印），但 55 部影片<strong>全部是单味药</strong>，测试也只断言 <code>&lt;Seal text="药"</code>。所有影片固定 360 帧（12 秒）、固定 3 个场景、固定两处切换点。</p>
+    <p>另外，SKILL.md 写的是"aim for about 12 seconds"（目标约 12 秒），而测试把 <code>durationInFrames={360}</code> 变成了硬性要求——规范留了弹性，测试把它焊死了。</p>
+    <div class="lbl">影响</div>
+    <ul>
+      <li>356 部结构完全一致的影片，对平台而言是明显的同质化内容，与账号正在经历的推荐受限处境叠加风险。</li>
+      <li>方剂是内容差异化最自然的抓手（配伍、君臣佐使、方名故事），但这条线在代码与测试层面完全没有验证过。</li>
+      <li>12 秒是硬约束时，内容量大的条目（原文长、别名多）只能靠压缩字号解决——这正好是 P1 的成因。</li>
+    </ul>
+    <div class="lbl fix">建议</div>
+    <ul>
+      <li>放开时长：把 360 从"硬性断言"降级为"默认值"，允许 360/450/540（12/15/18 秒）并让测试校验"时长与内容量匹配"。</li>
+      <li>准备 3 套版式变体，按内容形态自动选择（单味药·短条目 / 单味药·长条目 / 方剂），避免 356 部一个样子。</li>
+      <li>启动方剂线：先做 1–2 部跑通 <code>formula</code> 模式与"方"印，并把测试从"只认药印"改为"按模式认印"。</li>
+      <li>为"历史语境"设一个固定版位（对应新规范的注释块），让它成为结构的一部分，而不是临时塞进去的一行小字。</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">PLAN</span>原始建议的整改顺序</h2>
+<p class="sub">以下是首次诊断时提出的方案，供对照；实际执行状态见文首的「整改状态」。</p>
+
+<div class="item">
+  <div class="head"><span class="tag p0">第一步 · 立刻</span><span class="title">止血：备份 + 存量合规</span></div>
+  <div class="body">
+    <ul>
+      <li><code>git add -A</code> 纳入全部影片、图片、音乐、测试、脚本、台账，首次提交；配置私有 remote 并 push；母版 mp4 单独备份。</li>
+      <li>制作黄芝作为"新规范样板片"，跑通 <code>古籍称其主……</code> + 注释行的完整口径。</li>
+      <li>把合规校验写成针对影片的测试（而非针对 SKILL.md），先把样板片纳入，再逐部推进 44 部整改。</li>
+      <li>补建上传台账，至少为 55 部历史影片记录发布状态。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">第二步 · 本阶段</span><span class="title">降本：内容数据化 + 字号刻度</span></div>
+  <div class="body">
+    <ul>
+      <li>抽 <code>&lt;EntryFilm data={...} layout="A|B|C" /&gt;</code>，把影片从 300 行降到 20 行，内容迁到结构化数据文件。</li>
+      <li>建立 8 级字号刻度与布局栅格，把 46 种字号与手写 top 坐标收敛进版式常量。</li>
+      <li>把今译正文提到 ≥56px，长条目改为分屏呈现（同时解决 P1 与 P5）。</li>
+      <li>用数据文件作为唯一事实来源，让 <code>progress.json</code> 与测试表格自动派生，删掉 <code>DONE</code> 手工映射与命名启发式。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p2">第三步 · 随后</span><span class="title">加固：闸门与清理</span></div>
+  <div class="body">
+    <ul>
+      <li>自动化重复文本扫描、自动重叠检测（基于布局常量算包围盒）、静帧抽样加密到每 15 帧一张。</li>
+      <li>去掉测试中的魔法数字计数，改为派生式断言。</li>
+      <li>接入 CI：<code>npm test</code> + <code>npm run lint</code> + Composition 注册同步校验。</li>
+      <li>归档三个未被引用的模板与 <code>RootIllustration</code>，并重写 SKILL.md 的"模板隔离"条款指向真正的共享层。</li>
+      <li>参数化 <code>build-progress.mjs</code> 的书名/来源路径，为切换到下一部古籍做准备。</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">APPENDIX</span>值得肯定的部分</h2>
+<p>这份诊断偏严格，但这个项目的工程底子在同类个人创作里属于上游，有几处设计应当保留并作为整改的基础：</p>
+<ul>
+  <li><strong>规范本身质量很高。</strong>SKILL.md 把模式与印章、今译与注释的边界、内容去重、发布话术、验证顺序都写清楚了，"翻译不是评论"这类区分相当专业。</li>
+  <li><strong>共享壳层抽象是对的。</strong><code>FinishedFilm</code> 统一了音乐淡入淡出与三场景切换，<code>SceneShell</code> 保持 <code>durationInFrames</code> 可选以向后兼容，<code>fade/rise</code> 收敛了动效——这是正确的方向，只是还没走到底。</li>
+  <li><strong>测试与规则同址、以影片为单位建表</strong>，让"新增影片前先写失败测试"这条纪律真的可执行。</li>
+  <li><strong>授权与署名做到了可验证</strong>：<code>credits.json</code> + 测试强制"每张图必须有作者与许可，且片上必须显示"，并检测孤儿条目——这一点比多数自媒体团队严谨得多。</li>
+  <li><strong>事故记录留档并提炼了教训</strong>（不批量删除、申诉前备齐材料），这是可持续运营的关键习惯。</li>
+</ul>
+
+<footer>
+  核查方式：直接读取 <code>remotion-video/</code> 下的 <code>src/finished/</code>（55 部）、<code>tests/</code>、<code>scripts/</code>、<code>progress.json</code>、<code>public/images/credits.json</code>、<code>upload/</code>，并对源码做脚本化统计（布局几何签名、字号分布、合规短语覆盖率、重复文本扫描、git 跟踪范围）。所有数字均为实测值，可用同样方式复现。
+</footer>
+
+</div>
+</body>
+</html>
