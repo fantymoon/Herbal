@@ -365,6 +365,9 @@ test("no finished film carries code-drawn illustrations, css backgrounds, or wor
     assert.equal(source.includes("<svg"), false, f);
     assert.equal(source.includes("RootIllustration"), false, f);
     assert.equal(source.includes("backgroundImage"), false, f);
+    // HerbalVisuals holds the legacy templates; SKILL.md says a finished film must
+    // not be built on them.
+    assert.equal(source.includes('from "../HerbalVisuals"'), false, f);
     if (!legacyWorkflowOrderFilms.has(f)) {
       assert.equal(source.includes("阅读顺序"), false, f);
       assert.equal(source.includes("ENTRY 0"), false, f);

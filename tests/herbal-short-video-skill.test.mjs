@@ -39,4 +39,18 @@ test("the herbal short-video skill captures the production guardrails", () => {
   assert.equal(source.includes("卷、篇、部、章节"), true);
   assert.equal(source.includes("阅读顺序"), true);
   assert.equal(source.includes("ENTRY 04/05"), true);
+
+  // Rules added after the 2026-09 platform warning. Each one has a matching gate in
+  // scripts/lib/compliance.ts, so this file keeps the skill and the tests in step.
+  assert.equal(source.includes("Published Films Are Frozen"), true);
+  assert.equal(source.includes("scripts/lib/frozen-films.ts"), true);
+  assert.equal(source.includes("Never add a new film to that list"), true);
+  assert.equal(source.includes("npm run check"), true);
+  assert.equal(source.includes("the `今译` body must be at least 56px"), true);
+  assert.equal(source.includes("360 / 450 / 540 frames at 30 fps"), true);
+  assert.equal(source.includes("Every film must carry a separate block explicitly labelled"), true);
+  assert.equal(source.includes("upload/<kebab>.md"), true);
+  assert.equal(source.includes("--sheet"), true);
+  assert.equal(source.includes("tests/compliance.test.ts"), true);
+  assert.equal(source.includes("`FinishedFilm` takes any number of scenes"), true);
 });

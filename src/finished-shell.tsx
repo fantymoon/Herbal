@@ -32,25 +32,28 @@ export const FinishedFilm: React.FC<{
   accent: string;
   durationInFrames: number;
   music: string;
-  breaks: [number, number];
-  scenes: [FinishedScene, FinishedScene, FinishedScene];
+  /**
+   * Scene start frames, ascending. `breaks.length` must be `scenes.length - 1`.
+   * The original signature was a 2-tuple with exactly three scenes; widening it
+   * keeps the 55 published films rendering identically (the index derivation
+   * below reproduces the previous ternary for two breaks) while letting a new
+   * film split a long 今译 across four or five scenes.
+   */
+  breaks: number[];
+  scenes: FinishedScene[];
   peakVolume?: number;
 }> = ({ accent, durationInFrames, music, breaks, scenes, peakVolume = 0.12 }) => {
   const frame = useCurrentFrame();
-  const [HeroScene, ClassicalScene, ClosingScene] = scenes;
-  const [firstBreak, secondBreak] = breaks;
+  const found = breaks.findIndex((breakFrame) => frame < breakFrame);
+  const index = found === -1 ? breaks.length : found;
+  const start = index === 0 ? 0 : breaks[index - 1];
+  const Scene = scenes[Math.min(index, scenes.length - 1)];
 
   return (
     <>
       <FinishedMusic src={music} peakVolume={peakVolume} />
       <SceneShell accent={accent} mode="tall" durationInFrames={durationInFrames}>
-        {frame < firstBreak ? (
-          <HeroScene frame={frame} />
-        ) : frame < secondBreak ? (
-          <ClassicalScene frame={frame - firstBreak} />
-        ) : (
-          <ClosingScene frame={frame - secondBreak} />
-        )}
+        <Scene frame={frame - start} />
       </SceneShell>
     </>
   );
