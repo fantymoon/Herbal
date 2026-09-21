@@ -3,5 +3,7 @@ dist
 .DS_Store
 .env
 
-# Ignore the output video from Git but not videos you import into src/.
+# Rendered masters stay out of Git (173 MB of mp4). They are NOT backed up by this
+# repo, so keep a copy elsewhere: `npm run manifest` writes masters-manifest.json,
+# which records which masters existed and their sizes so a loss is detectable.
 out

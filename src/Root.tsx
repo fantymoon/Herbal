@@ -1,10 +1,10 @@
 import "./index.css";
-import { MyComposition } from "./Composition";
+import { HerbalCompositions } from "./Composition";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <MyComposition />
+      <HerbalCompositions />
     </>
   );
 };

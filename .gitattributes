@@ -1,0 +1,9 @@
+# Normalise line endings so the Windows working copy and CI agree on diffs.
+* text=auto eol=lf
+
+# Assets are binary: never diff, never touch their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.mp3 binary
+*.mp4 binary

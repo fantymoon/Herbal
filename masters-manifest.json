@@ -1,0 +1,334 @@
+{
+  "note": "out/ is gitignored. This ledger records the masters that existed so a lost or stale render is detectable. It is not a backup.",
+  "filmCount": 55,
+  "masterCount": 54,
+  "missingMasters": [
+    "AngelicaFourthFilm"
+  ],
+  "masters": [
+    {
+      "film": "AngelicaFourthFilmRealPhoto",
+      "file": "out/angelica-fourth-film-real-photo.mp4",
+      "bytes": 1723544,
+      "modified": "2026-08-12T02:00:31.631Z"
+    },
+    {
+      "film": "BaihaoFirstFilm",
+      "file": "out/baihao-first-film.mp4",
+      "bytes": 2127444,
+      "modified": "2026-08-26T06:30:48.073Z"
+    },
+    {
+      "film": "BaiqingFirstFilm",
+      "file": "out/baiqing-first-film.mp4",
+      "bytes": 2731455,
+      "modified": "2026-08-14T01:33:15.817Z"
+    },
+    {
+      "film": "BaishiyingFirstFilm",
+      "file": "out/baishiying-first-film.mp4",
+      "bytes": 2140369,
+      "modified": "2026-08-14T01:30:54.720Z"
+    },
+    {
+      "film": "BaiyingFirstFilm",
+      "file": "out/baiying-first-film.mp4",
+      "bytes": 1769158,
+      "modified": "2026-08-26T06:29:27.255Z"
+    },
+    {
+      "film": "BaizhiFirstFilm",
+      "file": "out/baizhi-first-film.mp4",
+      "bytes": 2029390,
+      "modified": "2026-08-26T06:40:26.539Z"
+    },
+    {
+      "film": "BajitianFirstFilm",
+      "file": "out/bajitian-first-film.mp4",
+      "bytes": 2269382,
+      "modified": "2026-08-26T06:28:06.349Z"
+    },
+    {
+      "film": "BianqingFirstFilm",
+      "file": "out/bianqing-first-film.mp4",
+      "bytes": 2653368,
+      "modified": "2026-08-14T01:34:42.983Z"
+    },
+    {
+      "film": "BupleurumThirdFilm",
+      "file": "out/bupleurum-third-film.mp4",
+      "bytes": 1402776,
+      "modified": "2026-08-11T04:47:16.199Z"
+    },
+    {
+      "film": "ChangpuFirstFilm",
+      "file": "out/changpu-first-film.mp4",
+      "bytes": 2194837,
+      "modified": "2026-08-15T01:03:57.256Z"
+    },
+    {
+      "film": "CheqianziFirstFilm",
+      "file": "out/cheqianzi-first-film.mp4",
+      "bytes": 2140370,
+      "modified": "2026-08-26T06:15:18.051Z"
+    },
+    {
+      "film": "ChijianFirstFilm",
+      "file": "out/chijian-first-film.mp4",
+      "bytes": 1910716,
+      "modified": "2026-08-26T06:32:11.736Z"
+    },
+    {
+      "film": "ChizhiFirstFilm",
+      "file": "out/chizhi-first-film.mp4",
+      "bytes": 2719750,
+      "modified": "2026-08-26T06:37:42.952Z"
+    },
+    {
+      "film": "ChongweiziFirstFilm",
+      "file": "out/chongweizi-first-film.mp4",
+      "bytes": 1888848,
+      "modified": "2026-08-20T01:59:04.246Z"
+    },
+    {
+      "film": "DanshaFirstFilm",
+      "file": "out/dansha-first-film.mp4",
+      "bytes": 3163892,
+      "modified": "2026-09-20T09:04:33.069Z"
+    },
+    {
+      "film": "DuhuoFirstFilm",
+      "file": "out/duhuo-first-film.mp4",
+      "bytes": 2258034,
+      "modified": "2026-08-26T06:13:55.228Z"
+    },
+    {
+      "film": "EphedraFirstFilm",
+      "file": "out/ephedra-first-film.mp4",
+      "bytes": 2528522,
+      "modified": "2026-08-13T03:34:38.297Z"
+    },
+    {
+      "film": "FangkuiFirstFilm",
+      "file": "out/fangkui-first-film.mp4",
+      "bytes": 2777836,
+      "modified": "2026-08-20T02:01:31.964Z"
+    },
+    {
+      "film": "GandihuangFirstFilm",
+      "file": "out/gandihuang-first-film.mp4",
+      "bytes": 2168110,
+      "modified": "2026-08-17T01:32:18.585Z"
+    },
+    {
+      "film": "GinsengFirstFilm",
+      "file": "out/ginseng-first-film.mp4",
+      "bytes": 1555838,
+      "modified": "2026-08-09T13:36:56.688Z"
+    },
+    {
+      "film": "HuangqiFirstFilm",
+      "file": "out/huangqi-first-film.mp4",
+      "bytes": 2606138,
+      "modified": "2026-08-13T04:37:42.106Z"
+    },
+    {
+      "film": "HuashiFirstFilm",
+      "file": "out/huashi-first-film.mp4",
+      "bytes": 2275902,
+      "modified": "2026-08-14T01:24:09.963Z"
+    },
+    {
+      "film": "JuhuaFirstFilm",
+      "file": "out/juhua-first-film.mp4",
+      "bytes": 2236804,
+      "modified": "2026-08-15T01:08:59.338Z"
+    },
+    {
+      "film": "KongqingFirstFilm",
+      "file": "out/kongqing-first-film.mp4",
+      "bytes": 2669002,
+      "modified": "2026-08-14T01:25:50.966Z"
+    },
+    {
+      "film": "LicoriceSecondFilm",
+      "file": "out/licorice-second-film.mp4",
+      "bytes": 1702974,
+      "modified": "2026-08-09T15:17:53.344Z"
+    },
+    {
+      "film": "LongdanFirstFilm",
+      "file": "out/longdan-first-film.mp4",
+      "bytes": 2778097,
+      "modified": "2026-08-26T06:23:28.941Z"
+    },
+    {
+      "film": "MaimendongFirstFilm",
+      "file": "out/maimendong-first-film.mp4",
+      "bytes": 2512087,
+      "modified": "2026-08-20T02:02:46.398Z"
+    },
+    {
+      "film": "MuxiangFirstFilm",
+      "file": "out/muxiang-first-film.mp4",
+      "bytes": 1974885,
+      "modified": "2026-08-26T06:16:41.236Z"
+    },
+    {
+      "film": "NieshiFirstFilm",
+      "file": "out/nieshi-first-film.mp4",
+      "bytes": 2446853,
+      "modified": "2026-08-14T01:20:07.061Z"
+    },
+    {
+      "film": "NiuxiFirstFilm",
+      "file": "out/niuxi-first-film.mp4",
+      "bytes": 2010365,
+      "modified": "2026-08-20T01:57:41.515Z"
+    },
+    {
+      "film": "NvweiFirstFilm",
+      "file": "out/nvwei-first-film.mp4",
+      "bytes": 2216261,
+      "modified": "2026-08-20T02:00:21.383Z"
+    },
+    {
+      "film": "PeonySecondFilm",
+      "file": "out/peony-second-film.mp4",
+      "bytes": 2021327,
+      "modified": "2026-08-09T15:18:48.544Z"
+    },
+    {
+      "film": "PuxiaoFirstFilm",
+      "file": "out/puxiao-first-film.mp4",
+      "bytes": 2642962,
+      "modified": "2026-08-14T01:22:49.572Z"
+    },
+    {
+      "film": "QingzhiFirstFilm",
+      "file": "out/qingzhi-first-film.mp4",
+      "bytes": 2287814,
+      "modified": "2026-08-26T06:39:04.464Z"
+    },
+    {
+      "film": "ShihuFirstFilm",
+      "file": "out/shihu-first-film.mp4",
+      "bytes": 1985920,
+      "modified": "2026-08-26T06:26:12.860Z"
+    },
+    {
+      "film": "ShishiFirstFilm",
+      "file": "out/shishi-first-film.mp4",
+      "bytes": 1671462,
+      "modified": "2026-08-26T06:36:18.365Z"
+    },
+    {
+      "film": "ShizhongruFirstFilm",
+      "file": "out/shizhongru-first-film.mp4",
+      "bytes": 2230772,
+      "modified": "2026-08-14T01:18:51.425Z"
+    },
+    {
+      "film": "ShuFirstFilm",
+      "file": "out/shu-first-film.mp4",
+      "bytes": 2241264,
+      "modified": "2026-08-18T00:56:25.075Z"
+    },
+    {
+      "film": "ShuyuFirstFilm",
+      "file": "out/shuyu-first-film.mp4",
+      "bytes": 1948946,
+      "modified": "2026-08-26T06:18:01.707Z"
+    },
+    {
+      "film": "TaiyiFirstFilm",
+      "file": "out/taiyi-first-film.mp4",
+      "bytes": 2069331,
+      "modified": "2026-08-14T01:29:40.327Z"
+    },
+    {
+      "film": "TianmendongFirstFilm",
+      "file": "out/tianmendong-first-film.mp4",
+      "bytes": 2271581,
+      "modified": "2026-08-15T23:47:00.636Z"
+    },
+    {
+      "film": "TusiziFirstFilm",
+      "file": "out/tusizi-first-film.mp4",
+      "bytes": 2025100,
+      "modified": "2026-08-19T00:53:08.923Z"
+    },
+    {
+      "film": "XiaoshiFirstFilm",
+      "file": "out/xiaoshi-first-film.mp4",
+      "bytes": 2000402,
+      "modified": "2026-08-14T01:21:30.860Z"
+    },
+    {
+      "film": "XixinFirstFilm",
+      "file": "out/xixin-first-film.mp4",
+      "bytes": 2426071,
+      "modified": "2026-08-26T06:24:50.204Z"
+    },
+    {
+      "film": "XiziFirstFilm",
+      "file": "out/xizi-first-film.mp4",
+      "bytes": 1888872,
+      "modified": "2026-08-26T06:34:55.773Z"
+    },
+    {
+      "film": "YanlvziFirstFilm",
+      "file": "out/yanlvzi-first-film.mp4",
+      "bytes": 1934005,
+      "modified": "2026-08-26T06:33:34.252Z"
+    },
+    {
+      "film": "YiyirenFirstFilm",
+      "file": "out/yiyiren-first-film.mp4",
+      "bytes": 2379968,
+      "modified": "2026-08-26T06:19:24.867Z"
+    },
+    {
+      "film": "YuanzhiFirstFilm",
+      "file": "out/yuanzhi-first-film.mp4",
+      "bytes": 2020000,
+      "modified": "2026-08-26T06:22:07.831Z"
+    },
+    {
+      "film": "YunmuFirstFilm",
+      "file": "out/yunmu-first-film.mp4",
+      "bytes": 2339294,
+      "modified": "2026-08-14T01:16:17.574Z"
+    },
+    {
+      "film": "YuquanFirstFilm",
+      "file": "out/yuquan-first-film.mp4",
+      "bytes": 2662214,
+      "modified": "2026-08-14T01:17:35.985Z"
+    },
+    {
+      "film": "YuyuliangFirstFilm",
+      "file": "out/yuyuliang-first-film.mp4",
+      "bytes": 2451759,
+      "modified": "2026-08-14T01:28:22.787Z"
+    },
+    {
+      "film": "ZengqingFirstFilm",
+      "file": "out/zengqing-first-film.mp4",
+      "bytes": 2442725,
+      "modified": "2026-08-14T01:27:11.030Z"
+    },
+    {
+      "film": "ZexieFirstFilm",
+      "file": "out/zexie-first-film.mp4",
+      "bytes": 2030103,
+      "modified": "2026-08-26T06:20:48.083Z"
+    },
+    {
+      "film": "ZishiyingFirstFilm",
+      "file": "out/zishiying-first-film.mp4",
+      "bytes": 1939704,
+      "modified": "2026-08-14T01:32:07.098Z"
+    }
+  ]
+}

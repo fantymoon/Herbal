@@ -1,0 +1,46 @@
+name: CI
+
+# Runs the guards that used to depend on somebody remembering to type `npm test`.
+# The compliance gate, the repeated-text scan and the ledger check all live here,
+# so a film that breaks the rules cannot reach a render unnoticed.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      - name: Lint and typecheck
+        run: npm run lint
+
+      - name: Rule check over every film
+        run: npm run check
+
+      - name: Composition registry is in sync with src/finished
+        run: |
+          npm run gen
+          if ! git diff --quiet -- src/Composition.tsx; then
+            echo "src/Composition.tsx is stale — run 'npm run gen' and commit the result."
+            git diff -- src/Composition.tsx
+            exit 1
+          fi
+
+      - name: Master ledger is current
+        run: npm run manifest

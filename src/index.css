@@ -1,1 +1,14 @@
 @import "tailwindcss";
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #171817;
+}
+
+body {
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
