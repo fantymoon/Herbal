@@ -17,6 +17,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { toKebab } from "./lib/film-files.ts";
+import { renderLedger } from "./lib/ledger.ts";
+import type { FilmContent } from "../src/layout.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -196,22 +198,38 @@ export const ${id}: React.FC = () => <EntryFilm content={content} />;
 );
 
 if (!keptLedger) {
-  fs.writeFileSync(
-    ledgerPath,
-    `# ${entry} · 上传台账
-
-- film: \`${id}\`
-- 标题：
-- 描述：
-- 话题：
-- BGM： 母版配 \`music/yuzhou-changwan.mp3\`，上传时用平台曲库同款替换
-- 今译句式： \`古籍称其主……\`（功效句强制框定）+ 注释 \`此为汉代认知，未经现代科学证实\`
-- 抖音： 未发布
-- 视频号： 未发布
-- 备注：
-`,
-    "utf8",
-  );
+  // The ledger is rendered from the same shape the film will load, so its copy fields
+  // are already filled the moment the scaffold lands.
+  const scaffold: FilmContent = {
+    id,
+    entry,
+    latin,
+    book: config.book,
+    bookLatin: config.bookLatin,
+    volume: showVolume(volume),
+    division: null,
+    flavor,
+    alias: factAlias ? `一名${factAlias}` : null,
+    original,
+    translation: "TODO 逐句今译",
+    commentary: "TODO 注释",
+    historicalNote: "此为汉代认知，未经现代科学证实",
+    facts: [
+      ...(factAlias ? [{ label: "别名", value: factAlias }] : []),
+      { label: "篇目位置", value: showVolume(volume) },
+    ],
+    photo: {
+      file: "TODO-<ascii-name>.jpg",
+      subject: "TODO SPECIES",
+      author: "TODO AUTHOR",
+      license: "TODO LICENSE",
+    },
+    music: "music/yuzhou-changwan.mp3",
+    accent: "#a8812f",
+    mode: "single-herb",
+  };
+  // Same renderer as `npm run ledger`, so the scaffold and the refresher cannot drift.
+  fs.writeFileSync(ledgerPath, renderLedger(scaffold, null), "utf8");
 }
 
 console.log(`created:

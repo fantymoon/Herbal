@@ -23,10 +23,32 @@ export const SCENE_TOP = 140;
 export const SIGN_SIZE = 224;
 
 export const FPS = 30;
-export const ALLOWED_DURATIONS = [360, 450, 540] as const;
+export const ALLOWED_DURATIONS = [360, 450, 540, 630, 720] as const;
 export type AllowedDuration = (typeof ALLOWED_DURATIONS)[number];
 /** SKILL.md: at least 4 seconds per scene. */
 export const MIN_SCENE_FRAMES = 120;
+
+/**
+ * Reading speed ceiling, in Chinese characters per second.
+ *
+ * 5.5/s is the comfortable silent-reading rate; this is not that. A scrolling feed is
+ * skimmed and re-watched, so a hard 5.5 would strangle the writing. 15/s is the
+ * skimming ceiling this series is willing to ship.
+ *
+ * The number comes from the 55 published films: they asked for ~31 characters/second
+ * in their middle scene (99 characters in 4 seconds), which is unreadable. Half of
+ * that, rounded to a workable budget, is where this sits. Without it the engine
+ * happily plans a screen that demands 42 characters/second and reports `ok`.
+ */
+export const READING_RATE_LIMIT = 15;
+/**
+ * A classical scene longer than this is split, so the picture changes at least every
+ * 9 seconds. Splitting does not reduce the reading time a film needs — it only decides
+ * how many screens that time is spread over.
+ */
+export const MAX_CLASSICAL_SCENE_FRAMES = 270;
+/** hero + 3 classical + closing = 5 screens, which 630 frames still paces at 126 each. */
+export const MAX_CLASSICAL_SCENES = 3;
 
 /**
  * Wording the compliance gate requires. Kept here rather than in the checker so the
@@ -269,6 +291,77 @@ export const stackBlocks = (
   return { blocks, used: y - top };
 };
 
+/**
+ * Labels, the brand mark and the ASCII credit line are chrome, not prose: nobody reads
+ * "CLASSICAL ENTRY / 古籍原文" as content. Everything else on screen has to be read.
+ */
+const CHROME_KINDS: readonly BlockKind[] = [
+  "sectionLabel",
+  "classicalLabel",
+  "translationLabel",
+  "commentaryLabel",
+  "sign",
+];
+
+const countCJK = (text: string): number => (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
+
+/** The Chinese characters a viewer actually has to read in one scene. */
+export const readableChars = (scene: ScenePlan): number =>
+  scene.blocks
+    .filter((block) => !CHROME_KINDS.includes(block.kind))
+    .reduce((total, block) => total + countCJK(block.text), 0);
+
+/**
+ * Frames the scene needs if it is to be read at READING_RATE_LIMIT.
+ *
+ * This is the measurement the engine was missing: `findOverflow` only knows whether a
+ * block's bottom edge passes 1728px, which says nothing about whether the viewer has
+ * time to read it. Geometry and reading time are separate budgets.
+ */
+export const readingFrames = (scene: ScenePlan): number =>
+  Math.ceil((readableChars(scene) / READING_RATE_LIMIT) * FPS);
+
+export type SceneReading = {
+  kind: ScenePlan["kind"];
+  chars: number;
+  /** Frames the scene needs at the ceiling. */
+  frames: number;
+  /** Frames the scene actually gets. */
+  allotted: number;
+  /** Characters per second the viewer is asked for. */
+  rate: number;
+  over: boolean;
+};
+
+/** Per-scene reading budget of a finished plan. */
+export const readingBudget = (plan: FilmPlan): SceneReading[] => {
+  const bounds = [0, ...plan.breaks, plan.durationInFrames];
+  return plan.scenes.map((scene, index) => {
+    const allotted = bounds[index + 1] - bounds[index];
+    const chars = readableChars(scene);
+    const seconds = allotted / FPS;
+    return {
+      kind: scene.kind,
+      chars,
+      frames: readingFrames(scene),
+      allotted,
+      rate: seconds > 0 ? chars / seconds : Number.POSITIVE_INFINITY,
+      over: readingFrames(scene) > allotted,
+    };
+  });
+};
+
+/** Scenes that ask the viewer to read faster than READING_RATE_LIMIT. */
+export const findReadingProblems = (plan: FilmPlan): string[] =>
+  readingBudget(plan)
+    .filter((scene) => scene.over)
+    .map(
+      (scene) =>
+        `${scene.kind}: ${scene.chars} characters in ${(scene.allotted / FPS).toFixed(1)}s ` +
+        `= ${scene.rate.toFixed(1)} chars/s, over the ${READING_RATE_LIMIT}/s ceiling — ` +
+        `shorten the text or split it across another scene`,
+    );
+
 /** Photo insert height, matching the published films' framed 932x500 insert. */
 const PHOTO_HEIGHT = 500;
 const PHOTO_CHROME = 28;
@@ -393,13 +486,17 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
       return { kind: "classical" as const, blocks: stackBlocks(drafts, CLASSICAL_TOP).blocks };
     });
 
-  // Split only when a single scene genuinely does not fit. Splitting a short
-  // translation across two scenes just adds an extra scene and eats the pacing.
+  // Split when a single scene either does not fit on screen or cannot be read inside a
+  // watchable stretch of time. Both tests have to say no before a short translation is
+  // kept whole: splitting one just adds a scene and eats the pacing.
   const single = build([content.translation]);
-  if (findOverflow(single).length === 0) {
+  const unreadable = readingFrames(single[0]) > MAX_CLASSICAL_SCENE_FRAMES;
+  if (findOverflow(single).length === 0 && !unreadable) {
     return single;
   }
-  return build(splitTranslation(content.translation, 2));
+  const screens = Math.ceil(readingFrames(single[0]) / MAX_CLASSICAL_SCENE_FRAMES);
+  const count = Math.min(MAX_CLASSICAL_SCENES, Math.max(2, screens));
+  return build(splitTranslation(content.translation, count));
 };
 
 export const planClosingScene = (content: FilmContent): ScenePlan => {
@@ -444,21 +541,19 @@ export const planClosingScene = (content: FilmContent): ScenePlan => {
 };
 
 /**
- * Duration follows the amount of reading, and must always leave every scene at
- * least MIN_SCENE_FRAMES. A scene that is too tall cannot be fixed by adding
- * duration, so findOverflow reports that separately.
+ * Duration follows how long the film takes to *read*, not how many characters it
+ * happens to contain. Counting characters alone is what let a 12-second film carry 99
+ * characters in one scene: the total looked small, but it was all in one place.
+ *
+ * A scene too tall for the canvas cannot be rescued by a longer duration, so
+ * findOverflow still reports that separately.
  */
-export const requiredDuration = (scenes: ScenePlan[], content: FilmContent): AllowedDuration => {
-  const chars = [
-    content.original,
-    content.translation,
-    content.commentary,
-    content.historicalNote,
-  ].reduce((total, text) => total + [...text].length, 0);
-  const textDriven = chars <= 130 ? 360 : chars <= 220 ? 450 : 540;
-  const pacingFloor = scenes.length * MIN_SCENE_FRAMES;
-  const needed = Math.max(textDriven, pacingFloor);
-  return ALLOWED_DURATIONS.find((d) => d >= needed) ?? 540;
+export const requiredDuration = (scenes: ScenePlan[]): AllowedDuration => {
+  const needed = scenes.reduce(
+    (total, scene) => total + Math.max(MIN_SCENE_FRAMES, readingFrames(scene)),
+    0,
+  );
+  return ALLOWED_DURATIONS.find((d) => d >= needed) ?? ALLOWED_DURATIONS[ALLOWED_DURATIONS.length - 1];
 };
 
 export const planFilm = (content: FilmContent): FilmPlan => {
@@ -466,17 +561,37 @@ export const planFilm = (content: FilmContent): FilmPlan => {
   const classical = planClassicalScenes(content);
   const closing = planClosingScene(content);
   const scenes = [hero, ...classical, closing];
-  const durationInFrames = requiredDuration(scenes, content);
+  const durationInFrames = requiredDuration(scenes);
 
-  // Every scene gets the 4s minimum first; only the surplus is shared out by weight,
-  // so a 540-frame four-scene film cannot starve its first scene down to 90 frames.
-  const weights = scenes.map((s) => (s.kind === "classical" ? 2 : 1));
-  const weightSum = weights.reduce((a, b) => a + b, 0);
-  const surplus = Math.max(0, durationInFrames - MIN_SCENE_FRAMES * scenes.length);
+  // Give every scene the time it needs to be read, then share the leftover in the same
+  // proportion. The old split handed the hero and the closing the same weight as the
+  // classical scene carrying three quarters of the text, which is how the middle of a
+  // 12-second film ended up at 31 characters/second while the hero sat at 2.5.
+  const need = scenes.map((scene) => Math.max(MIN_SCENE_FRAMES, readingFrames(scene)));
+  const needSum = need.reduce((a, b) => a + b, 0);
+  const frames =
+    needSum <= durationInFrames
+      ? (() => {
+          const leftover = durationInFrames - needSum;
+          const allocated = need.map((n) => n + Math.floor((leftover * n) / needSum));
+          // Floor rounding drops a few frames; the last scene absorbs them so the plan
+          // still adds up to exactly durationInFrames.
+          allocated[allocated.length - 1] +=
+            durationInFrames - allocated.reduce((a, b) => a + b, 0);
+          return allocated;
+        })()
+      : // The content outran the longest film this series makes. Split the time evenly
+        // and let findReadingProblems report the overload rather than hide it.
+        scenes.map((_, index) =>
+          index === scenes.length - 1
+            ? durationInFrames - Math.floor(durationInFrames / scenes.length) * (scenes.length - 1)
+            : Math.floor(durationInFrames / scenes.length),
+        );
+
   const breaks: number[] = [];
   let acc = 0;
   for (let i = 0; i < scenes.length - 1; i += 1) {
-    acc += MIN_SCENE_FRAMES + Math.round((surplus * weights[i]) / weightSum);
+    acc += frames[i];
     breaks.push(acc);
   }
   return { durationInFrames, breaks, scenes };
@@ -544,10 +659,9 @@ export const findPacingProblems = (plan: FilmPlan): string[] => {  const problem
  * chrome, not prose.
  */
 export const visibleText = (content: FilmContent): string[] => {
-  const chrome: BlockKind[] = ["sectionLabel", "classicalLabel", "translationLabel", "commentaryLabel", "sign"];
   return planFilm(content)
     .scenes.flatMap((scene) => scene.blocks)
-    .filter((block) => !chrome.includes(block.kind))
+    .filter((block) => !CHROME_KINDS.includes(block.kind))
     .flatMap((block) =>
       block.kind === "panel" && block.detail ? [block.text, block.detail] : [block.text],
     )

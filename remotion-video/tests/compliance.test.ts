@@ -169,6 +169,14 @@ test("the layout gate rejects a content module whose text cannot fit", () => {
   );
 });
 
+test("the layout gate rejects a film whose middle scene cannot be read in time", () => {
+  // Geometry alone would pass this: no overlap, no overflow, no pacing problem. What
+  // fails is the reading load, which is the budget the engine did not have before.
+  const broken = { ...compliantContent, translation: compliantContent.translation.repeat(6) };
+  const rules = rulesOf(checkPlan(broken));
+  assert.ok(rules.includes("reading-budget"), `expected reading-budget, got ${rules.join(", ")}`);
+});
+
 test("the planner never starves a scene, however long the translation", () => {
   // The scene count is capped at four (hero + at most two classical + closing), so the
   // 540-frame ceiling can never fall below the 4s-per-scene floor: 4 * 120 = 480. A

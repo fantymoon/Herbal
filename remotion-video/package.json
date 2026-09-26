@@ -29,6 +29,7 @@
     "gen": "node --experimental-strip-types scripts/generate-compositions.mjs",
     "progress": "node --experimental-strip-types scripts/build-progress.mjs",
     "new-film": "node --experimental-strip-types scripts/new-film.ts",
+    "ledger": "node --experimental-strip-types scripts/ledger.ts",
     "sync-music": "node scripts/sync-music.mjs",
     "verify": "node --experimental-strip-types scripts/verify-film.mjs",
     "manifest": "node --experimental-strip-types scripts/manifest-masters.mjs",

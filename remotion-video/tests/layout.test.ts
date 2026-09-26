@@ -5,12 +5,15 @@ import {
   CANVAS,
   MIN_CLEARANCE,
   MIN_SCENE_FRAMES,
+  READING_RATE_LIMIT,
   SAFE_INSET,
   TYPE,
   findOverflow,
   findOverlaps,
   findPacingProblems,
+  findReadingProblems,
   planFilm,
+  readingBudget,
   splitTranslation,
   textHeight,
   wrappedLineCount,
@@ -124,15 +127,85 @@ test("the split translation rejoins into the original text", () => {
   assert.equal(chunks.join(""), text);
 });
 
-test("a short entry still gets the shortest allowed duration", () => {
+test("even a short entry lands on 540 frames, because the 注释 and disclaimer are read too", () => {
+  // 360 frames leaves 120 for the classical scene, which carries the original, the
+  // 今译, the 注释 and the historical note. At READING_RATE_LIMIT that is not enough
+  // for any real entry, so the shortest step of the scale is effectively unreachable
+  // and a new film starts at 18 seconds.
   const plan = planFilm(base);
-  assert.equal(plan.durationInFrames, 360);
+  assert.equal(plan.durationInFrames, 540);
+  assert.deepEqual(findReadingProblems(plan), []);
+});
+
+test("the plan's breaks ascend and every scene is non-empty", () => {
+  const plan = planFilm(base);
   assert.equal(plan.breaks.length, plan.scenes.length - 1);
   assert.deepEqual(
     [...plan.breaks].sort((a, b) => a - b),
     plan.breaks,
     "breaks must ascend",
   );
+  const bounds = [0, ...plan.breaks, plan.durationInFrames];
+  for (let i = 0; i < bounds.length - 1; i += 1) {
+    assert.ok(bounds[i + 1] > bounds[i], "every scene must be non-empty");
+  }
+});
+
+// ---- Reading budget ---------------------------------------------------------
+
+test("every scene of a well-formed film is readable at the ceiling", () => {
+  const plan = planFilm(base);
+  assert.deepEqual(findReadingProblems(plan), []);
+  for (const scene of readingBudget(plan)) {
+    assert.ok(
+      scene.rate <= READING_RATE_LIMIT,
+      `${scene.kind} asks for ${scene.rate.toFixed(1)} characters/second`,
+    );
+  }
+});
+
+test("the reading budget catches a screen that is geometrically fine but unreadable", () => {
+  // The failure the old engine could not see: no overlap, no overflow, no pacing
+  // problem — yet the middle scene asks for ~23 characters per second. This entry is
+  // long enough that the split has already run out (three classical scenes is the cap),
+  // so the overload can only be reported, not laid out away.
+  const cramped = { ...base, translation: base.translation.repeat(6) };
+  const plan = planFilm(cramped);
+  assert.deepEqual(findOverlaps(plan.scenes), []);
+  assert.deepEqual(findOverflow(plan.scenes), []);
+  assert.deepEqual(findPacingProblems(plan), []);
+  assert.ok(
+    findReadingProblems(plan).length > 0,
+    "a screen asking for more than the ceiling must be reported",
+  );
+});
+
+test("the time a scene gets follows what it has to be read, not an equal split", () => {
+  // The old plan gave hero, classical and closing equal weight, so the classical scene
+  // carrying three quarters of the text got the same 120 frames as the hero.
+  const plan = planFilm(base);
+  const budget = readingBudget(plan);
+  const classical = budget.find((s) => s.kind === "classical");
+  const hero = budget.find((s) => s.kind === "hero");
+  assert.ok(classical && hero);
+  assert.ok(
+    classical.allotted > hero.allotted,
+    `classical got ${classical.allotted} frames and hero ${hero.allotted}`,
+  );
+  assert.ok(classical.chars > hero.chars * 4, "the fixture must actually carry the text");
+});
+
+test("the reading ceiling is what decides the duration, not a character count", () => {
+  // Two entries with the same total character count but a different distribution get
+  // different durations, because the duration follows the busiest scene.
+  const spread = { ...base, commentary: base.commentary.repeat(3) };
+  const plain = planFilm(base);
+  const heavy = planFilm(spread);
+  assert.ok(
+    heavy.durationInFrames > plain.durationInFrames,
+    `expected ${heavy.durationInFrames} > ${plain.durationInFrames}`,
+  );
+  assert.deepEqual(findReadingProblems(heavy), []);
 });
 
 test("a longer entry earns a longer duration rather than cramped type", () => {

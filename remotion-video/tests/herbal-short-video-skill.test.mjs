@@ -47,7 +47,10 @@ test("the herbal short-video skill captures the production guardrails", () => {
   assert.equal(source.includes("Never add a new film to that list"), true);
   assert.equal(source.includes("npm run check"), true);
   assert.equal(source.includes("the `今译` body must be at least 56px"), true);
-  assert.equal(source.includes("360 / 450 / 540 frames at 30 fps"), true);
+  assert.equal(source.includes("450 / 540 / 630 / 720 frames at 30 fps"), true);
+  // The reading budget is the second budget the engine checks, next to geometry.
+  assert.equal(source.includes("The reading budget is a gate, not advice"), true);
+  assert.equal(source.includes("READING_RATE_LIMIT"), true);
   assert.equal(source.includes("Every film must carry a separate block explicitly labelled"), true);
   assert.equal(source.includes("upload/<kebab>.md"), true);
   assert.equal(source.includes("--sheet"), true);

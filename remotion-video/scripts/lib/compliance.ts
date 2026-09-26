@@ -15,6 +15,7 @@ import {
   findOverflow,
   findOverlaps,
   findPacingProblems,
+  findReadingProblems,
   planFilm,
   type FilmContent,
 } from "../../src/layout.ts";
@@ -180,6 +181,11 @@ export const checkPlan = (content: FilmContent): Violation[] => {
   }
   for (const problem of findPacingProblems(plan)) {
     add("pacing", problem);
+  }
+  // Geometry says the text fits on screen; it says nothing about whether the viewer has
+  // time to read it. The two budgets are checked separately.
+  for (const problem of findReadingProblems(plan)) {
+    add("reading-budget", problem);
   }
   // The disclaimer is part of the closing scene by construction; assert it survived.
   const closing = plan.scenes[plan.scenes.length - 1];
