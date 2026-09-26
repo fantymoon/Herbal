@@ -64,6 +64,7 @@ export default {
     赤芝: "ChizhiFirstFilm",
     青芝: "QingzhiFirstFilm",
     白芝: "BaizhiFirstFilm",
+    黄芝: "HuangzhiFirstFilm",
     黄: "HuangqiFirstFilm",
     牡丹: "PeonySecondFilm",
     当归: "AngelicaFourthFilm",
@@ -74,6 +75,8 @@ export default {
   skipped: {
     石胆: "listed in 上经 TOC, no 篇名 section in this recension",
     五色石脂: "listed in 上经 TOC, no 篇名 section in this recension",
+    "附∶《吴氏本草》十二条": "appendix, not a drug entry: 吴普's quotations gathered at the end of 卷一",
+    "附∶诸药制使": "appendix, not a drug entry: the 畏恶七情 table, not a 本草经 条",
   },
 
   // Films whose source entry needs a note in the ledger.

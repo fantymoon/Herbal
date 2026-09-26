@@ -22,7 +22,8 @@ import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
-import { visibleText } from "../src/layout.ts";
+import { formatReadingBudget, planFilm, visibleText } from "../src/layout.ts";
+import type { FilmContent } from "../src/layout.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
@@ -37,6 +38,15 @@ const args = Object.fromEntries(
 );
 
 const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
+
+/**
+ * The per-scene reading budget, printed by `--verbose`.
+ *
+ * SKILL.md promises this: "npm run check -- --verbose prints the per-scene rate". A
+ * pass/fail gate alone cannot show that a screen is sitting at 14.6 of the 15/s
+ * ceiling with no room for one more clause.
+ */
+const readingReport = (content: FilmContent): string[] => formatReadingBudget(planFilm(content));
 
 const ledgerProblems = (kebab: string, filmId: string): string[] => {
   const ledger = path.join(uploadDir, `${kebab}.md`);
@@ -99,6 +109,15 @@ for (const file of all) {
     continue;
   }
 
+  // A new film with no content module at all. `checkNewFilm` already reports it under
+  // `data-driven`; the guard is here so the reading report has a plan to read, and it
+  // has to fail the run rather than fall through to the `ok` branch.
+  if (content === null) {
+    failures.push(`${file}: no content module to plan from`);
+    console.error(`FAIL ${file}\n  no content module to plan from`);
+    continue;
+  }
+
   if (isDraft(content)) {
     draftCount += 1;
     const unfinished = violations.filter((v) => v.rule === "unfinished").map((v) => v.detail);
@@ -106,6 +125,9 @@ for (const file of all) {
     if (args.verbose) {
       for (const detail of unfinished) {
         console.log(`        ${detail}`);
+      }
+      for (const line of readingReport(content)) {
+        console.log(line);
       }
     }
     continue;
@@ -125,6 +147,11 @@ for (const file of all) {
     }
   } else {
     console.log(`ok   ${file}`);
+  }
+  if (args.verbose) {
+    for (const line of readingReport(content)) {
+      console.log(line);
+    }
   }
 }
 

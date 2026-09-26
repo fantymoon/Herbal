@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 54,
+  "doneCount": 55,
   "entries": [
     {
       "name": "丹沙",
@@ -320,7 +320,8 @@
     {
       "name": "黄芝",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "HuangzhiFirstFilm"
     },
     {
       "name": "紫芝",
@@ -1837,12 +1838,14 @@
     {
       "name": "附∶《吴氏本草》十二条",
       "volume": "卷三 · 下经",
-      "status": "todo"
+      "status": "skipped",
+      "note": "appendix, not a drug entry: 吴普's quotations gathered at the end of 卷一"
     },
     {
       "name": "附∶诸药制使",
       "volume": "卷三 · 下经",
-      "status": "todo"
+      "status": "skipped",
+      "note": "appendix, not a drug entry: the 畏恶七情 table, not a 本草经 条"
     }
   ]
 }

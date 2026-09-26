@@ -18,9 +18,17 @@ export const isAllowedRepeat = (text: string): boolean =>
   text.includes("古籍内容展示，不构成诊疗建议") ||
   (text.includes("《") && /[卷篇部]/.test(text));
 
-/** Extract the visible CJK text nodes from a film's JSX source. */
+/**
+ * Extract the visible CJK text nodes from a film's JSX source.
+ *
+ * The text has to be allowed to span lines: every hand-written film puts its copy on
+ * its own line between the tags, so a `[^<>{}\n]` pattern matched only the handful of
+ * one-line cases and reported the other ~95% of the on-screen text as absent. That
+ * made "the JSX is scanned too, so a phrase you forgot to declare is still caught"
+ * untrue for exactly the films it was written for.
+ */
 export const extractVisibleText = (source: string): string[] =>
-  [...source.matchAll(/>([^<>{}\n]{2,60})</g)]
+  [...source.matchAll(/>\s*([^<>{}]+?)\s*</g)]
     .map((m) => m[1].trim())
     .filter((t) => t.length >= MIN_LENGTH && /[\u4e00-\u9fff]/.test(t));
 

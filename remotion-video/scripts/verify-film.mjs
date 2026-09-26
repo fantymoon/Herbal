@@ -9,7 +9,7 @@
 //
 // Films that are not frozen must pass the current compliance rules, contain no
 // repeated on-screen text, and ship with an upload ledger before anything renders.
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -115,20 +115,58 @@ const sampleIndices = [0, Math.max(0, intervals - 2), intervals - 1];
 const mids = sampleIndices.map(midOf);
 const [heroFrame, sourceFrame, closingFrame] = mids;
 
-const run = (cmd, cmdArgs, opts = {}) => {
-  const r = spawnSync(cmd, cmdArgs, {
-    cwd: repo,
-    encoding: "utf8",
-    timeout: 600000,
-    shell: process.platform === "win32",
-    ...opts,
+/**
+ * Run a child process and resolve with its combined output.
+ *
+ * Async `spawn`, not `spawnSync`: a render occupies the process for minutes, and the
+ * synchronous form is refused outright in some sandboxes (`spawnSync <exe> EBUSY`)
+ * where the async form runs — this repo is developed in one of them, so `verify` was
+ * unrunnable there even though every individual Remotion command worked by hand.
+ */
+const run = (cmd, cmdArgs, opts = {}) =>
+  new Promise((resolve) => {
+    const child = spawn(cmd, cmdArgs, { cwd: repo, timeout: 600000, ...opts });
+    let out = "";
+    child.stdout?.on("data", (chunk) => {
+      out += chunk;
+    });
+    child.stderr?.on("data", (chunk) => {
+      out += chunk;
+    });
+    child.on("error", (error) => {
+      fail(`${cmd} ${cmdArgs.join(" ")}\n${error}`);
+    });
+    child.on("close", (status) => {
+      if (status !== 0) {
+        fail(`${cmd} ${cmdArgs.join(" ")}\n${out.split("\n").slice(-15).join("\n")}`);
+      }
+      resolve(out);
+    });
   });
-  const out = (r.stdout ?? "") + (r.stderr ?? "") + (r.error ? String(r.error) : "");
-  if (r.status !== 0) {
-    fail(`${cmd} ${cmdArgs.join(" ")}\n${out.split("\n").slice(-15).join("\n")}`);
+
+/**
+ * The Remotion CLI, run through node instead of `npx remotion`.
+ *
+ * `npx` needs a shell, and on Windows a shell means spawning `cmd.exe`, which fails
+ * in the same locked-down environments; it also re-resolves the package on every one
+ * of the 30+ stills a contact sheet renders. The CLI is already installed, so run its
+ * own bin entry with the node that is running this script. `npx` stays as the
+ * fallback for an unusual layout.
+ */
+const remotionCommand = (() => {
+  const dir = path.join(repo, "node_modules", "@remotion", "cli");
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+    const rel = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.remotion;
+    const entry = rel ? path.join(dir, rel) : null;
+    if (entry && fs.existsSync(entry)) {
+      return (...args) => run(process.execPath, [entry, ...args]);
+    }
+  } catch {
+    // No local install to point at; fall back to npx below.
   }
-  return out;
-};
+  return (...args) => run("npx", ["remotion", ...args], { shell: process.platform === "win32" });
+})();
 
 const stillsDir = path.join(repo, "out", "stills");
 fs.mkdirSync(stillsDir, { recursive: true });
@@ -143,7 +181,7 @@ const stills = [
 ];
 for (const [name, frame] of stills) {
   const dest = path.join(stillsDir, `${kebab}-${name}.png`);
-  run("npx", ["remotion", "still", film, dest, `--frame=${frame}`, "--overwrite"]);
+  await remotionCommand("still", film, dest, `--frame=${frame}`, "--overwrite");
   console.log(`  still ${name} frame=${frame} -> out/stills/${kebab}-${name}.png`);
 }
 console.log("Inspect the three stills for overlap, readability, seal, and credits before shipping.");
@@ -163,7 +201,7 @@ if (args.sheet) {
   console.log(`contact sheet: ${frames.length} frames every ${every} -> out/stills/${kebab}-sheet/`);
   for (const frame of frames) {
     const dest = path.join(sheetDir, `f${String(frame).padStart(4, "0")}.png`);
-    run("npx", ["remotion", "still", film, dest, `--frame=${frame}`, "--overwrite"]);
+    await remotionCommand("still", film, dest, `--frame=${frame}`, "--overwrite");
   }
 }
 
@@ -173,10 +211,10 @@ if (args["skip-render"]) {
 }
 
 const mp4 = path.join(repo, "out", `${kebab}.mp4`);
-run("npx", ["remotion", "render", film, `out/${kebab}.mp4`, "--codec=h264", "--concurrency=1", "--overwrite"]);
+await remotionCommand("render", film, `out/${kebab}.mp4`, "--codec=h264", "--concurrency=1", "--overwrite");
 console.log(`  render -> out/${kebab}.mp4`);
 
-const probe = run("npx", ["remotion", "ffprobe", `out/${kebab}.mp4`]);
+const probe = await remotionCommand("ffprobe", `out/${kebab}.mp4`);
 const info = parseProbe(probe);
 const checks = checkProbe(info, {
   width: 1080,

@@ -62,6 +62,7 @@ import { ShishiFirstFilm } from "./finished/shishi-first-film";
 import { ChizhiFirstFilm } from "./finished/chizhi-first-film";
 import { QingzhiFirstFilm } from "./finished/qingzhi-first-film";
 import { BaizhiFirstFilm } from "./finished/baizhi-first-film";
+import { HuangzhiFirstFilm } from "./finished/huangzhi-first-film";
 
 export const HerbalCompositions: React.FC = () => {
   return (
@@ -529,6 +530,14 @@ export const HerbalCompositions: React.FC = () => {
         id="BaizhiFirstFilm"
         component={BaizhiFirstFilm}
         durationInFrames={360}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="HuangzhiFirstFilm"
+        component={HuangzhiFirstFilm}
+        durationInFrames={630}
         fps={30}
         width={1080}
         height={1920}

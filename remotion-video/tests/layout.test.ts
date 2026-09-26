@@ -12,6 +12,7 @@ import {
   findOverlaps,
   findPacingProblems,
   findReadingProblems,
+  formatReadingBudget,
   planFilm,
   readingBudget,
   splitTranslation,
@@ -195,6 +196,29 @@ test("the time a scene gets follows what it has to be read, not an equal split",
   assert.ok(classical.chars > hero.chars * 4, "the fixture must actually carry the text");
 });
 
+test("the verbose reading report names every scene and its rate", () => {
+  // `npm run check -- --verbose` promises the per-scene rate (SKILL.md). The gate only
+  // says pass or fail, so without this a film sitting at 14.6 of the 15/s ceiling looks
+  // identical to one at 6/s.
+  const plan = planFilm(base);
+  const lines = formatReadingBudget(plan);
+  assert.equal(lines.length, plan.scenes.length);
+  for (const [index, scene] of readingBudget(plan).entries()) {
+    assert.ok(
+      lines[index].includes(scene.kind),
+      `line ${index} does not name the ${scene.kind} scene: ${lines[index]}`,
+    );
+    assert.ok(
+      lines[index].includes(`${scene.rate.toFixed(1)}/s`),
+      `line ${index} does not print the rate: ${lines[index]}`,
+    );
+  }
+  // An overloaded scene is flagged in the same line, so the report points at the screen
+  // to fix rather than only at the film.
+  const cramped = planFilm({ ...base, translation: base.translation.repeat(6) });
+  assert.ok(formatReadingBudget(cramped).some((line) => line.includes("OVER")));
+});
+
 test("the reading ceiling is what decides the duration, not a character count", () => {
   // Two entries with the same total character count but a different distribution get
   // different durations, because the duration follows the busiest scene.
@@ -314,6 +338,32 @@ test("the classical scenes carry the original, the 今译 and the 注释", () =>
   assert.ok(kinds.includes("classical"));
   assert.ok(kinds.includes("translation"));
   assert.ok(kinds.includes("commentary"));
+});
+
+test("a continuation screen does not label a block it does not have", () => {
+  // Every continuation scene used to open with "CLASSICAL ENTRY / 古籍原文（续）" and
+  // then go straight to the 今译, so the screen led with a heading for a block that was
+  // not on it. The 原文 is printed once, on the first classical scene.
+  const split = planFilm({ ...base, translation: base.translation.repeat(2) });
+  const classical = split.scenes.filter((s) => s.kind === "classical");
+  assert.ok(classical.length > 1, "the fixture must actually split across screens");
+  assert.ok(classical[0].blocks.some((b) => b.kind === "classical"));
+  for (const scene of classical.slice(1)) {
+    assert.equal(
+      scene.blocks.some((b) => b.kind === "classical"),
+      false,
+      "a continuation screen carries no 原文",
+    );
+    assert.equal(
+      scene.blocks.some((b) => b.kind === "classicalLabel"),
+      false,
+      "and therefore must not label one",
+    );
+    assert.ok(
+      scene.blocks.some((b) => b.kind === "translationLabel"),
+      "the 今译 it does carry is labelled",
+    );
+  }
 });
 
 test("the closing scene carries the disclaimer", () => {

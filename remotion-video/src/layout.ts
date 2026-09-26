@@ -303,7 +303,14 @@ const CHROME_KINDS: readonly BlockKind[] = [
   "sign",
 ];
 
-const countCJK = (text: string): number => (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
+/**
+ * Chinese characters, excluding punctuation and any ASCII.
+ *
+ * Exported because the published-film audit has to measure a hand-written film the
+ * same way: counting punctuation on one side and not the other made a legacy film's
+ * screen look ~15% heavier than a data-driven one carrying the same copy.
+ */
+export const countCJK = (text: string): number => (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
 
 /** The Chinese characters a viewer actually has to read in one scene. */
 export const readableChars = (scene: ScenePlan): number =>
@@ -361,6 +368,21 @@ export const findReadingProblems = (plan: FilmPlan): string[] =>
         `= ${scene.rate.toFixed(1)} chars/s, over the ${READING_RATE_LIMIT}/s ceiling — ` +
         `shorten the text or split it across another scene`,
     );
+
+/**
+ * The per-scene reading budget, one line per screen, for `npm run check -- --verbose`.
+ *
+ * SKILL.md promises this output, and it is the only way to see *which* screen is tight
+ * before rendering: the gate only says pass or fail, and a film sitting at 14.6 of the
+ * 15/s ceiling passes while having no room for one more clause.
+ */
+export const formatReadingBudget = (plan: FilmPlan): string[] =>
+  readingBudget(plan).map(
+    (scene, index) =>
+      `    scene ${index + 1} ${scene.kind.padEnd(9)} ${String(scene.chars).padStart(3)} chars` +
+      ` / ${(scene.allotted / FPS).toFixed(1)}s = ${scene.rate.toFixed(1)}/s` +
+      `${scene.over ? "  OVER" : ""}`,
+  );
 
 /** Photo insert height, matching the published films' framed 932x500 insert. */
 const PHOTO_HEIGHT = 500;
@@ -451,19 +473,19 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
           ),
         );
       } else {
+        // A continuation scene carries no 原文, so a "CLASSICAL ENTRY / 古籍原文（续）"
+        // label would sit above empty space and read as a missing block. The label
+        // belongs on the block that is actually there.
         drafts.push(
-          draft(
-            "classicalLabel",
-            "CLASSICAL ENTRY / 古籍原文（续）",
-            TYPE.sectionLabel,
-            TYPE.sectionLabel,
-          ),
+          draft("translationLabel", "MODERN READING / 今译（续）", TYPE.sectionLabel, TYPE.sectionLabel),
         );
       }
-      drafts.push(
-        draft("translationLabel", "MODERN READING / 今译", TYPE.sectionLabel, TYPE.sectionLabel),
-        bodyDraft("translation", chunk, TYPE.translation, chunk, BODY_LINE_HEIGHT),
-      );
+      if (index === 0) {
+        drafts.push(
+          draft("translationLabel", "MODERN READING / 今译", TYPE.sectionLabel, TYPE.sectionLabel),
+        );
+      }
+      drafts.push(bodyDraft("translation", chunk, TYPE.translation, chunk, BODY_LINE_HEIGHT));
       if (last) {
         drafts.push(
           draft("commentaryLabel", "COMMENTARY / 注释", TYPE.sectionLabel, TYPE.sectionLabel),
