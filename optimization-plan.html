@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本草短视频 · 优化计划书</title>
+<style>
+  :root{
+    --paper:#f7f4ec; --card:#fffdf8; --ink:#1b1a18; --muted:#6f6a61;
+    --line:rgba(27,26,24,.14); --line-strong:rgba(27,26,24,.28);
+    --seal:#9d3527; --gold:#a8812f; --ok:#3f6b4a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0 20px 80px;
+    background:var(--paper); color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    line-height:1.72; font-size:15.5px;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header{padding:56px 0 28px;border-bottom:3px solid var(--ink)}
+  .kicker{font-size:12.5px;letter-spacing:.16em;font-weight:700;color:var(--seal);text-transform:uppercase}
+  h1{font-family:"STKaiti","KaiTi",serif;font-size:46px;line-height:1.12;margin:14px 0 10px;font-weight:400}
+  .sub{color:var(--muted);font-size:14.5px;margin:0}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line-strong);padding:3px 11px;font-size:12.5px;color:var(--muted);background:var(--card)}
+  h2{font-family:"STKaiti","KaiTi",serif;font-size:30px;font-weight:400;margin:56px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line-strong)}
+  h2 .num{color:var(--seal);font-size:15px;font-family:"Segoe UI",sans-serif;font-weight:700;letter-spacing:.1em;display:block;margin-bottom:6px}
+  h3{font-size:17px;margin:32px 0 8px;font-weight:700}
+  p{margin:10px 0}
+  .lead{font-size:16.5px;background:var(--card);border-left:4px solid var(--seal);padding:18px 22px;margin:26px 0}
+  .lead strong{color:var(--seal)}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:var(--card)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#efe9dc;font-size:12.5px;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  td.k{font-weight:700;white-space:nowrap}
+  td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+  code{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;background:#efe9dc;padding:1px 5px;border-radius:2px}
+  pre{background:#efe9dc;border:1px solid var(--line);padding:14px 16px;overflow-x:auto;font-family:"Cascadia Mono",Consolas,monospace;font-size:12.5px;line-height:1.7;margin:14px 0}
+  .bad{color:var(--seal);font-weight:700}
+  .good{color:var(--ok);font-weight:700}
+  .item{background:var(--card);border:1px solid var(--line);margin:16px 0;padding:0}
+  .item>.head{display:flex;align-items:baseline;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#f1ece0}
+  .item .tag{font-size:11.5px;font-weight:700;letter-spacing:.08em;padding:2px 9px;border:1px solid var(--line-strong);color:var(--muted);white-space:nowrap}
+  .item .tag.p0{background:var(--seal);color:#fff;border-color:var(--seal)}
+  .item .tag.p1{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .item .tag.p2{background:#5d6b52;color:#fff;border-color:#5d6b52}
+  .item .title{font-weight:700;font-size:16px}
+  .item .body{padding:6px 20px 18px}
+  .lbl{font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--seal);margin:14px 0 2px}
+  .lbl.fix{color:var(--ok)}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .phase{background:var(--card);border:1px solid var(--line);margin:20px 0}
+  .phase>.ph-head{padding:16px 22px;border-bottom:1px solid var(--line);background:#f1ece0;display:flex;flex-wrap:wrap;align-items:baseline;gap:14px}
+  .phase>.ph-head .ph-n{font-family:"STKaiti",serif;font-size:26px;color:var(--seal);line-height:1}
+  .phase>.ph-head .ph-t{font-size:16.5px;font-weight:700}
+  .phase>.ph-head .ph-w{margin-left:auto;font-size:12.5px;color:var(--muted);letter-spacing:.06em}
+  .phase table{margin:0;background:transparent}
+  .phase th{background:#f7f3e9}
+  .quote{border-left:3px solid var(--gold);padding-left:16px;color:var(--muted);font-size:14px;margin:14px 0}
+  .num-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0}
+  .num-row .c{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+  .num-row .c .v{font-family:"STKaiti",serif;font-size:34px;line-height:1;color:var(--seal)}
+  .num-row .c .t{font-size:12.5px;color:var(--muted);margin-top:9px;font-weight:700}
+  .num-row .c .d{font-size:13px;margin-top:5px;line-height:1.6}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line-strong);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Optimization Plan</div>
+  <h1>本草短视频 · 优化计划书</h1>
+  <p class="sub">以 2026-09-21 重构后的仓库实测为基准。每一条结论都可在本机复算：命令写在对应条目里。</p>
+  <div class="meta">
+    <span class="chip">核查日期 2026-09-22</span>
+    <span class="chip">55 部已发布（frozen）</span>
+    <span class="chip">1 部 draft · 0 部 renderable</span>
+    <span class="chip">127 项测试全绿</span>
+    <span class="chip">356 条目 / 已做 54</span>
+  </div>
+</header>
+
+<div class="lead">
+  <strong>一句话结论：工程侧的重构已经完成，产品侧一步没动。</strong><br>
+  数据化影片、布局引擎、检查门、CI 都在位，测试 127 项全绿——但 <code>npm run check</code> 的结论是 <code>0 renderable, 1 draft, 55 frozen</code>：新规范下<strong>一部片都还没产出</strong>，唯一在做的黄芝停在 5 个 TODO 上，而它后面排着 300 个条目。<br>
+  更关键的是，重构解决了"装不下"，还没解决"读不完"——新引擎规划出的片子，中段一屏仍要求观众以 <strong>42 字/秒</strong> 的速度阅读，而检查门是绿的。
+</div>
+
+<h2><span class="num">PART 0</span>现状快照（实测）</h2>
+
+<div class="num-row">
+  <div class="c"><div class="v">55</div><div class="t">已发布并冻结</div><div class="d">每部 5 项合规缺口，仍在平台在线</div></div>
+  <div class="c"><div class="v">0</div><div class="t">新规范下可渲染</div><div class="d">1 部 draft（黄芝）</div></div>
+  <div class="c"><div class="v">42</div><div class="t">字/秒（中段屏）</div><div class="d">舒适阅读约 5.5 字/秒</div></div>
+  <div class="c"><div class="v">0</div><div class="t">git remote</div><div class="d">877 文件已纳管，仍无异地副本</div></div>
+</div>
+
+<table>
+  <tr><th>核查项</th><th>实测结果</th><th>判定</th></tr>
+  <tr><td class="k">规则门禁</td><td><code>npm run check</code> → <code>0 renderable, 1 draft, 55 frozen</code>；<code>npm test</code> → 127 pass / 0 fail</td><td class="good">已建成</td></tr>
+  <tr><td class="k">影片数据化</td><td><code>src/films/</code> 1 个内容模块；影片文件已退化为 <code>&lt;EntryFilm&gt;</code> 包装</td><td class="good">已建成</td></tr>
+  <tr><td class="k">几何不变量</td><td><code>src/layout.ts</code> 计算全部坐标、字号刻度 <code>TYPE</code>、50px 间隙、溢出与重叠检测</td><td class="good">已建成</td></tr>
+  <tr><td class="k">CI</td><td>tests → lint → check → <code>gen</code>/<code>progress</code> 同步校验</td><td class="good">已建成</td></tr>
+  <tr><td class="k">阅读预算</td><td>已加 <code>READING_RATE_LIMIT = 15</code> 与 <code>reading-budget</code> 规则；时长改为按每屏阅读量分配，档位扩到 450 / 540 / 630 / 720</td><td class="good">已解决</td></tr>
+  <tr><td class="k">新片产出</td><td>黄芝 5 个占位符未清：translation / commentary / photo.file / subject / license</td><td class="bad">未开始</td></tr>
+  <tr><td class="k">存量处置</td><td>55 部冻结在代码侧正确，运营侧无处置清单（留 / 私密 / 重制）</td><td class="bad">缺口</td></tr>
+  <tr><td class="k">发布排期</td><td>54 部已完成里 51 部是卷一·上经（含 16 部矿物）；无任何发布顺序记录</td><td class="bad">缺口</td></tr>
+  <tr><td class="k">数据回流</td><td>台账 7 个必填字段全是文案与发布状态，无播放/完播/互动/涨粉</td><td class="warn">文案已自动化，数据仍缺</td></tr>
+  <tr><td class="k">异地备份</td><td>877 文件 / 5 次提交，<code>git remote -v</code> 为空；<code>out/</code> 母版仅存本地</td><td class="bad">单点</td></tr>
+</table>
+
+<h2><span class="num">PART 1</span>本轮新发现</h2>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">N1 · 布局引擎修好了"装不下"，没修"读不完"</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <p>用新引擎规划一部 176 字的黄芝（原文 32 字 + 今译 56 字 + 注释 69 字 + 免责行 16 字），结果：</p>
+    <table>
+      <tr><th>场景</th><th>时长</th><th>中文可见字符</th><th>阅读速度</th></tr>
+      <tr><td class="k">首屏 hero</td><td class="n">4.8 秒</td><td class="n">11</td><td class="n good">2.3 字/秒（空转）</td></tr>
+      <tr><td class="k">中段 classical</td><td class="n">5.5 秒</td><td class="n">232</td><td class="n bad">42.2 字/秒</td></tr>
+      <tr><td class="k">收尾 closing</td><td class="n">4.7 秒</td><td class="n">43</td><td class="n">9.1 字/秒</td></tr>
+      <tr><td class="k">全片</td><td class="n">15 秒</td><td class="n">176</td><td class="n bad">11.7 字/秒</td></tr>
+    </table>
+    <p>而 <code>findOverflow</code>、<code>findOverlaps</code>、<code>findPacingProblems</code> <strong>全部返回空</strong>——这部片子会以 <code>ok</code> 通过检查门并渲染上线。</p>
+    <div class="lbl">根因</div>
+    <ul>
+      <li><code>findOverflow</code> 只检查块底边是否越过 <code>1920 − 96 = 1728px</code>，与阅读时长无关。</li>
+      <li><code>requiredDuration</code> 的阈值（≤130 字 → 12 秒、≤220 字 → 15 秒、其余 18 秒）折算下来是 <strong>10–15 字/秒</strong>，是舒适速度的 2–2.7 倍。</li>
+      <li><code>splitTranslation</code> 只在几何溢出时触发，所以"文字挤在一屏"永远不会触发分屏。</li>
+      <li>结果是阅读负荷全部堆在中段一屏：首屏 11 字 / 4.8 秒，中段 232 字 / 5.5 秒，负荷相差 <strong>18 倍</strong>。</li>
+    </ul>
+    <div class="lbl fix">方向</div>
+    <p>把"阅读预算"做成独立于几何的度量，并进 <code>checkPlan</code>：见阶段一任务 1.2 / 1.3。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">N2 · 冻结名单把合规风险留在了线上</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <p><code>npm run check -- --verbose</code>：55 部 frozen 每部 <strong>5 项</strong> 已知合规缺口（<code>ginseng-first-film</code> 另有 3 处片内重复短语），而它们<strong>全部是已发布状态</strong>。</p>
+    <div class="lbl">判断</div>
+    <p>冻结在工程上是对的——母版就是线上副本，不回改。但它把"这些片子仍然带着触发处罚的表述挂在平台上"这件事，变成了一个只有代码注释知道的事实。账号还在养号重建期，这是当前最大的未处置风险。</p>
+    <div class="lbl fix">方向</div>
+    <p>建一份存量处置清单，逐条决定 <strong>留 / 转私密 / 重制</strong>，并作为日后平台问询时的举证材料。见阶段一任务 1.4。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">N3 · 选题仍按原序，发布侧没有排期</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <p>已完成 54 部中 <strong>51 部属卷一·上经</strong>，其中 <strong>16 部是矿物</strong>（丹沙、云母、玉泉、石钟乳、涅石、硝石、朴硝、滑石、空青、曾青、禹余粮、白石英、紫石英、白青、扁青…）。全台账 143 / 110 / 103（上/中/下经），待办 300。</p>
+    <p><code>new-film.ts</code> 支持 <code>--entry=</code> 跳选，但默认取首个 todo，且没有任何文件记录"发布顺序"。</p>
+    <div class="lbl">判断</div>
+    <p>SKILL.md 已经写明"原序是内部生产规则，不是观众向的文案"——这条区分在文档里存在，在产品里没有落地。矿物条目同时踩三个坑：无搜索需求、画面全是分不清的石头、正撞平台判罚的"功效"高危区（<code>upload/_incidents.md</code> 自己也已决定"矿物功效集与雄黄暂缓"）。</p>
+    <div class="lbl fix">方向</div>
+    <p>生产按原序不漏，<strong>发布另排一版顺序</strong>：高认知药材前置，矿物打包成合集、单期只放一条。见阶段二任务 2.1。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">N4 · 台账有字段，没有数据</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <p><code>upload/&lt;kebab&gt;.md</code> 的 7 个必填字段（<code>film:</code> / 标题 / 描述 / 话题 / BGM / 抖音 / 视频号）全是文案与发布状态。台账总数：<strong>1 份</strong>（黄芝）。</p>
+    <div class="lbl">判断</div>
+    <p>字段设计停在"可追溯"，没到"可迭代"。养号期最需要的是"哪类条目有效"的信号，而现在没有任何采集点——两周后仍然只能凭感觉决定下一批 30 条做什么。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">P1</span><span class="title">N5 · 人格、封面、音频仍是原样</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <ul>
+      <li>音频：<code>public/music/</code> 只有 2 首，55 部轮播。</li>
+      <li>人格：无口播、无出镜、无固定署名台词，片尾无连载钩子。</li>
+      <li>封面：首帧同时承担"信息流封面"和"内容首屏"两个职责，缩略后认不出主题。</li>
+      <li>标题：SKILL.md 已要求句式多样，但无"搜索词"意识。</li>
+    </ul>
+    <p>这三项都不需要动代码管线，属于纯内容决策——也正因为如此，它们在重构中被完整地漏掉了。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">P0</span><span class="title">N6 · 语料里有 17 个条目名是残缺的，按原序做会直接踩上</span></div>
+  <div class="body">
+    <div class="lbl">实测</div>
+    <p>逐个核对 <code>000-神农本草经.txt</code> 的 <code>&lt;篇名&gt;</code> 与内容行首句，发现 <strong>17 个条目的名字被截断</strong>：<code>青</code>（内容写「巨胜苗也」、《吴普》曰「青襄」→ 应为<strong>青蘘</strong>）、<code>木</code>（「一名檀桓」→ <strong>檗木</strong>）、<code>本</code>（「一名鬼卿」→ <strong>藁本</strong>）、<code>石</code>（「一名固羊石」→ <strong>礬石</strong>）、<code>蓬</code>（「一名复盆」→ <strong>蓬蘽</strong>）、<code>蓄</code>（→ <strong>萹蓄</strong>）、<code>萆</code>（→ <strong>萆薢</strong>）、<code>耳实</code>（→ <strong>枲耳实</strong>）、<code>发</code>（→ <strong>发髲</strong>），以及 <code>青琅</code>、<code>兰茹</code>、<code>蜀菽</code>、<code>秦菽</code>、<code>浓朴</code>、<code>元参</code>、<code>麻贲</code>。</p>
+    <p>更糟的是 <code>KT</code> 这个条目：内容行里写着「案∶《说文》云∶KT，菜也，叶似韭」——名字本身就是编码残缺。</p>
+    <div class="lbl">影响</div>
+    <p><code>progress.json</code> 只是索引，名字错了不影响进度统计，但<strong>片名、标题、话题、拼音全是拿这个名字生成的</strong>。按原序默认取首个 todo，第一条就会撞上黄芝之后的这些条目。另外 <code>附∶《吴氏本草》十二条</code> 和 <code>附∶诸药制使</code> 是附录章节，根本做不成"一味药"的片子。</p>
+    <div class="lbl fix">方向</div>
+    <p>已在 <code>publish-plan.md</code> 里列成核对表；每开一条新片先 <code>rg</code> 核对全名写进 <code>entry</code>，两条附录建议标为 <code>skipped</code>。</p>
+  </div>
+</div>
+
+<h2><span class="num">PART 2</span>优化计划</h2>
+
+<p>排序原则：<strong>先让新片能上线（阶段一），再让上线的内容有效（阶段二），最后才谈规模（阶段三）</strong>。阶段一不完成，后面两步都是在没有样本的情况下做判断。</p>
+
+<div class="phase">
+  <div class="ph-head">
+    <span class="ph-n">一</span>
+    <span class="ph-t">止血与校准</span>
+    <span class="ph-w">本周 · 6 项</span>
+  </div>
+  <table>
+    <tr><th style="width:34px">#</th><th>任务</th><th>产出与验收</th></tr>
+    <tr>
+      <td class="k">1.1</td>
+      <td><strong>备份落地</strong><br>配私有 remote 并 push；把 <code>out/</code> 的 55 部母版复制到 Git 之外的存储</td>
+      <td><code>git remote -v</code> 有值且 <code>git push</code> 成功；异地副本存在；<code>npm run manifest</code> 清单与副本文件逐一对应</td>
+    </tr>
+    <tr>
+      <td class="k">1.2</td>
+      <td><strong>阅读预算做成度量</strong> <span class="good">已完成</span><br><code>src/layout.ts</code> 导出 <code>readableChars</code> / <code>readingFrames</code> / <code>readingBudget</code> / <code>findReadingProblems</code></td>
+      <td>已落地。度量按场景返回中文可见字符数、实得帧数、字/秒与是否超限；标签与品牌印不计入</td>
+    </tr>
+    <tr>
+      <td class="k">1.3</td>
+      <td><strong>阅读预算进门禁</strong> <span class="good">已完成</span><br><code>checkPlan</code> 新增 <code>reading-budget</code> 规则；分屏触发条件从"几何溢出"改为"几何溢出<strong>或</strong>阅读超限"</td>
+      <td>已落地。阈值 <code>READING_RATE_LIMIT = 15</code> 字/秒（扫读上限，约舒适值的 3 倍，是已发布影片中段 31 字/秒 的一半）；分屏上限提到 3 屏，单屏最长 9 秒</td>
+    </tr>
+    <tr>
+      <td class="k">1.4</td>
+      <td><strong>存量处置清单</strong><br>新建 <code>upload/_frozen-disposition.md</code>，55 部逐条标注 留 / 私密 / 重制 与依据</td>
+      <td>55 行齐全；"重制"的条目与阶段三的批量重制计划对得上</td>
+    </tr>
+    <tr>
+      <td class="k">1.5</td>
+      <td><strong>完成黄芝（新规范样板）</strong><br>填 translation（<code>古籍称其主……</code>）/ commentary / photo，并登记 <code>credits.json</code></td>
+      <td><code>npm run check</code> 报 <code>ok</code>；<code>npm run verify -- --film=HuangzhiFirstFilm</code> 通过；stills 人工目检通过；台账填齐标题/描述/话题</td>
+    </tr>
+    <tr>
+      <td class="k">1.6</td>
+      <td><strong>校准时长与分配</strong> <span class="good">已完成</span><br><code>requiredDuration</code> 改为累加每屏阅读需求；场景时长按阅读需求比例分配，不再是固定权重</td>
+      <td>已落地。档位扩为 450 / 540 / 630 / 720（15–24 秒）；<strong>360 仍在允许集合内但已不可达</strong>——它只给中段屏 120 帧，装不下原文＋今译＋注释。旧分配把首屏和中段屏同等对待，正是中段 31 字/秒 的成因</td>
+    </tr>
+  </table>
+</div>
+
+<div class="phase">
+  <div class="ph-head">
+    <span class="ph-n">二</span>
+    <span class="ph-t">产品化</span>
+    <span class="ph-w">本月 · 5 项</span>
+  </div>
+  <table>
+    <tr><th style="width:34px">#</th><th>任务</th><th>产出与验收</th></tr>
+    <tr>
+      <td class="k">2.1</td>
+      <td><strong>发布排期与合集</strong> <span class="good">已产出</span><br>只从 <code>status === "todo"</code> 的 <strong>300</strong> 条里排；<strong>已发布的 54 条不排期、不重制上线</strong></td>
+      <td><code>publish-plan.md</code>：5 个合集 / 30 条。<strong>同一条目只做一次</strong>；已发布的留在线上。制作时用 <code>--entry=</code> 显式取排期条目——默认取首个 todo 会按原序做到残缺名字上</td>
+    </tr>
+    <tr>
+      <td class="k">2.2</td>
+      <td><strong>内容重心迁移到名物考据</strong><br>黄芝之后的 3 部，把注释块的主体从"功效说明"换成名字由来 / 异体字 / 注家分歧 / 版本异文</td>
+      <td>3 部成片的注释块各有一处可引用的考据点；<code>npm run check</code> 全绿；片内不出现被禁的现代疗效动词</td>
+    </tr>
+    <tr>
+      <td class="k">2.3</td>
+      <td><strong>台账自动化</strong> <span class="good">已完成</span><br>文案字段不再手填：<code>npm run ledger</code> 从内容模块生成；台账新增「数据回填」表</td>
+      <td>已落地 <code>scripts/lib/ledger.ts</code> + <code>scripts/ledger.ts</code>。<strong>只填空、不覆盖</strong>人工值，可反复运行；标题按 3 套句式轮换以避免固定模板。数据列仍需平台导出，见下方说明</td>
+    </tr>
+    <tr>
+      <td class="k">2.4</td>
+      <td><strong>封面与标题产品化</strong><br>封面单独出一张图（3–6 字大字 + 一个具体问题）；标题带搜索词</td>
+      <td>写入 SKILL.md 的 Platform Publishing；首条用黄芝验证（如"黄芝为什么叫金芝"优于"古书里写了什么"）</td>
+    </tr>
+    <tr>
+      <td class="k">2.5</td>
+      <td><strong>人格与音频</strong><br>固定开场/收尾台词 + 连载钩子（"下一篇读什么"）；BGM 扩到 8–12 首按主题轮换</td>
+      <td>同一句话在每部片尾稳定出现；曲库登记来源与授权，并在 SKILL.md 记录轮换规则</td>
+    </tr>
+  </table>
+</div>
+
+<div class="phase">
+  <div class="ph-head">
+    <span class="ph-n">三</span>
+    <span class="ph-t">规模与资产化</span>
+    <span class="ph-w">下月 · 4 项</span>
+  </div>
+  <table>
+    <tr><th style="width:34px">#</th><th>任务</th><th>产出与验收</th></tr>
+    <tr>
+      <td class="k">3.1</td>
+      <td><strong>方剂线开跑</strong><br><code>mode: "formula"</code> 与"方"印已在类型与检查门里支持，但从未产出</td>
+      <td>2 部方剂成片通过检查门；配伍与君臣佐使的呈现方式定稿并写入 SKILL.md</td>
+    </tr>
+    <tr>
+      <td class="k">3.2</td>
+      <td><strong>存量重制（先下架、后替换）</strong><br>按 1.4 的处置清单，把标为"重制"的条目用新管线重做</td>
+      <td>顺序固定：<strong>先在平台下架旧片 → 再用新管线重做 → 替换上线</strong>。任何时刻同一条目只有一条在线；重制成本降到"填内容模块 + 选图"，每部一次提交</td>
+    </tr>
+    <tr>
+      <td class="k">3.3</td>
+      <td><strong>内容资产化</strong><br>条目数据 → 可检索的合集 / 专栏原料</td>
+      <td>结构化数据可导出；不再依赖 55 个手写 TSX 文件</td>
+    </tr>
+    <tr>
+      <td class="k">3.4</td>
+      <td><strong>数据驱动的选题</strong><br>用两周回填的数据决定下一批 30 条</td>
+      <td>首批 30 条的完播/涨粉排序表；据此调整 2.1 的排期规则</td>
+    </tr>
+  </table>
+</div>
+
+<h2><span class="num">PART 3</span>验收指标</h2>
+
+<table>
+  <tr><th>指标</th><th>现状（实测）</th><th>阶段一目标</th><th>阶段二目标</th></tr>
+  <tr><td class="k">单屏阅读速度</td><td class="bad">中段 42 字/秒</td><td class="good">≤ 15 字/秒（门禁已强制）</td><td>场景间负荷差 &lt; 3 倍</td></tr>
+  <tr><td class="k">新片时长</td><td class="bad">全部 12 秒</td><td>450–720（15–24 秒），按阅读量分配</td><td>用数据决定是否回落到 450</td></tr>
+  <tr><td class="k">新片产出</td><td class="bad">0 部可渲染</td><td>1 部（黄芝）上线</td><td>每周 3 部</td></tr>
+  <tr><td class="k">门禁覆盖面</td><td>几何 + 合规 + 重复文本 + 台账</td><td>增加阅读预算</td><td>不变</td></tr>
+  <tr><td class="k">台账覆盖率</td><td class="bad">1 / 56，无数据列</td><td>黄芝台账含数据列</td><td>每部都有，每周回填</td></tr>
+  <tr><td class="k">母版备份</td><td class="bad">本地单点</td><td>异地副本 + 清单校验</td><td>不变</td></tr>
+  <tr><td class="k">发布排期</td><td class="bad">无</td><td>—</td><td>首批 30 条 + 3–4 个合集</td></tr>
+  <tr><td class="k">存量处置</td><td class="bad">无清单</td><td>55 行逐条结论</td><td>重制批次执行中</td></tr>
+</table>
+
+<h2><span class="num">PART 4</span>风险与取舍</h2>
+
+<div class="item">
+  <div class="head"><span class="tag p1">取舍</span><span class="title">8 字/秒 是首版阈值，可能偏严</span></div>
+  <div class="body">
+    <p>按 8 字/秒 反推，12 秒只能承载约 96 字——比现在的译文短不少，意味着今译必须更精炼、或更多条目要分到 15/18 秒。这是有意的：宁可让译文短，也不要让观众读不完。</p>
+    <p><strong>校准方式</strong>：先按 8 落地，两周后用台账的完播率数据回看。若完播率不降，可放宽到 10；若明显下滑，说明分屏比压缩更合适。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">风险</span><span class="title">拉长到 15/18 秒可能压低完播率</span></div>
+  <div class="body">
+    <p>时长与完播率在短视频里是反向指标。当前 55 部多为 12 秒，一旦新片普遍变成 15–18 秒，完播率可能下滑，而算法权重里完播占比很高。</p>
+    <p><strong>对策</strong>：用同一条目做 A/B（12 秒精简版 vs 18 秒完整版），用 2.3 的数据列对比，而不是靠判断。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">风险</span><span class="title">标为"留"的存量影片仍带旧表述</span></div>
+  <div class="body">
+    <p>处置清单里选择"留"的影片，其 5 项合规缺口不会消失。若平台再次判定，处置清单是唯一能证明"已识别、已分级、已处置"的材料。</p>
+    <p><strong>对策</strong>：清单里每条"留"都必须写一句保留理由（如"文化向、无功效陈述"），避免变成一份没有依据的名单。</p>
+  </div>
+</div>
+
+<h2><span class="num">PART 5</span>台账的数据从哪里来</h2>
+
+<p>台账里的字段分三层，<strong>只有中间一层需要人</strong>：</p>
+
+<table>
+  <tr><th>层次</th><th>字段</th><th>来源</th></tr>
+  <tr>
+    <td class="k">文案</td>
+    <td><code>film</code> / 标题 / 描述 / 话题 / BGM</td>
+    <td class="good">脚本生成。由 <code>npm run ledger</code> 从内容模块推导，标题按 3 套句式轮换</td>
+  </tr>
+  <tr>
+    <td class="k">发布状态</td>
+    <td>抖音 / 视频号 / 备注</td>
+    <td>一行文本，人工填或从平台导出读入</td>
+  </tr>
+  <tr>
+    <td class="k">数据</td>
+    <td>播放 / 完播率 / 点赞 / 评论 / 分享 / 涨粉 / 主要来源</td>
+    <td class="bad">平台不提供开放接口，只能从创作者中心导出</td>
+  </tr>
+</table>
+
+<h3>数据获取的四条路</h3>
+
+<table>
+  <tr><th>方式</th><th>可行性</th><th>成本与风险</th></tr>
+  <tr>
+    <td class="k">逐条手填</td>
+    <td>可行</td>
+    <td>每条每周约一分钟。条目一多就必然停更——这正是不推荐它的理由</td>
+  </tr>
+  <tr>
+    <td class="k">创作者中心导出后脚本合并<br><span class="good">推荐</span></td>
+    <td>可行</td>
+    <td>后台点一次导出，跑一条命令把数据并进台账的「数据回填」表。<strong>需要你提供一份真实导出文件</strong>，我按实际列名写映射——否则列名只能靠猜</td>
+  </tr>
+  <tr>
+    <td class="k">浏览器自动化抓后台</td>
+    <td>可行但脆弱</td>
+    <td>需要保持登录态，平台改版即失效。适合作为兜底，不适合作为主路径</td>
+  </tr>
+  <tr>
+    <td class="k">平台开放接口</td>
+    <td class="bad">不可行</td>
+    <td>个人账号拿不到内容数据接口</td>
+  </tr>
+</table>
+
+<div class="item">
+  <div class="head"><span class="tag p1">下一步</span><span class="title">要做的只有一件事：给一份导出样例</span></div>
+  <div class="body">
+    <p>从抖音创作者中心和视频号助手各导出一次作品数据（CSV 或 Excel 都行），丢给我。我会：</p>
+    <ul>
+      <li>按真实列名写 <code>npm run stats -- --file=&lt;导出文件&gt;</code>，按标题匹配到对应台账，把一行追加进「数据回填」表；</li>
+      <li>把两个平台的列名差异收敛到一处映射，换平台不用改脚本；</li>
+      <li>匹配不上的行单独报出来，不静默丢弃。</li>
+    </ul>
+    <p>在拿到样例之前，「数据回填」表的表头已经就位（<code>upload-ledger.test.ts</code> 断言它存在），表头固定、按日期追加行，人工填也能用。</p>
+  </div>
+</div>
+
+<h2><span class="num">START</span>第一步：立刻可执行的命令</h2>
+
+<p>阶段一的 1.1 / 1.5 不依赖任何代码改动，可以今天就做完。</p>
+
+<pre># 已完成（本轮）：1.2 / 1.3 / 1.6 阅读预算与时长分配 · 2.3 台账自动化 · 2.1 发布排期
+npm --prefix remotion-video test          # 136 项，全绿
+npm --prefix remotion-video run check     # 0 renderable, 1 draft, 55 frozen
+
+# 1.1 备份落地（在仓库根目录，需要先给一个私有仓库地址）
+git remote add origin &lt;私有仓库地址&gt;
+git push -u origin HEAD
+npm --prefix remotion-video run manifest      # 记录 55 部母版清单
+# 再把 remotion-video/out/ 复制到 Git 之外的存储，与清单核对
+
+# 1.5 完成黄芝（新规范样板）
+cat remotion-video/src/films/huangzhi-first-film.ts
+# 填 translation / commentary / photo，并登记 public/images/credits.json
+npm --prefix remotion-video run check -- --film=HuangzhiFirstFilm
+npm --prefix remotion-video run verify -- --film=HuangzhiFirstFilm
+
+# 2.1 按排期取条目——不要用默认的原序，会踩到残缺名字
+cd remotion-video
+npm run new-film -- --entry=大枣 --id=DazaoFirstFilm --latin="DA ZAO"
+npm run ledger                                # 台账文案字段自动填好
+npm run progress</pre>
+
+<div class="quote">
+  1.2 / 1.3 / 1.6 是代码改动，按仓库既有约定走：先加失败测试（<code>tests/layout.test.ts</code>），再改 <code>src/layout.ts</code>，最后 <code>npm test</code> + <code>npm run lint</code> + <code>npm run check</code>。改动落在 <code>checkPlan</code> 上时，注意 <code>tests/compliance.test.ts</code> 需要证明检查器对坏输入会失败。
+</div>
+
+<footer>
+  本草短视频优化计划书 · 依据 2026-09-21 重构后的仓库实测生成<br>
+  复算入口：<code>npm run check -- --verbose</code>（存量缺口）、<code>src/layout.ts</code> + 内容模块试算（阅读预算）、<code>progress.json</code> 分卷统计（选题分布）、<code>git remote -v</code>（备份）
+</footer>
+
+</div>
+</body>
+</html>
