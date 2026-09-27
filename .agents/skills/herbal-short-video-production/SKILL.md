@@ -1,103 +1,102 @@
 ---
 name: herbal-short-video-production
-description: Use when creating, revising, or preparing upload copy for mobile-first Chinese herbal medicine or formula videos in Remotion from classical-book text, especially when style references, real images, readable copy, seals, music, attribution, and template isolation matter.
+description: 用于从古籍文本制作竖屏本草（单味药或方剂）短视频：撰写内容模块与上传文案，处理版式、真实配图、可读性、印章、配乐、署名与模板隔离。
 ---
 
-# Herbal Short Video Production
+# 本草短视频制作
 
-Use this workflow for educational 9:16 videos about a single Chinese herb or a formula. Build a new finished composition from the supplied book content; keep reusable templates unchanged.
+本流程用于制作单味药或方剂的 9:16 竖屏科普短视频。依据给定的古籍内容新建一支成片；共用模板保持不动。
 
-## Input And Mode
+## 输入与模式
 
-Collect the exact source entry, visual references, optional cutout sign, music files, and target composition ID. Search book text with `rg`; preserve the source wording and do not turn historical descriptions into medical advice.
+先收齐：准确的原文条目、视觉参考、可选的透明印章素材、配乐文件、目标 Composition ID。用 `rg` 检索古籍文本；原文照录，不得把历史描述改写成医疗建议。
 
-When a batch draws from multiple classical books, choose one book, finish every selected entry from that book, and only then move to another book. Keep the book name and volume consistent in all scenes and upload copy for that batch.
+一批内容涉及多本古籍时，选定一本，把该书选中的条目全部做完，再换下一本。同一批次的片名、卷次在上传文案里保持一致。
 
-When continuing a book across several videos, choose the next uncovered entry in its **original order**. Do not jump between convenient entries unless the user explicitly changes the sequence. Track coverage in `progress.json` (rebuild with `npm run progress` inside `remotion-video/`); the next film is the first `todo` entry.
+跨多支影片延续一本书时，按**原序**取下一个未覆盖的条目。除非用户明确改变顺序，不要在条目之间挑顺手的。覆盖情况记录在 `progress.json`（在 `remotion-video/` 下用 `npm run progress` 重建）；下一支就是第一个 `todo` 条目。
 
-The **original order is an internal production rule**, not viewer-facing copy. **Do not display workflow order** in the video: do not show labels such as `阅读顺序`, `按原文顺序阅读`, `ENTRY 04/05`, or a batch sequence number. If a source marker is useful, show only the book's actual bibliographic location, such as `卷、篇、部、章节` (for example, `《神农本草经》卷二·中经`).
+**原序是内部生产规则**，不是给观众看的文案。**不要在片内展示工作流顺序**：不要出现 `阅读顺序`、`按原文顺序阅读`、`ENTRY 04/05` 或批次序号之类的标注。需要出处标记时，只展示古籍真实的著录位置，例如 `卷、篇、部、章节`（如 `《神农本草经》卷二·中经`）。
 
-Choose the mode before layout:
+定版式之前先选模式：
 
-| Mode | Use for | Upper-right seal |
+| 模式 | 用于 | 右上角印章 |
 | --- | --- | --- |
-| `single-herb` | one herb or medicine profile | `药` |
-| `formula` | a prescription with several ingredients | `方` |
+| `single-herb` | 单味药条目 | `药` |
+| `formula` | 多味组成的方剂 | `方` |
 
-The seal is a single large glyph, never the herb or formula name. Use a glyph scale around `0.5` to `0.6`; two characters leave half the seal visibly empty.
+印章是一个大字，永远不是药名或方名。字号比例用 `0.5` 到 `0.6` 左右；两个字会让印章有一半是空的。
 
-## Visual Rules
+## 视觉规则
 
-- Borrow color, paper texture, framing, and typography rhythm from reference images. Do not place a reference image directly as a video background.
-- 不使用代码绘制药材、根、叶或药物主体。**首先尝试从网上获取真实图片**（license-compatible），实在找不到再省略。Put local photos in `public/images` with ASCII filenames. Render them with Remotion's `Img` and `staticFile`, never a native `img` or CSS background image.
-- Photo source channels: Wikimedia Commons first — fetch file info via its REST API (`commons.wikimedia.org/w/rest.php/v1/file/File:<name>`) and read the JSON `original.url` for the direct download. Wikimedia rate-limits bursts with HTTP 429 (often for many minutes per IP), so space requests out and keep alternate channels ready. Fall back to Openverse (`api.openverse.org/v1/images/?q=<name>&license_type=commercial`), which aggregates Flickr, Europeana (incl. naturalis.nl), the Smithsonian, and other CC-licensed collections. **Check reachability before assuming either works.** Behind some networks — a mainland-China proxy is the common case — Wikimedia and Openverse both time out while iNaturalist does not: `api.inaturalist.org/v1/observations?taxon_name=<genus>&photo_license=cc0,cc-by,cc-by-sa&quality_grade=research` returns `photos[].license_code` and `attribution` directly, and one photo id serves `square` / `large` / `original` on `inaturalist-open-data.s3.amazonaws.com`. Treat it as a first-class channel, not a last resort. Only accept CC0 / CC BY / CC BY-SA images; record the exact file, author, and license for the on-screen credit, and register the entry in `public/images/credits.json` (enforced by tests). Note that the credits ledger must match the files in `public/images` exactly, so the image has to be on disk before the entry is written.
-- Put local photos in `public/images` with ASCII filenames. Render them with Remotion's `Img` and `staticFile`, never a native `img` or CSS background image.
-- Use a framed insert, not full bleed. Crop around the actual subject and include compact author/source/license credit when required.
-- Use the supplied transparent sign only after confirming its edge/background is clean. It should read as a subtle brand mark, not an opaque pasted square.
+- 从参考图借用配色、纸感、取景和字体节奏。不要把参考图直接当视频背景。
+- 不使用代码绘制药材、根、叶或药物主体。**首先尝试从网上获取真实图片**（许可兼容的）；实在找不到再省略。本地图片放进 `public/images`，文件名用 ASCII。用 Remotion 的 `Img` 和 `staticFile` 渲染，不要用原生 `img` 或 CSS 背景图。
+- 图源通道：先试 Wikimedia Commons —— 用它的 REST API（`commons.wikimedia.org/w/rest.php/v1/file/File:<name>`）取文件信息，读 JSON 里的 `original.url` 直接下载。Wikimedia 对突发请求会返回 HTTP 429 限流（每个 IP 常常持续数分钟），所以请求之间要留间隔，并备好其他通道。退路是 Openverse（`api.openverse.org/v1/images/?q=<name>&license_type=commercial`），它聚合了 Flickr、Europeana（含 naturalis.nl）、史密森学会等 CC 授权图库。**动手前先探测可达性。** 在某些网络下——中国大陆代理是常见情形——Wikimedia 和 Openverse 都超时，而 iNaturalist 通：`api.inaturalist.org/v1/observations?taxon_name=<属名>&photo_license=cc0,cc-by,cc-by-sa&quality_grade=research` 直接返回 `photos[].license_code` 和 `attribution`，同一个照片 id 在 `inaturalist-open-data.s3.amazonaws.com` 上有 `square` / `large` / `original` 三档。把它当一等通道，而不是最后手段。只接受 CC0 / CC BY / CC BY-SA 图片；把确切的文件、作者、许可记下来用于片中署名，并登记到 `public/images/credits.json`（由测试强制）。注意：署名台账必须与 `public/images` 下的文件完全一致，所以图片要先落盘再登记。
+- 用带框的插入图，不要满幅出血。围绕真实主体裁切，必要时附一行紧凑的作者/来源/许可。
+- 提供的透明印章只有在确认边缘和底色干净之后才能用。它应当是一枚含蓄的品牌标记，不是一块贴上去的不透明白方块。
 
 ```tsx
 <Img src={staticFile("images/herb-photo.jpg")} style={{ objectFit: "cover" }} />
 <Seal text={mode === "single-herb" ? "药" : "方"} glyphScale={0.55} />
 ```
 
-## How A New Film Is Built
+## 新片如何构成
 
-A new film is **data, not JSX**. Three files, and only one of them holds prose:
+新片是**数据，不是 JSX**。三个文件，只有一个装正文：
 
-| File | Holds |
+| 文件 | 装什么 |
 | --- | --- |
-| `src/films/<kebab>.ts` | the `FilmContent` object — the only place prose is written |
-| `src/finished/<kebab>.tsx` | a ~5-line wrapper: `<EntryFilm content={content} />` |
-| `upload/<kebab>.md` | the upload ledger (platform copy, once written) |
+| `src/films/<kebab>.ts` | `FilmContent` 对象——唯一写正文的地方 |
+| `src/finished/<kebab>.tsx` | 约 5 行的包装：`<EntryFilm content={content} />` |
+| `upload/<kebab>.md` | 上传台账（平台文案，写好后填） |
 
-`npm run new-film -- --id=<CompositionId> [--latin=...] [--entry=...]` writes all three at once, reading the entry's 原文 straight out of the corpus and marking the rest as `TODO`. Do not hand-edit the wrapper: geometry, type scale, scene split, duration and pacing all come from `src/layout.ts`, which `tests/layout.test.ts` covers.
+`npm run new-film -- --id=<CompositionId> [--latin=...] [--entry=...]` 一次生成这三个文件，直接从语料里读出条目的原文，其余标为 `TODO`。不要手改包装文件：几何、字号体系、场景切分、时长与节奏全部来自 `src/layout.ts`，由 `tests/layout.test.ts` 覆盖。
 
-- **Draft state.** While the content module still contains `TODO` placeholders the film is a *draft*: `npm run check` reports it, `npm run gen` does not register it, and `npm run verify` refuses to render it. A draft therefore has no Composition and cannot reach a platform — that is what makes it safe for the gate to report a draft without failing. Clear every placeholder and the film becomes renderable.
-- **Never hand-position a block or hand-pick a font size.** A film file that carries its own `position: "absolute"` fails the gate, and every size must come from `TYPE` in `src/layout.ts`. The 55 published films drifted to 46 distinct font sizes and 11–14 hand-placed blocks each, which is exactly the maintenance this replaces.
-- Text heights are reserved from each block's own line-height, so a block never reserves more space than it renders. `tests/layout.test.ts` asserts this — a 1.5 line box on the 150px hero title once pushed the whole hero ~87px below where the published films put it.
-- The reveal is front-loaded: blocks finish appearing by roughly frame 56 of a 120-frame scene, matching the published films.
+- **草稿态。** 内容模块里还有 `TODO` 占位符时，这支片就是*草稿*：`npm run check` 会报出来，`npm run gen` 不注册它，`npm run verify` 拒绝渲染它。所以草稿没有 Composition，到不了平台——这正是门禁报告草稿却不算失败的安全前提。清空所有占位符，片子才可渲染。
+- **永远不要手写块的位置或自选字号。** 片文件里带 `position: "absolute"` 就会 FAIL，每一个字号都必须来自 `src/layout.ts` 的 `TYPE`。55 部已发布影片漂移出了 46 种不同字号、每部 11–14 个手摆的块，这正是要替换掉的维护负担。
+- 文本高度按每个块自己的行高预留，所以块预留的空间永远不超过它渲染出来的。`tests/layout.test.ts` 断言这一点——曾经用 1.5 倍行框去量 150px 的主标题，把整个首屏往下推了约 87px，偏离了已发布影片的位置。
+- 出场是前置的：块在 120 帧场景的约第 56 帧就全部出现完毕，与已发布影片一致。
 
-## Mobile-First Layout
+## 移动优先的版式
 
-- Compose at `1080×1920`. Inspect frames at phone scale before export.
-- Pace for reading, not skimming: at least 4 seconds per scene, and a total length of 15, 18, 21 or 24 seconds (450 / 540 / 630 / 720 frames at 30 fps). 360 frames stays in the accepted set but is no longer reachable: it would leave 120 frames for a classical scene that has to carry the original, the `今译`, the `注释` and the historical note. `tests/compliance.test.ts` enforces the duration set, the per-scene minimum, and that the number of `breaks` is one less than the number of scenes. Choose the longer durations instead of shrinking type. Entrance animations should be gentle (around one second of fade/rise).
-- **The reading budget is a gate, not advice.** `READING_RATE_LIMIT` in `src/layout.ts` is 15 Chinese characters per second — a skimming ceiling, roughly three times the comfortable reading rate. `npm run check` fails a film whose busiest scene asks for more, *even when nothing overlaps and nothing overflows*: geometry and reading time are separate budgets, and the 55 published films shipped with their middle scene at ~31 characters/second because only the first one was ever checked. Fix an overload by shortening the text or letting the split spread it across another scene — never by speeding the viewer up. `npm run check -- --verbose` prints the per-scene rate.
-- The geometry invariants are machine-checked, not eyeballed: `src/layout.ts` stacks every block with at least 50px of vertical clearance, and `npm run check` fails a film whose plan has an overlap, an overflow past the bottom reserve, or a scene shorter than 4 seconds. You still inspect the stills — the checker cannot judge whether a photo shows the right species.
-- Keep the title dominant. Two floors are enforced by tests and are not negotiable: the `今译` body must be at least 56px, and any element that renders Chinese must be at least 24px. ASCII-only photo credits are exempt from the 24px floor. Aim for secondary Chinese at least 34px and pinyin/English labels at least 24px. Keep photo credits concise and subordinate.
-- Do not solve a full screen by shrinking the translation. The original quotation is allowed to be large, but the `今译` — the part that makes the entry readable — must never end up smaller than the classical text. When the material does not fit, the layout splits the translation across up to three classical scenes; if it still overflows, that is a content problem and `npm run check` reports it rather than hiding it behind smaller type.
-- Fill the vertical story with meaningful material: identity, a short quote, photo or factual strip, continuation from the source, and a closing/source note. Calm spacing is good; an unoccupied middle third is not.
-- Do not nest cards. Use a few paper rules, framed inserts, and aligned strips instead of unrelated floating boxes.
-- Put the long original quotation, aliases, habitat, and bibliographic details into later scenes to prevent both tiny type and empty screens.
-- Text that lands on the decorative landscape needs its own backing. The hero's 原文 excerpt and its citation share one bordered panel for exactly this reason; a bare line over the hills reads as a grey smudge.
-- The brand mark is anchored to the bottom of the closing frame, not stacked after the disclaimer, so it does not float in the middle of the empty lower half.
+- 按 `1080×1920` 构图。导出前以手机尺寸检查帧。
+- 按阅读节奏，不按划过的速度：每场景至少 4 秒，总长 15、18、21 或 24 秒（30 fps 下即 450 / 540 / 630 / 720 帧）。360 帧仍在接受集合内但已不可达：它只给古典场景留 120 帧，而那一屏要装原文、`今译`、`注释` 和历史框定。`tests/compliance.test.ts` 强制时长集合、每场景下限，以及 `breaks` 的数量比场景数少一。宁可选更长时长，不要缩字号。入场动画要轻（约一秒的淡入/上浮）。
+- **阅读预算是门禁，不是建议。** `src/layout.ts` 里的 `READING_RATE_LIMIT` 是每秒 15 个汉字——一个略读上限，约为舒适阅读速度的三倍。`npm run check` 会让最忙的一屏超出上限的影片 FAIL，*即使没有任何重叠、没有任何溢出*：几何和阅读时间是两个独立预算，55 部已发布影片的中段屏以约每秒 31 字上线，就是因为当时只检查了第一个。超载要靠缩短文本、或让切分把它摊到另一屏来解决——永远不要靠让观众读得更快。`npm run check -- --verbose` 会打印每屏的速率。
+- 几何不变量是机器检查的，不靠肉眼：`src/layout.ts` 给每个块之间留至少 50px 垂直净空，`npm run check` 会让计划里存在重叠、越过底部保留区溢出、或某场景短于 4 秒的影片 FAIL。静帧仍然要你自己看——检查器判断不了照片里是不是对的物种。
+- 标题要保持主导。两条下限由测试强制、不可谈判：`今译` 正文至少 56px，任何渲染中文的元素至少 24px。纯 ASCII 的照片署名不受 24px 下限约束。次级中文目标 34px 以上，拼音/英文标签 24px 以上。照片署名要短、要次要。
+- 不要靠缩小今译来解决一屏装不下。原文允许大，但 `今译`——让条目变得可读的那部分——永远不能比古典正文更小。素材装不下时，版式会把今译切分到最多三个古典场景；如果仍然溢出，那是内容问题，`npm run check` 会报出来，而不是藏在更小的字号后面。
+- 用有意义的材料填满竖向叙事：身份、一句短引文、照片或事实条、原文的延续、以及结尾的出处说明。留白从容是好的；空掉中间三分之一不是。
+- 不要嵌套卡片。用几道纸线、带框插入和对齐的条带，而不是一堆互不相干的浮框。
+- 把长的原文引文、别名、生境和著录细节放到后面的场景，既避免字号过小，也避免空屏。
+- 落在装饰性山水上的文字需要自己的衬底。首屏的原文摘录和它的出处共用一个带框面板，正是这个原因；一行裸字压在山丘上会读成一道灰印。
+- 品牌标记锚定在结尾帧的底部，而不是叠在免责声明之后，这样它不会浮在空掉的下半屏中间。
 
-## Content Repetition
+## 内容重复
 
-- Make a fact map before writing: assign every source fact, alias, habitat phrase, and short quote to **one scene only**.
-- Do not repeat the herb/formula name, an alias, habitat, or a short source phrase across hero, source, closing, and post copy unless a required source credit or disclaimer needs it.
-- Fill a source scene with a **longer contiguous original quote** or a previously unused supporting detail. Do not recycle the hero line merely to fill space.
-- Keep direct quotations faithful, but split a long entry into distinct, non-overlapping excerpts when it serves the pacing.
-- Before rendering, run `npm run check`, which performs the **repeated-string scan** across all visible on-screen text automatically. It reads the film's rendered text — the content module and its layout plan for a data-driven film, the JSX for the frozen hand-written ones — rather than a hand-written list, so a phrase you forgot to declare is still caught. Credits and the required disclaimer are the only normal exceptions; bibliographic citations (`《…》…卷/篇/部`) are allowed to repeat, which is why the citation is printed as `《书名》· 卷 · 篇` rather than concatenated bare.
+- 写之前先做事实映射：把每一条来源事实、别名、生境短语和短引文分配到**只出现在一屏**。
+- 不要把药名/方名、别名、生境或短的原句在首屏、原文屏、结尾屏和上传文案之间重复，除非必要的出处署名或免责声明需要。
+- 用**更长的一段连续原文**或此前未用的支撑细节来填满原文屏。不要为了填地方而回收首屏那句话。
+- 直接引文要保持忠实，但为了节奏可以把长条目切成互不重叠的独立摘录。
+- 渲染前跑 `npm run check`，它会自动对所有可见屏幕文字做**重复字符串扫描**。它读的是影片渲染出来的文本——数据驱动的影片读内容模块和它的排版计划，冻结的手写影片读 JSX——而不是一份手写的清单，所以你没声明到的短语照样会被抓到。署名和必需的免责声明是仅有的常规例外；著录性引用（`《…》…卷/篇/部`）允许重复，这也是引用要打印成 `《书名》· 卷 · 篇` 而不是裸拼接的原因。
 
-## Original And Modern Reading
+## 原文与今译
 
-- Present a faithful original excerpt first, then a visibly separate **modern plain-language translation** in the same or following scene.
-- **Translation is not commentary.** The `今译` block must be a **逐句现代汉语翻译**: follow the displayed original clause by clause, preserve subjects, actions, objects, qualifiers, and uncertainty, and put the resulting plain-language meaning on screen. Do not omit the difficult clauses merely because they are archaic.
+- 先给忠实的原文摘录，再在同一屏或下一屏给一块**明显分开的现代白话翻译**。
+- **今译不是注释。** `今译` 块必须是**逐句现代汉语翻译**：跟着屏上显示的原文逐句走，保留主语、动作、宾语、限定语和不确定性，把得出的白话意思放到屏幕上。不要因为某些句子古奥就略过。
 - 不得以“这段主要谈及……”等概括、评论或释义替代今译。原文说了什么，就先翻成现代汉语；无法确定的字词应在今译中保留不确定性，例如“此处字义待考”或“底本注作……”。
-- Every film must carry a separate block explicitly labelled `注释` / `说明` / `COMMENTARY`, placed outside the `今译`. Use it for historical background, textual variants, terminology notes, and safety framing. 评论/说明 may explain context, but must never stand in for the translation. This block is required, not optional: `tests/compliance.test.ts` fails a film that omits it or that omits the historical framing line below.
-- **Frame efficacy as history, not advice.** Whenever the original ascribes an effect with `主……`, the corresponding `今译` clause must open with the historical frame `古籍称其主……`, and the `注释` block must carry one line such as `此为汉代认知，未经现代科学证实`. The `主` stays faithful to the source; the frame marks it as historical belief. Modern therapeutic verbs — `治疗`, `主治`, `改善`, `有效`, `根治`, `特效`, `治愈` — never appear in `今译` or `注释` outside direct quotation from the source text.
-- Keep every translation distinct from medical advice: do not turn the text into a diagnosis, treatment instruction, modern efficacy claim, dose, or safety conclusion.
-- Before rendering, run a clause check: every visible original clause must have a corresponding modern clause; confirm that no `今译` sentence begins by summarizing or evaluating the passage instead of translating it.
+- 每部片必须有一个单独成块、明确标注的 `注释` / `说明` / `COMMENTARY`，放在 `今译` 之外。用它承载历史背景、版本异文、术语说明和安全框定。评论/说明可以解释背景，但绝不能顶替翻译。这个块是必需的，不是可选的：`tests/compliance.test.ts` 会让省略它、或省略下面那行历史框定的影片 FAIL。
+- **把功效框定为历史认知，而不是建议。** 原文用 `主……` 表述功效时，对应的 `今译` 分句必须以历史框定 `古籍称其主……` 开头，`注释` 块必须带一行诸如 `此为汉代认知，未经现代科学证实`。`主` 忠实于原文；框定把它标记为历史上的认知。现代疗效动词——`治疗`、`主治`、`改善`、`有效`、`根治`、`特效`、`治愈`——除了直接引用原文，不得出现在 `今译` 或 `注释` 里。
+- 每一处今译都要与医疗建议保持距离：不要把文本变成诊断、治疗指令、现代功效声明、剂量或安全性结论。
+- 渲染前做分句核对：每一句可见原文都要有对应的现代分句；确认没有哪句 `今译` 是以概括或评价开头，而不是在翻译。
 
-## Template And Audio Boundaries
+## 模板与音频边界
 
-- Create or edit only the finished composition and its focused tests. The shared layer a finished film may build on is `src/entry-film.tsx` (`EntryFilm`), `src/layout.ts` (geometry and type scale), `src/finished-shell.tsx` (`FinishedFilm`, `FinishedMusic`), `src/herbal-stage.tsx` (`SceneShell`, `Seal`, palette) and `src/herbal-cards.tsx` (`fade`, `rise`). Extend that layer only in backward-compatible ways — a new optional prop is fine, a changed default is not, because 55 published films render through it. After touching the shared layer, render a frozen film's still and confirm it is byte-identical to the pre-change still before committing.
-- `HerbalFeature`, `HerbProfileTemplate` and `FormulaShortTemplate` are legacy scaffolding: no finished film references them, and code-drawn illustration (`RootIllustration`) is forbidden. Do not use them as a starting point for a new film.
-- A new film renders through `EntryFilm`; that is what the gate checks for. `FinishedFilm` takes any number of scenes as long as `breaks.length === scenes.length - 1`, and the plan supplies both, so a data-driven film never writes a `durationInFrames` or `breaks` literal of its own.
-- Register the film with `npm run gen` instead of hand-editing `src/Composition.tsx`. `gen` reads the duration from the plan and skips drafts.
-- Store music under `public/music`; name it as `music/<file>.mp3` in the content module. The shell plays it through `Audio` with `staticFile`, `trimAfter={durationInFrames}`, and gentle fade-in/out at a low background volume.
-- The disclaimer `古籍内容展示，不构成诊疗建议` is part of the closing scene by construction, and the gate fails a plan that lost it. It is required whenever a historical source describes medicinal use — which, for this corpus, is always.
-- The block below is the **frozen hand-written shape** — it is what the 55 published films look like and what a retired film would be re-made from, not a template for a new one. A new film must not copy it.
+- 只新建或修改成片本身和它专门的测试。成片可以依赖的共用层是 `src/entry-film.tsx`（`EntryFilm`）、`src/layout.ts`（几何与字号体系）、`src/finished-shell.tsx`（`FinishedFilm`、`FinishedMusic`）、`src/herbal-stage.tsx`（`SceneShell`、`Seal`、配色）和 `src/herbal-cards.tsx`（`fade`、`rise`）。这一层只能向后兼容地扩展——新增可选 prop 可以，改动默认值不行，因为 55 部已发布影片都渲染在它上面。动过共用层之后，渲染一部冻结影片的静帧，确认它与改动前的静帧逐字节一致，再提交。
+- `HerbalFeature`、`HerbProfileTemplate` 和 `FormulaShortTemplate` 是遗留脚手架：没有成片引用它们，代码绘制的插图（`RootIllustration`）是被禁止的。不要把她们当作新片的起点。
+- 新片通过 `EntryFilm` 渲染，这也是门禁检查的。`FinishedFilm` 接受任意数量的场景，只要 `breaks.length === scenes.length - 1`，而计划会同时给出两者，所以数据驱动的影片从不自己写 `durationInFrames` 或 `breaks` 字面量。
+- 用 `npm run gen` 注册影片，不要手改 `src/Composition.tsx`。`gen` 从计划里读时长，并跳过草稿。
+- 配乐放在 `public/music` 下；在内容模块里写成 `music/<file>.mp3`。外壳通过 `Audio` 配合 `staticFile`、`trimAfter={durationInFrames}` 播放，并以低音量做轻柔的淡入淡出。
+- 免责声明 `古籍内容展示，不构成诊疗建议` 按构造属于结尾场景，丢掉它的计划会被门禁判 FAIL。只要历史文献描述了药用，它就必须出现——对这个语料来说，是永远。
+- 下面这段是**冻结的手写形态**——它就是 55 部已发布影片的样子，也是退役影片重制时的起点，不是新片的模板。新片不得照抄。
 
 ```tsx
 export const XFirstFilm: React.FC = () => (
@@ -111,18 +110,19 @@ export const XFirstFilm: React.FC = () => (
 );
 ```
 
-## Platform Publishing
+## 平台发布
 
-Prepare upload copy after the final visual and media checks. When the user does not name a platform, use a short-video-safe default rather than inventing platform-specific limits.
+在视觉与媒体检查全部通过之后准备上传文案。用户没有指定平台时，用短视频安全默认值，不要凭空发明平台特有的限制。
 
-- **短标题**: lead with the herb or formula name and a source-led question or fact. Keep the default below 18 Chinese characters. Avoid clickbait, treatment promises, or absolute wording. Do not reuse one fixed question template across videos (such as "古书里写了什么？"): vary the phrasing with the entry — a question about the herb's name, its alias, its main sentence, or its place in the book all work.
-- **视频描述**: describe what this video actually shows rather than a generic formula: name the source entry, the scene flow (identity, original quote, 今译, closing facts), and any featured photo, then the disclaimer. Two to four short lines. Add three to five neutral tags only when the platform supports tags.
-- **医疗表述**: 不夸大疗效，不把古籍描述改写成“治疗”“改善”“必备”“有效”等承诺，也不补充未在素材中出现的现代医学结论。以下词语不得出现在片内今译/注释、标题、描述、话题中的任何位置（直接引用古籍原文除外）：`治疗`、`主治`、`改善`、`有效`、`根治`、`特效`、`治愈`、`秘方`、`神效`、`必备`、`包治`、`断根`、`奇效`、`立竿见影`、`药到病除`。该表由测试强制执行（2026年9月前的存量影片`主治`表述除外，见测试内名单）。
-- **来源标注**: 视频描述首行必须为出处，格式如`《神农本草经》卷一·上经载……`；照片署名保留作者/来源/许可（见 `public/images/credits.json`）。
-- **账号定位**: 账号分类选文化/读书；简介如“每日读一段本草古籍”，不出现养生、调理、健康科普字样，不承诺任何功效。
-- **署名**: retain required photo credit in-video. Repeat it in the description only when the source license or platform requires it.
-- **上传台账**: every new film needs `upload/<kebab>.md` declaring `film:`, `标题：`, `描述：`, `话题：`, `BGM：`, `抖音：`, `视频号：` before it can be rendered. The 55 published films have no ledger and cannot be reconstructed — the ledger starts here so a platform question can be answered with evidence instead of memory. `tests/upload-ledger.test.ts` and `npm run check` enforce the file and its fields; the values themselves may stay empty until the copy is written.
-- **母版与发布版本**: masters bake in a local BGM that is replaced by the platform library at upload time, so the master is not byte-identical to the published video. Record the platform track in the ledger, and keep a copy of `out/` outside Git (`npm run manifest` records what should be there).
+- **短标题**：以药名或方名开头，接一个以出处为本的问题或事实。默认控制在 18 个汉字以内。避免标题党、疗效承诺或绝对化措辞。不要在影片之间复用同一个固定的提问模板（例如“古书里写了什么？”）：随条目变化措辞——问药名、问别名、问它的主句、问它在书里的位置，都可以。
+- **视频描述**：描述这条视频实际展示了什么，而不是套通用公式：点明出处条目、场景流（身份、原文、今译、结尾事实）以及出现的照片，然后是免责声明。二到四行短句。只在平台支持话题时加三到五个中性话题。
+- **医疗表述**：不夸大疗效，不把古籍描述改写成“治疗”“改善”“必备”“有效”等承诺，也不补充未在素材中出现的现代医学结论。以下词语不得出现在片内今译/注释、标题、描述、话题中的任何位置（直接引用古籍原文除外）：`治疗`、`主治`、`改善`、`有效`、`根治`、`特效`、`治愈`、`秘方`、`神效`、`必备`、`包治`、`断根`、`奇效`、`立竿见影`、`药到病除`。该表由测试强制执行（2026年9月前的存量影片`主治`表述除外，见测试内名单）。
+- **来源标注**：视频描述首行必须为出处，格式如`《神农本草经》卷一·上经载……`；照片署名保留作者/来源/许可（见 `public/images/credits.json`）。
+- **账号定位**：账号分类选文化/读书；简介如“每日读一段本草古籍”，不出现养生、调理、健康科普字样，不承诺任何功效。
+- **署名**：必需的片内照片署名要保留。只有在来源许可或平台要求时，才在描述里重复它。
+- **上传台账**：每支新片都需要 `upload/<kebab>.md`，声明 `film:`、`标题：`、`描述：`、`话题：`、`BGM：`、`抖音：`、`视频号：`，才能渲染。55 部已发布影片没有台账、也无法重建——台账从这里开始，好让平台的问题能用证据回答而不是靠回忆。`tests/upload-ledger.test.ts` 和 `npm run check` 强制这个文件及其字段；值本身可以在文案写好之前留空。
+- **母版与发布版本**：母版里烤进了本地 BGM，上传时会被平台曲库替换，所以母版与线上视频并不逐字节相同。把平台曲目记进台账，并把 `out/` 在 Git 之外另存一份（`npm run manifest` 记录那里应该有什么）。
+- **封面**：**第 0 帧是一张空白纸**——入场动画从第 2 帧才开始淡入，所以第 0 帧只有纸面、山水和角落标签，没有标题、没有配图。平台上不要用默认首帧当封面；选 hero 完全出现之后的一帧（约第 3 秒，30 fps 下即第 90 帧往后），那一帧才有药名、拼音、部类、配图、原文摘录和别名。
 
 ```text
 标题：麻黄为何称"龙沙"？
@@ -134,30 +134,30 @@ Prepare upload copy after the final visual and media checks. When the user does 
 #麻黄 #神农本草经 #本草 #中草药
 ```
 
-## Verification
+## 验证
 
-1. Add a focused test before implementation and run it until it fails for the missing behavior.
-2. Implement the smallest change, then run `npm test` and `npm run lint`.
-3. Run `npm run check` (or `npm run check -- --film=<CompositionId>`). It applies the compliance rules, the repeated-text scan, and the upload-ledger check. A new film that fails any of these cannot be rendered. A `draft` line is not a failure: it means placeholders are still open, and the film is not renderable until they are cleared.
-4. Run `npm run verify -- --film=<CompositionId>`: it re-runs the rule check as a pre-flight (and refuses a draft), renders hero/source/closing stills to `out/stills/`, exports `out/<name>.mp4`, and asserts the container facts via `npx remotion ffprobe` — 1080x1920, 30fps, H.264 video, AAC audio, a duration matching the composition, and a plausible file size. The three still frames are sampled from the plan, so they are true scene mids whatever the scene count. Add `--sheet` (optionally `--sheet=20`) to sample a contact sheet instead of three frames; three frames out of 360 is a thin sample for a film whose main failure mode is text crowding mid-scene.
-5. Inspect the stills yourself for subject, seal, pinyin, English, and Chinese readability on mobile; the script cannot judge that for you. Compare a new film's hero and closing against a frozen film's at the same frame — that is the only reliable way to catch a departure from the series' visual language.
-6. Refresh Studio and leave the final composition previewable.
+1. 先写一支专门的测试，跑到它为缺失的行为而失败。
+2. 做最小的改动，然后跑 `npm test` 和 `npm run lint`。
+3. 跑 `npm run check`（或 `npm run check -- --film=<CompositionId>`）。它执行合规规则、重复文本扫描和上传台账检查。任何一项不过的新片都不能渲染。`draft` 一行不算失败：它表示占位符还没清，在清完之前该片不可渲染。
+4. 跑 `npm run verify -- --film=<CompositionId>`：它把规则检查作为前置重跑一遍（并拒绝草稿），把 hero/source/closing 静帧渲染到 `out/stills/`，导出 `out/<name>.mp4`，并通过 `npx remotion ffprobe` 断言容器事实——1080x1920、30fps、H.264 视频、AAC 音频、时长与 Composition 一致、文件大小合理。三个静帧的帧位取自计划，所以无论场景数多少都是真正的场景中点。加 `--sheet`（可选 `--sheet=20`）可以改为采样接触表；360 帧里抽 3 帧，对一部主要失效模式是中段文字拥挤的影片来说样本太薄。
+5. 静帧要你自己看：主体、印章、拼音、英文、中文在手机上的可读性；脚本替你判断不了。把新片的 hero 和 closing 与一部冻结影片的同帧位对比——这是唯一可靠的办法，能发现偏离系列视觉语言的地方。
+6. 刷新 Studio，让最终 Composition 保持可预览。
 
-## Published Films Are Frozen
+## 已发布影片是冻结的
 
-`scripts/lib/frozen-films.ts` lists the films already published to the platforms. They are frozen: their masters are live copies, so the rules in this document are **not** re-applied to them, and their known gaps are reported for information only.
+`scripts/lib/frozen-films.ts` 列出了已经发到平台上的影片。它们是冻结的：母版就是线上副本，所以本文档的规则**不会**回套到它们身上，它们已知的缺口只作信息报告。
 
-- Never add a new film to that list. A new film must satisfy the current rules instead.
-- The list may only shrink, and only by retiring a film and re-making it.
-- `tests/compliance.test.ts` asserts the list matches the published films exactly, so an accidental addition fails the suite.
+- 永远不要往这个名单里加新片。新片必须满足当前规则。
+- 名单只减不增，且只能通过退役一部影片并重制来减少。
+- `tests/compliance.test.ts` 断言该名单与已发布影片完全一致，所以误加一部会让测试套件失败。
 
-## Avoid
+## 禁止事项
 
-- Code-drawn medicine illustrations, reference images used as backgrounds, or unlicensed/uncredited web photos.
-- Tiny pinyin, English, labels, or source text just to fit more material.
-- A two-character seal, an invisible sign, or a sign with an uncut white block.
-- Rendering a finished video before inspecting key frames, or rendering one that `npm run check` rejects.
-- Adding a new film to `scripts/lib/frozen-films.ts` to get past the rules, or re-applying the current rules to a published master.
-- Polluting the shared shell (`FinishedFilm`, `SceneShell`, `fade`/`rise`) while producing a one-off finished video.
-- Modern therapeutic verbs in `今译`/`注释` outside direct source quotation.
-- Shrinking the `今译` below 56px to fit a long entry, instead of splitting the translation or moving to a 450/540-frame duration.
+- 代码绘制的药物插图、把参考图当背景、或未授权/未署名的网络图片。
+- 为了塞进更多材料而把拼音、英文、标签或原文做得极小。
+- 两个字的印章、看不见的印章、或带未裁白块的印章。
+- 没看过关键帧就渲染成片，或渲染一部 `npm run check` 拒绝的影片。
+- 为了绕过规则而把新片加进 `scripts/lib/frozen-films.ts`，或把当前规则回套到已发布母版上。
+- 在做一次性成片时污染共用外壳（`FinishedFilm`、`SceneShell`、`fade`/`rise`）。
+- 在 `今译`/`注释` 里使用现代疗效动词（直接引用原文除外）。
+- 为了装下长条目而把 `今译` 缩到 56px 以下，而不是切分今译或改用 450/540 帧时长。
