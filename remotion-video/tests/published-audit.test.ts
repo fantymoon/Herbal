@@ -105,15 +105,18 @@ test("the audit table is worst screen first, with the entry named", () => {
   assert.ok(markdown[3].includes("| 12.0 |"));
 });
 
-test("the disposition follows the reading load, not the wording", () => {
-  // 主治 cannot rank the films (44 of 55 say it) and the historical framing cannot
-  // either (none carry it), so the only thing left to sort them by is how hard the
-  // film is to read.
-  const at = (rate: number) => dispositionOf({ ...auditFilm("x-first-film.tsx", published, null, true), worstRate: rate });
-  assert.equal(at(32.5), "重制");
-  assert.equal(at(29.0), "观察");
-  assert.equal(at(16.8), "留");
-  assert.equal(at(12.0), "留");
+test("the disposition takes the platform first and the reading load second", () => {
+  // The account is still being judged on what is public on 视频号, so taking those down
+  // is one action and comes first. 主治 cannot rank the films (44 of 55 say it) and the
+  // historical framing cannot either (none carry it), so the reading load is what
+  // decides which of them also need re-making.
+  const at = (rate: number, channels: string | null) =>
+    dispositionOf({ ...auditFilm("x-first-film.tsx", published, null, true), worstRate: rate, channels });
+  assert.equal(at(32.5, "2026-08-14"), "私密·重制");
+  assert.equal(at(29.0, "2026-08-14"), "私密");
+  assert.equal(at(12.0, "2026-08-14"), "私密");
+  assert.equal(at(32.5, null), "重制");
+  assert.equal(at(12.0, null), "留");
 });
 
 test("the summary counts each gap rather than naming films", () => {
@@ -124,7 +127,7 @@ test("the summary counts each gap rather than naming films", () => {
   assert.ok(summary.includes("2 film(s)"));
   assert.ok(summary.includes("1 carry no 古籍称其主 frame"));
   assert.ok(summary.includes("1 still say 主治"));
-  assert.ok(summary.includes("Disposition from reading load alone: 0 重制, 0 观察, 2 留"));
+  assert.ok(summary.includes("Disposition: 0 私密·重制, 0 私密, 0 重制, 2 留"));
   assert.ok(summary.includes("0 contain a banned modern efficacy word"));
 });
 

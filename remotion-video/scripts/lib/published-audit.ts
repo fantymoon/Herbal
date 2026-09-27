@@ -151,26 +151,31 @@ export const auditFilm = (
   };
 };
 
-export type Disposition = "重制" | "观察" | "留";
+export type Disposition = "私密·重制" | "私密" | "重制" | "留";
 
 /**
- * What to do with a published master, from the evidence alone.
+ * What to do with a published master.
  *
- * Reading load is the only discriminator available. 主治 cannot rank the films (44 of
- * 55 say it) and the historical framing cannot either (none of them carry it), so
- * every master is equally out of step with the current rules. What separates them is
- * how hard the film is to read: a screen asking for more than 30 characters per second
- * is not readable at any playback speed, which is the defect the engine rewrite was
- * about, and the master will underperform however the platform judges it.
+ * Two facts, in this order. First, the platform: 视频号 cut distribution between 08-19
+ * and 08-21 — 菟丝子 went from 1642 plays to nothing — and the films still public there
+ * are the ones the account is still being judged on. Taking them down is a single
+ * action, so it comes before anything that has to be done one film at a time.
  *
- * This is a starting position, not a verdict. The platform exposure is not recorded
- * anywhere — there was no ledger when these shipped — so it cannot be factored in, and
- * the column is meant to be corrected by hand once that is known.
+ * Second, the reading load. It is the only thing that separates the films from each
+ * other: 主治 is on 44 of 55 and the historical framing is on none, so neither can rank
+ * them. A screen asking for more than 30 characters per second is unreadable at any
+ * playback speed, which is the defect the engine rewrite was about — worth re-making
+ * whether or not the platform ever objected.
+ *
+ * A starting position, not a verdict: it does not know whether a master was already
+ * taken down by hand, or how the account was repositioned.
  */
 export const dispositionOf = (row: FilmAudit): Disposition => {
-  if (row.worstRate > 30) return "重制";
-  if (row.worstRate > 25) return "观察";
-  return "留";
+  const unreadable = row.worstRate > 30;
+  if (row.channels !== null) {
+    return unreadable ? "私密·重制" : "私密";
+  }
+  return unreadable ? "重制" : "留";
 };
 
 const round = (n: number): string => n.toFixed(1);
@@ -223,7 +228,7 @@ export const formatAuditMarkdown = (
 
 export const summarizeAudit = (rows: FilmAudit[]): string => {
   const over = rows.filter((row) => row.worstRate > 15);
-  const buckets = (["重制", "观察", "留"] as const).map(
+  const buckets = (["私密·重制", "私密", "重制", "留"] as const).map(
     (label) => `${rows.filter((row) => dispositionOf(row) === label).length} ${label}`,
   );
   return (
@@ -232,6 +237,6 @@ export const summarizeAudit = (rows: FilmAudit[]): string => {
     `${rows.filter((r) => !r.historicalNote).length} carry no historical note, ` +
     `${rows.filter((r) => r.zhuzhi).length} still say 主治, ` +
     `${rows.filter((r) => r.banned.length > 0).length} contain a banned modern efficacy word. ` +
-    `Disposition from reading load alone: ${buckets.join(", ")}`
+    `Disposition: ${buckets.join(", ")}`
   );
 };
