@@ -30,13 +30,16 @@ description: 用于从古籍文本制作竖屏本草（单味药或方剂）短�
 
 - 从参考图借用配色、纸感、取景和字体节奏。不要把参考图直接当视频背景。
 - 不使用代码绘制药材、根、叶或药物主体。**首先尝试从网上获取真实图片**（许可兼容的）；实在找不到再省略。本地图片放进 `public/images`，文件名用 ASCII。用 Remotion 的 `Img` 和 `staticFile` 渲染，不要用原生 `img` 或 CSS 背景图。
-- 图源通道：先试 Wikimedia Commons —— 用它的 REST API（`commons.wikimedia.org/w/rest.php/v1/file/File:<name>`）取文件信息，读 JSON 里的 `original.url` 直接下载。Wikimedia 对突发请求会返回 HTTP 429 限流（每个 IP 常常持续数分钟），所以请求之间要留间隔，并备好其他通道。退路是 Openverse（`api.openverse.org/v1/images/?q=<name>&license_type=commercial`），它聚合了 Flickr、Europeana（含 naturalis.nl）、史密森学会等 CC 授权图库。**动手前先探测可达性。** 在某些网络下——中国大陆代理是常见情形——Wikimedia 和 Openverse 都超时，而 iNaturalist 通：`api.inaturalist.org/v1/observations?taxon_name=<属名>&photo_license=cc0,cc-by,cc-by-sa&quality_grade=research` 直接返回 `photos[].license_code` 和 `attribution`，同一个照片 id 在 `inaturalist-open-data.s3.amazonaws.com` 上有 `square` / `large` / `original` 三档。把它当一等通道，而不是最后手段。只接受 CC0 / CC BY / CC BY-SA 图片；把确切的文件、作者、许可记下来用于片中署名，并登记到 `public/images/credits.json`（由测试强制）。注意：署名台账必须与 `public/images` 下的文件完全一致，所以图片要先落盘再登记。
+- 图源通道：先试 Wikimedia Commons —— 用它的 REST API（`commons.wikimedia.org/w/rest.php/v1/file/File:<name>`）取文件信息，读 JSON 里的 `original.url` 直接下载。Wikimedia 对突发请求会返回 HTTP 429 限流（每个 IP 常常持续数分钟），所以请求之间要留间隔，并备好其他通道。退路是 Openverse（`api.openverse.org/v1/images/?q=<name>&license_type=commercial`），它聚合了 Flickr、Europeana（含 naturalis.nl）、史密森学会等 CC 授权图库。**动手前先探测可达性。** 在某些网络下——中国大陆代理是常见情形——Wikimedia 和 Openverse 都超时，而 iNaturalist 通：`api.inaturalist.org/v1/observations?taxon_name=<属名>&photo_license=cc0,cc-by,cc-by-sa&quality_grade=research` 直接返回 `photos[].license_code` 和 `attribution`，同一个照片 id 在 `inaturalist-open-data.s3.amazonaws.com` 上有 `square` / `large` / `original` 三档。**扩展名不固定**：有的 id 是 `large.jpg`，有的是 `large.jpeg`，同桶、同许可都可能不同，所以要从 API 返回的 `photo.url` 读扩展名，不要硬编码——硬编码任一种都会静默砍掉一半图库，让整个分类看上去「没有可下载的图」。把它当一等通道，而不是最后手段。只接受 CC0 / CC BY / CC BY-SA 图片；把确切的文件、作者、许可记下来用于片中署名，并登记到 `public/images/credits.json`（由测试强制）。注意：署名台账必须与 `public/images` 下的文件完全一致，所以图片要先落盘再登记。以上整段由 `npm run fetch-photo -- --taxon="<学名>" --file=<文件名主干>` 一条命令完成；`--check` 先列候选，看过之后用 `--id=<photoId>` 取选定的那张（自动排序只是启发式，看不出「密叶丛」比「整株带花」差）。插框是约 1.9:1 的横向裁切，**竖构图会切掉主体**，优先挑横向图。
 - 用带框的插入图，不要满幅出血。围绕真实主体裁切，必要时附一行紧凑的作者/来源/许可。
 - 提供的透明印章只有在确认边缘和底色干净之后才能用。它应当是一枚含蓄的品牌标记，不是一块贴上去的不透明白方块。
 
 ```tsx
-<Img src={staticFile("images/herb-photo.jpg")} style={{ objectFit: "cover" }} />
-<Seal text={mode === "single-herb" ? "药" : "方"} glyphScale={0.55} />
+// 渲染器里的形态（`src/entry-film.tsx`），供参照——影片文件本身不要写这些：
+// 印章字形来自 `sealGlyph(mode)`（单味药「药」/ 方剂「方」），由渲染器决定，
+// 内容模块只声明 `mode`。`position` / 字号同样全部由 `src/layout.ts` 给出。
+<Img src={staticFile(`images/${content.photo.file}`)} style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
+<Seal text={sealGlyph(mode)} size={104} glyphScale={0.55} rotation={-5} />
 ```
 
 ## 新片如何构成
