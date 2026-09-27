@@ -32,7 +32,8 @@
 ## 已知缺口（截至 2026-09-26）
 
 - **配图必须人工下载**：本机经代理 `http://127.0.0.1:52928` 出网，维基媒体与 Openverse 均不可达（实测全部超时，百度正常）。SKILL.md 规定的两个图源通道在这台机器上拿不到图。另：`tests/finished-video.test.ts` 断言 `credits.json` 与 `public/images/` 下的文件完全一致，所以不能先登记图片再补文件。
-- 无 git remote，`out/` 母版仅存本地单点。
+- 远端 `git@github.com:fantymoon/Herbal.git`（**必须用 SSH**：HTTPS 的 push 在这台机器上会
+  挂死，探测 github.com 本身是通的）。`out/` 母版仍仅存本地单点，约 180MB 不在仓库里。
 - 台账数据列尚无导入器——需要一份抖音/视频号创作者中心的真实导出样例才能写列映射。
 - 方剂线（`mode: "formula"` / "方"印）从未产出。
 - BGM 只有 2 首轮播；无口播/人格；封面未与首帧分离。
