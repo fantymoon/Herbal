@@ -33,7 +33,15 @@ const pick = (seed: string, count: number): number => {
   return h % count;
 };
 
-/** A starting title, not the final one: vary it with the entry. */
+/**
+ * A placeholder title, so the field is never empty.
+ *
+ * This is scaffolding, not authorship: the workflow is run by a model, and writing the
+ * actual title is judgement — which alias or fact this particular entry turns on, and
+ * how to say it without promising anything. A generator cannot do that from the fields
+ * a content module carries, and trying turned into machinery nobody asked for. It
+ * fills the field; whoever runs the workflow rewrites it.
+ */
 export const draftTitle = (content: FilmContent): string => {
   const alias = aliasShort(content);
   const options = alias
