@@ -152,6 +152,17 @@
     <p>全仓搜索 <code>override</code> / <code>waiver</code> / <code>exempt</code>，命中的全是硬编码豁免（书名号引用、ASCII 署名下限）。逐片偏离只有两条路：改共享引擎 + 改测试，或者加进 <code>frozen-films.ts</code>（后者被明确禁止）。</p>
     <div class="lbl">问题</div>
     <p><strong>这才是真正损失灵活性的地方。</strong>冻结清单处理的是过去（55 部不改），对未来的"这一部确实该不一样"没有任何词汇。模型的判断无处安放，于是只剩两种结果：要么被规则挡回去，要么有人偷偷改引擎。</p>
+    <div class="lbl">实测：这个需求不是假想的</div>
+    <p>拿语料里的真实条目跑一遍计划器（<code>planFilm</code> + <code>checkPlan</code>），容量上限取决于<strong>全片可读总字数</strong>（阅读预算 15 字/秒 × 封顶 24 秒 = 360 字），而今译约为原文的 1.5–2 倍：</p>
+    <table>
+      <tr><th>今译 / 原文</th><th>能承载的原文上限</th><th>说明</th></tr>
+      <tr><td class="k">× 1.55</td><td>≈ 78 字</td><td>黄芝实测比例。它的 33 字已经吃掉 <strong>630 / 720 帧</strong>，只剩 3 秒余量</td></tr>
+      <tr><td class="k">× 1.8</td><td>≈ 66 字</td><td>长句更啰嗦的正常情形</td></tr>
+      <tr><td class="k">× 2.1</td><td>≈ 60 字</td><td>古病名多、要解释的多</td></tr>
+    </table>
+    <p>再统计语料：<strong>340 条可识别经文里，307 条（90%）在 60 字以内</strong>，24 条落在 61–78 字，<strong>9 条超过 78 字</strong>——包括 <code>丹雄鸡</code>（137 字）、<code>桑根白皮</code>（91）、<code>白马茎</code>（89）、<code>龙骨</code>（88）。</p>
+    <p>也就是说：<strong>这条线现在就在切语料。</strong>那 33 条放不下的，只有两条出路——删原文（违反「原文照录」和「今译逐句」），或者<strong>全局</strong>抬高档位（那会让每一部片子的时长选择都变，不是「这一部特殊」的表达）。没有第三条路说「这一部我知道，它就是要 30 秒，理由写在这儿」。</p>
+    <p class="sub">注意这跟「阅读预算 15 字/秒」不是一回事，那条不该动——它量化的是观众读不读得完，与内容无关。要放宽的是<strong>时长档位的上限</strong>，而且应该按片放：不是让每部片都变长，是允许长条目那一部有更长的片子。</p>
     <div class="lbl">建议</div>
     <p>加 <code>content.deviations?: { rule: string; why: string }[]</code>：闸门把列出的规则降级为 warn，<code>check --verbose</code> 打印理由，并断言<strong>偏离必须带非空理由</strong>。这样偏离是可见、有成本、留痕的——而不是静默豁免。</p>
   </div>
@@ -163,6 +174,7 @@
     <div class="lbl">证据</div>
     <p><code>ScenePlan.kind</code> 只有 <code>hero | classical | closing</code>，<code>planFilm</code> 是固定三步。18 个内容字段全部贴合「单条目·单味药」。</p>
     <p>而 SKILL.md 第 86 行自己写着 <code>注释</code> 该承载「历史背景、<strong>版本异文</strong>、术语说明、安全框定」四项——schema 里只有一个 <code>commentary: string</code>。黄芝那部现在就把古病名、方术语义、德行言药、产地出处四件事挤在同一个字符串里。</p>
+    <p>语料里还直接躺着<strong>另一种形态</strong>：<code>丹雄鸡</code>、<code>白马茎</code>、<code>龙骨</code>、<code>桑根白皮</code> 都是「一条之下并列多个部位，各部位各有主……」，比如丹雄鸡一条里就有头、肪、肠、裹黄皮、尿白、黑雌鸡、翮羽、鸡子、鸡白蠹 九组。现有 schema 的 <code>original: string</code> + <code>translation: string</code> 只能把它们压成一段散文，而<strong>逐句今译的要求正是要求把它们分开</strong>——两件事直接冲突。</p>
     <div class="lbl">问题</div>
     <p>要加一屏「名字由来」或「注家分歧」，必须同时改 <code>layout.ts</code> + <code>entry-film.tsx</code> + <code>TYPE</code> + 测试。也就是说，<strong>项目一旦真按名物考据的方向走，每一部新形态都要先做一次引擎改造</strong>。这比任何单条规则都更限制灵活性。</p>
     <div class="lbl">建议</div>
