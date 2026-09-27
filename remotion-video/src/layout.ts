@@ -61,6 +61,21 @@ export const REQUIRED_NOTE = "此为汉代认知，未经现代科学证实";
 export const DISCLAIMER_TEXT = "古籍内容展示，不构成诊疗建议";
 
 /**
+ * The seal glyph for a mode. SKILL.md § Input And Mode: one large character, `药` for a
+ * single herb and `方` for a formula — never the herb's or formula's name.
+ *
+ * It lives here, as a mapping, so that adding a mode is a compile error rather than a
+ * silent fallback: the renderer used to hardcode `药`, which meant the gate validated a
+ * `mode` field that changed nothing on screen.
+ */
+export const SEAL_GLYPH: Record<FilmContent["mode"], string> = {
+  "single-herb": "药",
+  formula: "方",
+};
+
+export const sealGlyph = (mode: FilmContent["mode"]): string => SEAL_GLYPH[mode];
+
+/**
  * The only font sizes a film may use. The previous films drifted to 46 values
  * (14, 15, 19, 20, 21, 22, ...) because every screen was tuned by hand.
  */

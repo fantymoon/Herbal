@@ -10,9 +10,14 @@ export default {
   bookLatin: "SHENNONG BENCAO JING",
   source: "TCM-Ancient-Books-master/000-神农本草经.txt",
 
-  // Entry name in the txt -> Composition id. Composition ids cannot be derived from
-  // entry names (黄 -> HuangqiFirstFilm, 柴胡 -> BupleurumThirdFilm), so the mapping
-  // is explicit. scripts/build-progress.mjs checks it against the films on disk.
+  // Entry name in the txt -> Composition id, for films that predate content modules.
+  //
+  // A data-driven film no longer needs an entry here: its content module already carries
+  // both facts (`entry` and `id`), and scripts/build-progress.mjs reads the mapping off
+  // it. This map is now a legacy supplement for the 55 hand-written films, whose ids
+  // were chosen freely (黄 -> HuangqiFirstFilm, 柴胡 -> BupleurumThirdFilm) and which have
+  // no content module to read them from. Adding a new film here is harmless but
+  // redundant — the content module wins on a conflict.
   done: {
     丹沙: "DanshaFirstFilm",
     云母: "YunmuFirstFilm",
@@ -64,7 +69,6 @@ export default {
     赤芝: "ChizhiFirstFilm",
     青芝: "QingzhiFirstFilm",
     白芝: "BaizhiFirstFilm",
-    黄芝: "HuangzhiFirstFilm",
     黄: "HuangqiFirstFilm",
     牡丹: "PeonySecondFilm",
     当归: "AngelicaFourthFilm",

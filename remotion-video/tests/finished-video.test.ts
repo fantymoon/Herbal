@@ -421,7 +421,10 @@ test("every finished film shows the seal, disclaimer, and sign (except the photo
     const content = contentOf.get(f) ?? null;
     if (content) {
       const entryFilm = fs.readFileSync(new URL("../src/entry-film.tsx", import.meta.url), "utf8");
-      assert.equal(entryFilm.includes('<Seal text="药"'), true, f);
+      // The seal glyph follows `mode` (药 for a single herb, 方 for a formula) rather
+      // than being a literal, so the assertion is that the renderer reads the field —
+      // otherwise the gate would be validating a `mode` that changes nothing on screen.
+      assert.equal(entryFilm.includes("sealGlyph(mode)"), true, f);
       assert.equal(entryFilm.includes('staticFile("sign-1.png")'), true, f);
       assert.equal(content.historicalNote.length > 0, true, f);
       continue;

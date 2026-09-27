@@ -38,7 +38,38 @@ if (!available.includes(wanted)) {
   process.exit(1);
 }
 const config = (await import(new URL(wanted, `file://${booksDir}/`).href)).default;
-const { book, source, done, skipped, notes, wrappers = {} } = config;
+const { book, source, skipped, notes, wrappers = {} } = config;
+
+// The entry -> Composition id mapping used to live only in the book config's hand-written
+// `done` map, which meant every new film needed a manual edit there — and `npm run
+// progress` hard-failed until somebody made it. A data-driven film already carries both
+// facts in its content module (`entry` and `id`), so new films register themselves and
+// the hand map shrinks to a legacy supplement for the 55 films that predate content
+// modules. The two are merged, with the content module winning on a conflict.
+const finishedDir = path.join(repo, "src", "finished");
+const filmsDir = path.join(repo, "src", "films");
+const derived = {};
+const drafts = [];
+const onDisk = new Set();
+for (const file of fs.readdirSync(finishedDir).filter((f) => f.endsWith(".tsx"))) {
+  const filmSource = fs.readFileSync(path.join(finishedDir, file), "utf8");
+  const id = readFilmId(filmSource);
+  if (!id) {
+    console.error(`no exported film component in ${file}`);
+    process.exit(1);
+  }
+  const { content } = await loadContent(filmSource, filmsDir);
+  if (isDraft(content)) {
+    drafts.push(id);
+    continue;
+  }
+  onDisk.add(id);
+  if (content?.entry) {
+    derived[content.entry] = id;
+  }
+}
+const done = { ...config.done, ...derived };
+const legacyDone = Object.keys(config.done).length;
 
 const buf = fs.readFileSync(path.join(repo, "..", source));
 const lines = new TextDecoder("gb18030").decode(buf).split("\n");
@@ -120,27 +151,8 @@ console.log(`ledger: ${out.doneCount}/${out.entryCount} done`);
 console.log(`next: ${next.name} [${next.volume}]`);
 
 // Cross-check both directions, using each film's own exported component name
-// instead of guessing it from the filename. A draft (content module still carrying
-// TODOs) is not a finished film: it stays `todo` in the ledger and is reported
-// separately rather than being demanded of the book config.
-const finishedDir = path.join(repo, "src", "finished");
-const filmsDir = path.join(repo, "src", "films");
-const onDisk = new Set();
-const drafts = [];
-for (const file of fs.readdirSync(finishedDir).filter((f) => f.endsWith(".tsx"))) {
-  const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
-  const id = readFilmId(source);
-  if (!id) {
-    console.error(`no exported film component in ${file}`);
-    process.exit(1);
-  }
-  const { content } = await loadContent(source, filmsDir);
-  if (isDraft(content)) {
-    drafts.push(id);
-    continue;
-  }
-  onDisk.add(id);
-}
+// instead of guessing it from the filename. The scan itself happened above, before
+// the ledger was built, because the same pass is what derives new films' mappings.
 const mapped = new Set([...Object.values(done), ...Object.keys(wrappers)]);
 const unmapped = [...onDisk].filter((f) => !mapped.has(f));
 if (unmapped.length > 0) {
@@ -151,6 +163,12 @@ const stale = [...mapped].filter((f) => !onDisk.has(f));
 if (stale.length > 0) {
   console.error("book config references films that no longer exist: " + stale.join(", "));
   process.exit(1);
+}
+const derivedCount = Object.keys(derived).length;
+if (derivedCount > 0) {
+  console.log(
+    `${derivedCount} film(s) registered from their content module, ${legacyDone} from the legacy map`,
+  );
 }
 if (drafts.length > 0) {
   console.log(`draft(s) in progress, still todo: ${drafts.join(", ")}`);

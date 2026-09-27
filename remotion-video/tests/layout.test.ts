@@ -7,6 +7,7 @@ import {
   MIN_SCENE_FRAMES,
   READING_RATE_LIMIT,
   SAFE_INSET,
+  SEAL_GLYPH,
   TYPE,
   findOverflow,
   findOverlaps,
@@ -15,6 +16,7 @@ import {
   formatReadingBudget,
   planFilm,
   readingBudget,
+  sealGlyph,
   splitTranslation,
   textHeight,
   wrappedLineCount,
@@ -371,4 +373,17 @@ test("the closing scene carries the disclaimer", () => {
   const closing = plan.scenes[plan.scenes.length - 1];
   assert.equal(closing.kind, "closing");
   assert.ok(closing.blocks.some((b) => b.text.includes("不构成诊疗建议")));
+});
+
+test("the seal glyph follows the mode instead of being fixed", () => {
+  // The gate validates `mode`; if the renderer ignored it, a formula film would pass
+  // the rules and still come out stamped 药. A mapping that is asserted here is what
+  // makes that rule about behaviour rather than about a field's shape.
+  assert.equal(sealGlyph("single-herb"), "药");
+  assert.equal(sealGlyph("formula"), "方");
+  assert.equal(
+    new Set(Object.values(SEAL_GLYPH)).size,
+    Object.keys(SEAL_GLYPH).length,
+    "two modes must not share a glyph",
+  );
 });

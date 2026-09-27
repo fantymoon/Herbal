@@ -243,4 +243,5 @@ next:
   3. npm run gen && npm run check      (until step 1 is done this film is a draft:
                                         reported, not registered, not renderable)
   4. npm run verify -- --film=${id}
-  5. npm run progress                  (picks the film up from the content file)`);
+  5. npm run progress                  (registers the film by reading its own entry/id
+                                        off this content module — no book-config edit)`);

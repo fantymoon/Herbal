@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本草短视频项目 · 过拟合与灵活性审计</title>
+<style>
+  :root{
+    --paper:#f7f4ec; --card:#fffdf8; --ink:#1b1a18; --muted:#6f6a61;
+    --line:rgba(27,26,24,.14); --line-strong:rgba(27,26,24,.28);
+    --seal:#9d3527; --gold:#a8812f; --ok:#3f6b4a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0 20px 72px;
+    background:var(--paper); color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    line-height:1.72; font-size:15.5px;
+  }
+  .wrap{max-width:940px;margin:0 auto}
+  header{padding:56px 0 28px;border-bottom:3px solid var(--ink)}
+  .kicker{font-size:12.5px;letter-spacing:.16em;font-weight:700;color:var(--seal);text-transform:uppercase}
+  h1{font-family:"STKaiti","KaiTi",serif;font-size:42px;line-height:1.15;margin:14px 0 10px;font-weight:400}
+  .sub{color:var(--muted);font-size:14.5px;margin:0}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line-strong);padding:3px 11px;font-size:12.5px;color:var(--muted);background:var(--card)}
+  h2{font-family:"STKaiti","KaiTi",serif;font-size:29px;font-weight:400;margin:52px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line-strong)}
+  h2 .num{color:var(--seal);font-size:15px;font-family:"Segoe UI",sans-serif;font-weight:700;letter-spacing:.1em;display:block;margin-bottom:6px}
+  h3{font-size:17px;margin:34px 0 8px;font-weight:700}
+  p{margin:10px 0}
+  .lead{font-size:16.5px;background:var(--card);border-left:4px solid var(--seal);padding:18px 22px;margin:26px 0}
+  .lead.ok{border-left-color:var(--ok)}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:22px 0}
+  .card{background:var(--card);border:1px solid var(--line);padding:18px 20px}
+  .card .n{font-family:"STKaiti",serif;font-size:34px;line-height:1;color:var(--seal)}
+  .card .t{font-size:13px;color:var(--muted);margin-top:8px;font-weight:700}
+  .card .d{font-size:13.5px;color:var(--ink);margin-top:6px;line-height:1.6}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:var(--card)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#efe9dc;font-size:12.5px;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  td.k{font-weight:700;white-space:nowrap}
+  code{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;background:#efe9dc;padding:1px 5px;border-radius:2px}
+  .bad{color:var(--seal);font-weight:700}
+  .good{color:var(--ok);font-weight:700}
+  .warn{color:var(--gold);font-weight:700}
+  .item{background:var(--card);border:1px solid var(--line);margin:16px 0;padding:0}
+  .item>.head{display:flex;align-items:baseline;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#f1ece0}
+  .item .tag{font-size:11.5px;font-weight:700;letter-spacing:.08em;padding:2px 9px;border:1px solid var(--line-strong);color:var(--muted);white-space:nowrap}
+  .item .tag.p0{background:var(--seal);color:#fff;border-color:var(--seal)}
+  .item .tag.p1{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .item .tag.p2{background:#5d6b52;color:#fff;border-color:#5d6b52}
+  .item .title{font-weight:700;font-size:16px}
+  .item .body{padding:6px 20px 18px}
+  .lbl{font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--seal);margin:14px 0 2px}
+  .lbl.fix{color:var(--ok)}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line-strong);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Overfitting Audit</div>
+  <h1>闸门是不是把「当前 55 部的做法」当成了「产品规则」</h1>
+  <p class="sub">对 <code>src/layout.ts</code>、<code>scripts/lib/</code> 与 111 条测试逐条核对：哪些约束与输出行为绑定，哪些只是固化了当初恰好写成的那串字。</p>
+  <div class="meta">
+    <span class="chip">2026-09-27</span>
+    <span class="chip">155 测试通过 / 0 失败</span>
+    <span class="chip">零生成物漂移</span>
+    <span class="chip">已修 3 项 · 待决策 6 项</span>
+  </div>
+</header>
+
+<div class="lead">
+  <strong>结论：有，但比预想的少，而且集中在两个地方。</strong>
+  闸门共 17 类规则，其中 16 类与输出行为绑定（几何、阅读预算、禁用词、署名、免责声明），这部分是正当的产品约束，不该动。
+  真正的问题有两类：<strong>一类是只验字段形状、不验行为的死规则</strong>（已修）；<strong>另一类更值得警惕——整套机制没有地方记录「这一部确实不同，理由是……」</strong>。
+  闸门只会说 yes / no。对一个有大模型参与的项目，模型最值钱的东西恰恰是<em>有理由的例外判断</em>，而这里没有它的位置。
+</div>
+
+<h2><span class="num">SCALE</span>约束面有多大</h2>
+<div class="grid3">
+  <div class="card"><div class="n">17</div><div class="t">闸门规则种类</div><div class="d">16 类与行为绑定；1 类（<code>seal</code>）曾是死规则，本轮修好</div></div>
+  <div class="card"><div class="n">111</div><div class="t">测试用例 / 2121 行</div><div class="d">守 3529 行引擎与闸门代码，测试:实现 ≈ 0.60</div></div>
+  <div class="card"><div class="n">18</div><div class="t">内容 schema 字段</div><div class="d">全部贴合「单条目·单味药」格式，没有名物考据类字段</div></div>
+  <div class="card"><div class="n">14</div><div class="t">允许字号</div><div class="d">封闭集合 <code>TYPE</code>：加新元素必须改共享引擎</div></div>
+</div>
+
+<h2><span class="num">FIXED</span>本轮修掉的三处</h2>
+
+<div class="item">
+  <div class="head"><span class="tag p0">已修</span><span class="title">闸门校验了一个对输出毫无影响的字段</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>compliance.ts</code> 检查 <code>mode</code> 是否属于 <code>single-herb | formula</code>，失败时报 <code>seal: mode "x" has no seal glyph</code>。但渲染器里印章是硬编码的 <code>&lt;Seal text="药" /&gt;</code>，<code>layout.ts</code> 完全不读 <code>mode</code>。</p>
+    <p>于是 <code>mode: "formula"</code> <strong>能过闸门、仍然渲染「药」</strong>。规则名字里写着 seal，行为上什么都不保证。这是最坏的一种过拟合：<strong>验形状不验行为</strong>——模型只要把枚举值打对就能"满足"规则，而片子是错的。</p>
+    <div class="lbl fix">修法</div>
+    <p>SKILL.md 第 39 行其实早就写明了实现方式（<code>&lt;Seal text={mode === "single-herb" ? "药" : "方"} /&gt;</code>），是代码没跟上文档。现在把映射提成布局层的纯函数 <code>SEAL_GLYPH</code> / <code>sealGlyph(mode)</code>，渲染器读它，并加测试断言 <code>sealGlyph("formula") === "方"</code> 且两个 mode 不共用字形。</p>
+    <p>顺带的好处：加 mode 现在是<strong>编译错误</strong>而不是静默回退——<code>Record&lt;mode, string&gt;</code> 少一个键就报错。</p>
+    <p class="sub">同时修掉测试里 <code>assert.equal(entryFilm.includes('&lt;Seal text="药"'))</code> 这类硬编码字符串断言——它断言的正是那个 bug，是过拟合的另一面。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">已修</span><span class="title">脚手架声称的流程是假的，新片仍需手改配置表</span></div>
+  <div class="body">
+    <div class="lbl">现象</div>
+    <p><code>npm run new-film</code> 打印的第 5 步写着「<code>npm run progress</code>（从内容文件自动拾取）」。实际上 <code>build-progress.mjs</code> 的 <code>done</code> 映射来自 <code>scripts/books/*.mjs</code> 里<strong>手写</strong>的 <code>{ 黄芝: "HuangzhiFirstFilm" }</code>，而它还会反向校验：磁盘上有一部未登记的成片就 <code>exit 1</code>。</p>
+    <p>也就是说，照脚手架说的做，第 5 步会直接失败；真正的手工步骤（改书配置）根本没被写出来。数据化承诺的"五处手工维护收成一处"当时只兑现了四处。</p>
+    <div class="lbl fix">修法</div>
+    <p>数据化影片的内容模块本来就同时带着 <code>entry</code> 和 <code>id</code>，所以 <code>build-progress.mjs</code> 改为从内容模块派生映射，手写表退化成「55 部手写老片的遗留补充」，且冲突时以内容模块为准。</p>
+    <p>实测验证：把黄芝从手写表里摘掉后重跑，<code>progress.json</code> <strong>逐字节不变</strong>，仍报 55/356 done、下一部紫芝。新片从此不需要改书配置。</p>
+  </div>
+</div>
+
+<h2><span class="num">DECISIONS</span>待你决策的六处</h2>
+<p>下面这些我没有单方面改。前四项是真的过拟合，后两项是有意的取舍但值得知道代价。</p>
+
+<div class="item">
+  <div class="head"><span class="tag p0">A</span><span class="title">历史框定句要求逐字相等，而规范自己说的是「诸如」</span></div>
+  <div class="body">
+    <div class="lbl">证据</div>
+    <p><code>compliance.ts:93</code> 是 <code>content.historicalNote !== REQUIRED_NOTE</code>（字节相等）。<br>
+    SKILL.md 第 87 行：「<code>注释</code> 块必须带一行<strong>诸如</strong> <code>此为汉代认知，未经现代科学证实</code>」。</p>
+    <div class="lbl">问题</div>
+    <p>代码比规范严，而且严得没有产品理由——它固化的只是当初写下的那一串字。任何更好的措辞（「此为汉代说法，现代科学未予验证」）都会 FAIL，而且改措辞要改代码，规则不可证伪。</p>
+    <div class="lbl">三个选项</div>
+    <ul>
+      <li><strong>① 文档向代码看齐</strong>：把 SKILL.md 的「诸如」改成「必须逐字」。零风险，但正式放弃措辞灵活性。</li>
+      <li><strong>② 改成语义检查</strong>：要求同时点出时代（汉 / 古代 / 古籍）与否认现代验证（未…现代科学），用小的正则族。保留规范本意，代价是新增一处启发式。</li>
+      <li><strong>③ 逐字为默认 + 显式变体</strong>：保留逐字默认值，另开一个字段允许写明理由的变体。</li>
+    </ul>
+    <p class="sub">风险提示：这是唯一直接关联平台处罚的规则，放宽需要你判断。我倾向 ②，但它不该由我单方面决定。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">B</span><span class="title">没有任何「逐片合理偏离」的表达方式</span></div>
+  <div class="body">
+    <div class="lbl">证据</div>
+    <p>全仓搜索 <code>override</code> / <code>waiver</code> / <code>exempt</code>，命中的全是硬编码豁免（书名号引用、ASCII 署名下限）。逐片偏离只有两条路：改共享引擎 + 改测试，或者加进 <code>frozen-films.ts</code>（后者被明确禁止）。</p>
+    <div class="lbl">问题</div>
+    <p><strong>这才是真正损失灵活性的地方。</strong>冻结清单处理的是过去（55 部不改），对未来的"这一部确实该不一样"没有任何词汇。模型的判断无处安放，于是只剩两种结果：要么被规则挡回去，要么有人偷偷改引擎。</p>
+    <div class="lbl">建议</div>
+    <p>加 <code>content.deviations?: { rule: string; why: string }[]</code>：闸门把列出的规则降级为 warn，<code>check --verbose</code> 打印理由，并断言<strong>偏离必须带非空理由</strong>。这样偏离是可见、有成本、留痕的——而不是静默豁免。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p0">C</span><span class="title">场景语法封闭，内容 schema 装不下项目自己选的方向</span></div>
+  <div class="body">
+    <div class="lbl">证据</div>
+    <p><code>ScenePlan.kind</code> 只有 <code>hero | classical | closing</code>，<code>planFilm</code> 是固定三步。18 个内容字段全部贴合「单条目·单味药」。</p>
+    <p>而 SKILL.md 第 86 行自己写着 <code>注释</code> 该承载「历史背景、<strong>版本异文</strong>、术语说明、安全框定」四项——schema 里只有一个 <code>commentary: string</code>。黄芝那部现在就把古病名、方术语义、德行言药、产地出处四件事挤在同一个字符串里。</p>
+    <div class="lbl">问题</div>
+    <p>要加一屏「名字由来」或「注家分歧」，必须同时改 <code>layout.ts</code> + <code>entry-film.tsx</code> + <code>TYPE</code> + 测试。也就是说，<strong>项目一旦真按名物考据的方向走，每一部新形态都要先做一次引擎改造</strong>。这比任何单条规则都更限制灵活性。</p>
+    <div class="lbl">建议</div>
+    <p>给 <code>FilmContent</code> 加 <code>sections?: { kind; label; text }[]</code>，让 <code>planFilm</code> 把它展开成额外的古典屏。这是让"内容数据化"真正兑现的一步。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">D</span><span class="title">原文不能切分，今译可以</span></div>
+  <div class="body">
+    <div class="lbl">证据</div>
+    <p>只有 <code>splitTranslation()</code>。<code>content.original</code> 在 <code>layout.ts</code> 里只出现两次，都是整块塞进第一个古典屏。</p>
+    <div class="lbl">问题</div>
+    <p>长条目（下经多长条）的原文只能靠"删到放得下"，而它的今译却能跨三屏。这是历史遗留的不对称，不是规则——没有任何产品理由说原文不该切分。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p1">E</span><span class="title">重复扫描用「书名号 + 卷篇部」当"引用"的替身</span></div>
+  <div class="body">
+    <div class="lbl">证据</div>
+    <p><code>isAllowedRepeat = text.includes("古籍内容展示，不构成诊疗建议") || (text.includes("《") &amp;&amp; /[卷篇部]/.test(text))</code></p>
+    <div class="lbl">问题</div>
+    <p>它编码的是"那 55 部恰好印了什么"，不是"什么算必需署名"。重复出现的摄影师署名、或没有卷次的方剂组成引用会被误判；反过来 <code>《》</code> 包起来的正文会被放过。目前的语料恰好让这个替身够用。</p>
+  </div>
+</div>
+
+<div class="item">
+  <div class="head"><span class="tag p2">F</span><span class="title">时长上限 24 秒（这条不是过拟合，但要知道代价）</span></div>
+  <div class="body">
+    <div class="lbl">说明</div>
+    <p><code>ALLOWED_DURATIONS = [360, 450, 540, 630, 720]</code>，SKILL.md 与代码完全一致，是<strong>有意的产品决定</strong>而非漂移——所以我把它列为取舍，不是缺陷。</p>
+    <div class="lbl">代价</div>
+    <p>它同时关掉了"更长、更收藏向"的形态。如果策略往那边走，这个常量必须跟着走；它不会自己放宽。</p>
+  </div>
+</div>
+
+<h2><span class="num">KEEP</span>没有过拟合、应当保留的部分</h2>
+<p>避免把好约束一起改松。以下都是刻意的设计，核对后认为站得住：</p>
+<table>
+  <tr><th>约束</th><th>为什么不是过拟合</th></tr>
+  <tr><td class="k">冻结清单 55 个文件名</td><td>刻意的棘轮：只减不增，且有测试断言它不腐烂。它管的是过去，不是未来。</td></tr>
+  <tr><td class="k">禁用疗效词表</td><td>平台风险，不是对语料的拟合。账号已经因此被限流一次。</td></tr>
+  <tr><td class="k">免责声明 / 真实授权配图 / 不代码绘制</td><td>产品身份与合规底线，与"当前 55 部长什么样"无关。</td></tr>
+  <tr><td class="k">几何不变量（间距 50px、不重叠、不溢出）</td><td>断言的是几何事实。原先是靠人眼在每一部上重新满足的。</td></tr>
+  <tr><td class="k">阅读预算 15 字/秒</td><td>量化了"观众读不读得完"，与内容无关。旧片的 31 字/秒正是因为当时只检查了几何。</td></tr>
+  <tr><td class="k">draft 状态</td><td>严格更弱的状态（渲染不出来），不是绕过闸门的后门。</td></tr>
+  <tr><td class="k">测试断言不变量而非内容</td><td>25 条布局测试基本都是性质断言。抽查未发现"锁死某段文案"的写法（除上面已修的那处）。</td></tr>
+</table>
+
+<h2><span class="num">TAX</span>灵活性税的来源</h2>
+<p>测试 2121 行守 3529 行实现，测试:实现 ≈ 0.60。这个比例本身不算异常，问题在于<strong>改共享引擎的成本 = 改引擎 + 改测试 + 重渲染验证</strong>。</p>
+<p>所以真正的杠杆不是删规则，而是 <strong>C（给内容 schema 一个扩展点）</strong> 和 <strong>B（给偏离一个留痕的地方）</strong>：前者让新形态不必每次动引擎，后者让模型的判断有地方落。这两项做完，"过拟合"就不再等于"没法表达"。</p>
+
+<footer>
+  核对范围：<code>src/layout.ts</code>、<code>src/entry-film.tsx</code>、<code>scripts/lib/*.ts</code>、<code>scripts/*.mjs</code>、<code>tests/*</code>。<br>
+  本轮改动后：155 测试通过 / lint 干净 / <code>npm run check</code> 1 renderable + 55 frozen / <code>Composition.tsx</code> 与 <code>progress.json</code> 零漂移。
+</footer>
+
+</div>
+</body>
+</html>

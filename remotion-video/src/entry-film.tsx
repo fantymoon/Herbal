@@ -2,7 +2,7 @@ import { Img, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
 import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
-import { planFilm, type Block, type FilmContent } from "./layout";
+import { planFilm, sealGlyph, type Block, type FilmContent } from "./layout";
 
 // Data-driven renderer for new films.
 //
@@ -270,12 +270,13 @@ const BlockView: React.FC<{
   }
 };
 
-const SceneView: React.FC<{ blocks: Block[]; frame: number; accent: string; photoFile: string }> = ({
-  blocks,
-  frame,
-  accent,
-  photoFile,
-}) => (
+const SceneView: React.FC<{
+  blocks: Block[];
+  frame: number;
+  accent: string;
+  photoFile: string;
+  mode: FilmContent["mode"];
+}> = ({ blocks, frame, accent, photoFile, mode }) => (
   <>
     {blocks.map((block, index) => (
       <BlockView
@@ -292,7 +293,9 @@ const SceneView: React.FC<{ blocks: Block[]; frame: number; accent: string; phot
     ))}
     {blocks.some((b) => b.kind === "heroTitle") ? (
       <div style={{ position: "absolute", right: 74, top: 72, opacity: fade(frame, 16, 44) }}>
-        <Seal text="药" size={104} glyphScale={0.55} rotation={-5} />
+        {/* SKILL.md § Input And Mode: the seal is 药 for a single herb and 方 for a
+            formula, so it is read from `mode` rather than hardcoded. */}
+        <Seal text={sealGlyph(mode)} size={104} glyphScale={0.55} rotation={-5} />
       </div>
     ) : null}
   </>
@@ -307,6 +310,7 @@ export const EntryFilm: React.FC<{ content: FilmContent }> = ({ content }) => {
         frame={frame}
         accent={content.accent}
         photoFile={content.photo.file}
+        mode={content.mode}
       />
     );
     return Scene;
