@@ -79,6 +79,13 @@ export default {
     "附∶诸药制使": "appendix, not a drug entry: the 畏恶七情 table, not a 本草经 条",
   },
 
+  // Names a platform's copy may use for an entry, when it differs from the source
+  // heading. `npm run stats` matches an export row to a film by the entry name in the
+  // platform's own text, and a one-character heading is too short to match on safely.
+  titleAliases: {
+    黄: ["黄耆"],
+  },
+
   // Films whose source entry needs a note in the ledger.
   notes: {
     菟丝子: "no 篇名 heading in the txt; described inline between 术 and 牛膝",

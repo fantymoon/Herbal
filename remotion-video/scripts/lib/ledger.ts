@@ -10,6 +10,7 @@
 // back from the platform (发布状态, 数据回填).
 import type { FilmContent } from "../../src/layout.ts";
 import { toKebab } from "./film-files.ts";
+import { mergeStatsSection, statsHeader, STATS_PREAMBLE } from "./stats-import.ts";
 
 /** `HuangzhiFirstFilm` → `huangzhi-first-film`, matching the content module and film. */
 export const ledgerFileName = (content: FilmContent): string => `${toKebab(content.id)}.md`;
@@ -111,25 +112,23 @@ const renderField = (label: LedgerField, value: string | string[]): string => {
 
 const STATS_HEADING = "## 数据回填";
 
-const DEFAULT_STATS = `${STATS_HEADING}
-
-平台不提供开放接口，数据来自创作者中心导出，每周回填一次。
-表头固定，行按日期追加。
-
-| 日期 | 平台 | 播放 | 完播率 | 点赞 | 评论 | 分享 | 涨粉 | 主要来源 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-`;
+const DEFAULT_STATS = [STATS_HEADING, "", STATS_PREAMBLE, "", ...statsHeader(), ""].join("\n");
 
 /**
- * The stats block is appended to by hand or by the importer, so it is carried over
- * verbatim. Rebuilding it from the template would silently delete every recorded week.
+ * The stats block is appended to by the importer, so its rows are carried over
+ * verbatim. Rebuilding them from the template would silently delete every recorded
+ * week.
+ *
+ * The header is not data: it is the schema, and it follows `STATS_COLUMNS`. An older
+ * ledger whose header names columns the platforms never export is normalised here
+ * rather than left to drift.
  */
 const statsSection = (existing: string | null): string => {
   const at = existing?.indexOf(STATS_HEADING) ?? -1;
   if (existing === null || at === -1) {
     return DEFAULT_STATS;
   }
-  return `${existing.slice(at).trimEnd()}\n`;
+  return mergeStatsSection(existing.slice(at), []);
 };
 
 /**

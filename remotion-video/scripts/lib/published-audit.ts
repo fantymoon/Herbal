@@ -44,6 +44,25 @@ export type FilmAudit = {
    */
   zhuzhi: boolean;
   frozen: boolean;
+  /** The date the ledger records for each platform, or null when it records none. */
+  douyin: string | null;
+  channels: string | null;
+};
+
+/**
+ * Which platforms a film is live on, read off its ledger.
+ *
+ * This is the column the disposition list could not fill when it was first written: the
+ * 55 masters shipped before ledgers existed, so "which ones are still public on the
+ * account that pushed back" had no answer. `npm run stats` now writes that ledger from
+ * the platform export, so the answer exists and belongs in the same table.
+ */
+export const readPlatformStatus = (
+  ledger: string | null,
+): Pick<FilmAudit, "douyin" | "channels"> => {
+  const dateFor = (label: string): string | null =>
+    ledger?.match(new RegExp(`^- ${label}：已发布 (\\d{4}-\\d{2}-\\d{2})`, "m"))?.[1] ?? null;
+  return { douyin: dateFor("抖音"), channels: dateFor("视频号") };
 };
 
 const toKebab = (file: string): string => file.replace(/\.tsx$/, "");
@@ -109,6 +128,7 @@ export const auditFilm = (
   source: string,
   content: FilmContent | null,
   frozen: boolean,
+  ledger: string | null = null,
 ): FilmAudit => {
   const measured = content
     ? auditDataDriven(content)
@@ -127,6 +147,7 @@ export const auditFilm = (
     banned: BANNED_THERAPEUTIC_WORDS.filter((word) => prose.includes(word)),
     zhuzhi: prose.includes("主治"),
     frozen,
+    ...readPlatformStatus(ledger),
   };
 };
 
@@ -185,14 +206,16 @@ export const formatAuditMarkdown = (
 ): string[] => {
   const sorted = [...rows].sort((a, b) => b.worstRate - a.worstRate);
   const lines = [
-    "| 影片 | 条目 | 时长 | 中屏字/秒 | 主治 | 帧定 | 注释 | 处置 |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| 影片 | 条目 | 时长 | 中屏字/秒 | 主治 | 帧定 | 注释 | 平台 | 处置 |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   ];
+  const on = (date: string | null): string => (date ? date.slice(5) : "—");
   for (const row of sorted) {
     lines.push(
       `| \`${row.kebab}\` | ${names.get(row.kebab) ?? "—"} | ${(row.duration / 30).toFixed(0)}s ` +
         `| ${round(row.worstRate)} | ${row.zhuzhi ? "有" : "无"} | ${row.historicalFrame ? "有" : "无"} ` +
-        `| ${row.historicalNote ? "有" : "无"} | ${dispositionOf(row)} |`,
+        `| ${row.historicalNote ? "有" : "无"} | 抖${on(row.douyin)} / 视${on(row.channels)} ` +
+        `| ${dispositionOf(row)} |`,
     );
   }
   return lines;

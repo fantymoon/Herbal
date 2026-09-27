@@ -6,6 +6,7 @@ import {
   dispositionOf,
   formatAuditMarkdown,
   formatAuditTable,
+  readPlatformStatus,
   summarizeAudit,
 } from "../scripts/lib/published-audit.ts";
 import { content as huangzhi } from "../src/films/huangzhi-first-film.ts";
@@ -125,4 +126,22 @@ test("the summary counts each gap rather than naming films", () => {
   assert.ok(summary.includes("1 still say 主治"));
   assert.ok(summary.includes("Disposition from reading load alone: 0 重制, 0 观察, 2 留"));
   assert.ok(summary.includes("0 contain a banned modern efficacy word"));
+});
+
+test("the audit reads which platforms a film is live on from its ledger", () => {
+  const ledger = [
+    "- 抖音：已发布 2026-08-14",
+    "- 视频号：已发布 2026-08-14",
+    "## 数据回填",
+    "",
+    "| 日期 | 平台 |",
+    "| --- | --- |",
+  ].join("\n");
+  assert.deepEqual(readPlatformStatus(ledger), { douyin: "2026-08-14", channels: "2026-08-14" });
+  // 未发布 and a ledger that does not exist both mean "no date recorded".
+  assert.deepEqual(readPlatformStatus("- 抖音：未发布\n- 视频号：未发布"), {
+    douyin: null,
+    channels: null,
+  });
+  assert.deepEqual(readPlatformStatus(null), { douyin: null, channels: null });
 });

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { isFrozen } from "../scripts/lib/frozen-films.ts";
 import { readFilmId } from "../scripts/lib/film-files.ts";
 import { readLedgerField, renderLedger } from "../scripts/lib/ledger.ts";
+import { STATS_COLUMNS } from "../scripts/lib/stats-import.ts";
 import type { FilmContent } from "../src/layout.ts";
 
 const finishedDir = new URL("../src/finished/", import.meta.url);
@@ -29,7 +30,7 @@ const REQUIRED_LEDGER_FIELDS = [
 // creator-centre export and get merged into this fixed header.
 const REQUIRED_STATS_HEADERS = [
   "## 数据回填",
-  "| 日期 | 平台 | 播放 | 完播率 | 点赞 | 评论 | 分享 | 涨粉 | 主要来源 |",
+  `| ${STATS_COLUMNS.join(" | ")} |`,
 ];
 
 const newFilms = fs

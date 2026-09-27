@@ -44,7 +44,9 @@ const rows = [];
 for (const file of fs.readdirSync(finishedDir).filter((f) => f.endsWith(".tsx")).sort()) {
   const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
   const { content } = await loadContent(source, filmsDir);
-  rows.push(auditFilm(file, source, content, isFrozen(file)));
+  const ledgerPath = path.join(repo, "upload", `${file.replace(/\.tsx$/, "")}.md`);
+  const ledger = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : null;
+  rows.push(auditFilm(file, source, content, isFrozen(file), ledger));
 }
 
 const worstFirst = [...rows].sort((a, b) => b.worstRate - a.worstRate);
