@@ -179,6 +179,9 @@
     <p>要加一屏「名字由来」或「注家分歧」，必须同时改 <code>layout.ts</code> + <code>entry-film.tsx</code> + <code>TYPE</code> + 测试。也就是说，<strong>项目一旦真按名物考据的方向走，每一部新形态都要先做一次引擎改造</strong>。这比任何单条规则都更限制灵活性。</p>
     <div class="lbl">建议</div>
     <p>给 <code>FilmContent</code> 加 <code>sections?: { kind; label; text }[]</code>，让 <code>planFilm</code> 把它展开成额外的古典屏。这是让"内容数据化"真正兑现的一步。</p>
+    <div class="lbl">但要看清 C 不解决什么</div>
+    <p>C 解决的是<strong>形状</strong>，不是<strong>容量</strong>。总容量 = 阅读预算 15 字/秒 × 时长，分屏只是切法——加屏不增加能装多少字。所以 C 做完，丹雄鸡那 137 字<strong>照样放不下</strong>；而且加屏本身还要时间（每屏 ≥120 帧，第 6 屏至少要把片子推到 840 帧以上，同样撞 B 那面墙）。</p>
+    <p>这也是我先前把 B、C 并列成"两个杠杆"时不准确的地方：<strong>B 才是动容量的那个</strong>，C 动的是形状。按语料的紧迫程度，B 更靠前。</p>
   </div>
 </div>
 
@@ -227,7 +230,8 @@
 
 <h2><span class="num">TAX</span>灵活性税的来源</h2>
 <p>测试 2121 行守 3529 行实现，测试:实现 ≈ 0.60。这个比例本身不算异常，问题在于<strong>改共享引擎的成本 = 改引擎 + 改测试 + 重渲染验证</strong>。</p>
-<p>所以真正的杠杆不是删规则，而是 <strong>C（给内容 schema 一个扩展点）</strong> 和 <strong>B（给偏离一个留痕的地方）</strong>：前者让新形态不必每次动引擎，后者让模型的判断有地方落。这两项做完，"过拟合"就不再等于"没法表达"。</p>
+<p>所以真正的杠杆不是删规则，而是 <strong>B（让容量按片可放，并给偏离一个留痕的地方）</strong> 和 <strong>C（给内容 schema 一个扩展点）</strong>：前者决定"长条目还能不能做"，后者决定"新形态要不要每次动引擎"。两项做完，"过拟合"就不再等于"没法表达"。</p>
+<p>按实测的紧迫程度排序：<strong>B &gt; C</strong>。B 那条线（约 78 字原文）现在就在切语料，9 条已经过不去；C 是形态问题，下一部要做的紫芝仍在现有形状内，可以等一个真实的新形态出现再动。</p>
 
 <footer>
   核对范围：<code>src/layout.ts</code>、<code>src/entry-film.tsx</code>、<code>scripts/lib/*.ts</code>、<code>scripts/*.mjs</code>、<code>tests/*</code>。<br>
