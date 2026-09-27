@@ -10,7 +10,9 @@ import {
   checkNewFilm,
   checkPlan,
   formatViolations,
+  hardViolations,
   isDraft,
+  isWaived,
   unfinishedFields,
   type Violation,
 } from "../scripts/lib/compliance.ts";
@@ -125,6 +127,85 @@ test("a rejected note names the part of the frame it is missing", () => {
   const detail =
     checkContent(broken, knownPhotos).find((v) => v.rule === "commentary")?.detail ?? "";
   assert.match(detail, /denial/, `detail should say what is missing, got: ${detail}`);
+});
+
+// ---- Declared deviations: budget rules are negotiable, safety rules are not ----
+//
+// The gate does two jobs. One is safety — a banned claim, the historical frame, the
+// disclaimer — and no reason makes those acceptable. The other is budget, and a film
+// that outgrows it should be able to say so in writing instead of being impossible to
+// make. These tests pin both halves: the reason is what buys the waiver, and the
+// waiver reaches nothing else.
+
+/** 今译 long enough that the 720-frame cap cannot carry it, but 810 can. */
+const LONG_TRANSLATION = "古籍称其主大风与头眩痛，即风邪所致的眩晕头痛，恶风风邪，指怕风、易受风邪。".repeat(
+  7,
+);
+const longContent: FilmContent = { ...compliantContent, translation: LONG_TRANSLATION };
+const longReason = "经文 90 字，今译 259 字，24 秒读不完；本片放到 27 秒";
+
+test("a film that outgrows the house cap fails until it records a reason", () => {
+  assert.equal(
+    planFilm(longContent).durationInFrames,
+    720,
+    "without a declaration the planner stays on the standard ladder",
+  );
+  assert.ok(
+    rulesOf(checkNewFilm(compliantFilmFile, longContent, knownPhotos)).includes("reading-budget"),
+    "expected the reading budget to fail",
+  );
+});
+
+test("a declared duration deviation buys the longer rung, and is still reported", () => {
+  const declared: FilmContent = {
+    ...longContent,
+    deviations: [{ rule: "duration", why: longReason }],
+  };
+  assert.equal(planFilm(declared).durationInFrames, 810, "the extended rung is reachable");
+  const findings = checkNewFilm(compliantFilmFile, declared, knownPhotos);
+  assert.deepEqual(hardViolations(findings), [], formatViolations("fixture", findings));
+  // The finding is marked, not deleted. A waiver nobody can see is the failure mode
+  // this whole mechanism exists to avoid.
+  const duration = findings.find((v) => v.rule === "duration");
+  assert.ok(duration, "the longer runtime must still be reported");
+  assert.equal(duration.waived, longReason);
+});
+
+test("a deviation may not name a safety rule", () => {
+  for (const rule of ["banned-wording", "commentary", "efficacy-frame", "disclaimer", "photo"]) {
+    const declared: FilmContent = { ...compliantContent, deviations: [{ rule, why: "试一试" }] };
+    assert.ok(
+      rulesOf(checkNewFilm(compliantFilmFile, declared, knownPhotos)).includes("deviation"),
+      `"${rule}" is a safety rule and should not be waivable`,
+    );
+  }
+});
+
+test("a deviation with no reason waives nothing", () => {
+  const blank: FilmContent = {
+    ...longContent,
+    deviations: [{ rule: "reading-budget", why: "   " }],
+  };
+  const findings = checkNewFilm(compliantFilmFile, blank, knownPhotos);
+  assert.ok(rulesOf(findings).includes("deviation"), "a blank reason is itself a violation");
+  assert.deepEqual(findings.filter(isWaived), [], "nothing may be waived without a reason");
+  assert.ok(
+    rulesOf(hardViolations(findings)).includes("reading-budget"),
+    "the budget violation has to survive",
+  );
+});
+
+test("naming a safety rule does not soften the finding it names", () => {
+  // Belt and braces on top of the rule-name check: the waiver is applied by rule name,
+  // so a name that is not negotiable cannot mark anything, however it got declared.
+  const broken: FilmContent = {
+    ...compliantContent,
+    translation: "主治心腹五种邪气，增益脾气。",
+    deviations: [{ rule: "banned-wording", why: "想保留原文用字" }],
+  };
+  const hard = rulesOf(hardViolations(checkNewFilm(compliantFilmFile, broken, knownPhotos)));
+  assert.ok(hard.includes("banned-wording"), "a banned claim is not a budget question");
+  assert.ok(hard.includes("efficacy-frame"), "and neither is the historical frame");
 });
 
 test("the gate rejects an unfinished scaffold", () => {
@@ -294,7 +375,16 @@ for (const file of newFilms) {
       return;
     }
     const violations = checkNewFilm(source, content, knownPhotos);
-    assert.deepEqual(violations, [], formatViolations(file, violations));
+    // A declared budget deviation is allowed to appear here, marked. A safety violation
+    // never can, because `applyDeviations` only marks rules in `NEGOTIABLE_RULES`.
+    const hard = hardViolations(violations);
+    assert.deepEqual(hard, [], formatViolations(file, hard));
+    for (const waived of violations.filter(isWaived)) {
+      assert.ok(
+        waived.waived && waived.waived.trim().length > 0,
+        `${file} waives [${waived.rule}] without a reason`,
+      );
+    }
   });
 }
 

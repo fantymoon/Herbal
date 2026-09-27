@@ -17,7 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkNewFilm, isDraft } from "./lib/compliance.ts";
+import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
@@ -134,11 +134,18 @@ for (const file of all) {
   }
 
   const filmId = readFilmId(source);
+  // A declared budget deviation renders and reports, but does not fail. `npm run check`
+  // prints the film's own reason on the waived line, so "27s because the 经文 is 90
+  // characters" is visible in the gate's output instead of being inferred from absence.
+  const waived = violations.filter(isWaived);
   const problems = [
-    ...violations.map((v) => `${file}: [${v.rule}] ${v.detail}`),
+    ...hardViolations(violations).map((v) => `${file}: [${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(file, repeats)] : []),
     ...(filmId ? ledgerProblems(kebab, filmId) : [`${file}: declares no exported film component`]),
   ];
+  for (const w of waived) {
+    console.log(`     waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
+  }
   if (problems.length > 0) {
     failures.push(...problems);
     console.error(`FAIL ${file}`);
@@ -146,7 +153,7 @@ for (const file of all) {
       console.error(`  ${p}`);
     }
   } else {
-    console.log(`ok   ${file}`);
+    console.log(`ok   ${file}${waived.length > 0 ? ` (${waived.length} declared deviation(s))` : ""}`);
   }
   if (args.verbose) {
     for (const line of readingReport(content)) {

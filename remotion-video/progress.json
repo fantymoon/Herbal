@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 55,
+  "doneCount": 59,
   "entries": [
     {
       "name": "丹沙",
@@ -326,7 +326,8 @@
     {
       "name": "紫芝",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "ZizhiFirstFilm"
     },
     {
       "name": "卷柏",
@@ -336,7 +337,8 @@
     {
       "name": "蓝实",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "LanshiFirstFilm"
     },
     {
       "name": "芎",
@@ -378,7 +380,8 @@
     {
       "name": "防风",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "FangfengFirstFilm"
     },
     {
       "name": "蒲黄",
@@ -413,7 +416,8 @@
     {
       "name": "决明子",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "JuemingziFirstFilm"
     },
     {
       "name": "丹参",

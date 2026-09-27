@@ -13,7 +13,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkNewFilm, isDraft } from "./lib/compliance.ts";
+import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
@@ -77,10 +77,17 @@ if (isFrozen(`${kebab}.tsx`)) {
 } else {
   const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(filmSource);
+  const findings = checkNewFilm(filmSource, content, knownPhotos);
+  // A declared budget deviation is reported and rendered, not blocked. Everything else
+  // stops the render — the gate's whole value is that a rendered film is a compliant one.
+  const waivers = findings.filter(isWaived);
   const problems = [
-    ...checkNewFilm(filmSource, content, knownPhotos).map((v) => `[${v.rule}] ${v.detail}`),
+    ...hardViolations(findings).map((v) => `[${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(`${kebab}.tsx`, repeats)] : []),
   ];
+  for (const w of waivers) {
+    console.log(`pre-flight: waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
+  }
   const filmId = readFilmId(filmSource);
   const ledger = path.join(repo, "upload", `${kebab}.md`);
   if (!filmId) {

@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { defectOf, findEntries, readCorpus } from "./lib/corpus.ts";
 import { toKebab } from "./lib/film-files.ts";
 import { renderLedger } from "./lib/ledger.ts";
 import type { FilmContent } from "../src/layout.ts";
@@ -67,47 +68,52 @@ const latin = typeof args.latin === "string" ? args.latin.toUpperCase() : "TODO 
 const kebab = toKebab(id);
 
 // ---- Read the entry out of the corpus ---------------------------------------
-const sourcePath = path.join(repo, "..", config.source);
-const text = new TextDecoder("gb18030").decode(fs.readFileSync(sourcePath));
-const lines = text.split("\n");
-let volume = null;
-let body: string[] = [];
-let found = false;
-for (let i = 0; i < lines.length; i += 1) {
-  const line = lines[i].trim();
-  const dir = line.match(/^<目录>(.*)$/);
-  if (dir) {
-    volume = dir[1].trim();
-    continue;
-  }
-  const name = line.match(/^<篇名>(.*)$/);
-  if (name) {
-    if (found) {
-      break;
-    }
-    if (name[1].trim() === entry) {
-      found = true;
-    }
-    continue;
-  }
-  if (found && line) {
-    body.push(line);
-  }
+//
+// Through `scripts/lib/corpus.ts`, the same reader `npm run entry` uses. This file used
+// to walk the lines itself and take only the *first* line of the 内容 block, which meant
+// every entry whose 经文 wraps across lines got scaffolded with a truncated `original`:
+// 决明子 came out as "主青盲、…益精光（《太平御览》" — a sentence that reads as if it were
+// complete. The scaffold is a draft, but a draft with a *plausible* wrong 原文 is worse
+// than one with a TODO, because nothing marks it for a second look.
+const entries = findEntries(readCorpus(path.join(repo, "..", config.source)));
+const exact = entries.filter((e) => e.name === entry);
+const near = entries.filter((e) => e.name.includes(entry));
+const found = exact.length > 0 ? exact : near;
+if (found.length === 0) {
+  console.error(`entry "${entry}" has no readable 经文 in ${config.source}`);
+  process.exit(1);
 }
-if (!found) {
-  console.error(`entry "${entry}" has no <篇名> section in ${config.source}`);
+if (found.length > 1) {
+  console.error(
+    `"${entry}" matches ${found.length} entries — be exact: ${found.map((e) => e.name).join(" / ")}`,
+  );
+  process.exit(1);
+}
+const { name: entryName, volume, sutra } = found[0];
+if (entryName !== entry) {
+  console.warn(`note: <篇名> is "${entryName}"; the 经文 below is the evidence for it.`);
+}
+
+// A defective 经文 has nothing correct to put on screen, and guessing the missing
+// character is exactly what `原文照录` forbids. Refuse, and say which entry to use.
+const defect = defectOf(sutra);
+if (defect) {
+  console.error(
+    `${entry}: ${defect}\n` +
+      `  照录会把缺陷带上屏，而「原文照录」不允许改字。\n` +
+      `  换个底本核对，或改用 --entry=<另一条目>。`,
+  );
   process.exit(1);
 }
 
-const contentLine = body.find((l) => l.startsWith("内容：")) ?? "";
-const rest = contentLine.replace(/^内容：/, "").trim();
-const flavorMatch = rest.match(/^(味[^。]*。)/);
+const text = sutra.text;
+const flavorMatch = text.match(/^(味[^。]*。)/);
 const flavor = flavorMatch ? flavorMatch[1] : "";
-const original = flavorMatch ? rest.slice(flavor.length).trim() : rest;
-const aliases = body
-  .filter((l) => l.startsWith("一名"))
-  .map((l) => l.replace(/^一名/, "").replace(/。$/, "").trim())
-  .filter((a) => a.length > 0);
+const original = flavorMatch ? text.slice(flavor.length).trim() : text;
+const aliases = original
+  .split("。")
+  .map((clause) => clause.match(/^一名(.+)$/)?.[1]?.trim())
+  .filter((a): a is string => Boolean(a));
 if (!original) {
   console.error(`could not read a 内容 line for "${entry}"; add it by hand`);
   process.exit(1);

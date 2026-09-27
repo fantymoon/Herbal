@@ -25,8 +25,58 @@ export const SIGN_SIZE = 224;
 export const FPS = 30;
 export const ALLOWED_DURATIONS = [360, 450, 540, 630, 720] as const;
 export type AllowedDuration = (typeof ALLOWED_DURATIONS)[number];
+/**
+ * Rungs above the house cap. Not reachable by arithmetic: `requiredDuration` only
+ * considers them when the content module declares a `duration` deviation, so a film
+ * that outgrows 24 seconds has to say so in writing. See `NEGOTIABLE_RULES`.
+ */
+export const EXTENDED_DURATIONS = [810, 900] as const;
+/** Every rung a plan may legitimately land on, declared or not. */
+export const DURATION_LADDER = [...ALLOWED_DURATIONS, ...EXTENDED_DURATIONS] as const;
+/** Any rung, including the extended ones. What a `FilmPlan` may carry. */
+export type PlannedDuration = (typeof DURATION_LADDER)[number];
+/** The longest film the series makes without a recorded reason: 24 seconds. */
+export const STANDARD_DURATION_CAP = ALLOWED_DURATIONS[ALLOWED_DURATIONS.length - 1];
 /** SKILL.md: at least 4 seconds per scene. */
 export const MIN_SCENE_FRAMES = 120;
+
+/**
+ * A rule this film knowingly breaks, and why it must.
+ *
+ * The gate does two different jobs and they should not be negotiable on the same
+ * terms. One is *safety*: a banned efficacy claim, an unframed 主…… statement, a
+ * missing disclaimer, text running off the canvas. No reason makes those acceptable,
+ * so `deviations` may not name them. The other is *budget*: the film is longer or
+ * denser than the house standard. That is a judgement about this entry's text — the
+ * corpus has entries whose 经文 cannot be read inside 24 seconds, and refusing to
+ * make them is not a compliance decision, it is a scheduling one.
+ *
+ * So a declaration here buys exactly one thing: the named rule's finding is kept but
+ * marked waived, and the film's own reason travels with it into `npm run check` and
+ * the test suite. An unexplained waiver is not a waiver, and `checkDeviations`
+ * rejects both an empty `why` and a `rule` outside this list.
+ */
+export type Deviation = {
+  /** One of `NEGOTIABLE_RULES`. */
+  rule: string;
+  /** The reason. Required, and the reason this field exists at all. */
+  why: string;
+};
+
+/** The only rules `deviations` may name. Everything else is a safety rule. */
+export const NEGOTIABLE_RULES = ["duration", "reading-budget", "pacing"] as const;
+export type NegotiableRule = (typeof NEGOTIABLE_RULES)[number];
+
+export const isNegotiableRule = (rule: string): rule is NegotiableRule =>
+  (NEGOTIABLE_RULES as readonly string[]).includes(rule);
+
+/** Whether this film asked for a rung above `STANDARD_DURATION_CAP`. */
+export const declaresDurationDeviation = (content: FilmContent): boolean =>
+  (content.deviations ?? []).some((d) => d.rule === "duration" && d.why.trim().length > 0);
+
+/** The rungs `requiredDuration` may pick from for this film. */
+export const durationLadder = (content: FilmContent): readonly PlannedDuration[] =>
+  declaresDurationDeviation(content) ? DURATION_LADDER : ALLOWED_DURATIONS;
 
 /**
  * Reading speed ceiling, in Chinese characters per second.
@@ -188,6 +238,11 @@ export type FilmContent = {
   music: string;
   accent: string;
   mode: "single-herb" | "formula";
+  /**
+   * Budget rules this film knowingly breaks, each with its reason. Absent means the
+   * film claims to fit the house standard. See `Deviation`.
+   */
+  deviations?: Deviation[];
 };
 
 export type BlockKind =
@@ -229,7 +284,7 @@ export type ScenePlan = {
 };
 
 export type FilmPlan = {
-  durationInFrames: AllowedDuration;
+  durationInFrames: PlannedDuration;
   /** Scene start frames, ascending; length is scenes.length - 1. */
   breaks: number[];
   scenes: ScenePlan[];
@@ -618,12 +673,17 @@ export const planClosingScene = (content: FilmContent): ScenePlan => {
  * A scene too tall for the canvas cannot be rescued by a longer duration, so
  * findOverflow still reports that separately.
  */
-export const requiredDuration = (scenes: ScenePlan[]): AllowedDuration => {
+export const requiredDuration = (
+  scenes: ScenePlan[],
+  ladder: readonly PlannedDuration[] = ALLOWED_DURATIONS,
+): PlannedDuration => {
   const needed = scenes.reduce(
     (total, scene) => total + Math.max(MIN_SCENE_FRAMES, readingFrames(scene)),
     0,
   );
-  return ALLOWED_DURATIONS.find((d) => d >= needed) ?? ALLOWED_DURATIONS[ALLOWED_DURATIONS.length - 1];
+  // Past the last rung the content simply does not fit. Cap there and let
+  // findReadingProblems report the overload rather than invent a duration.
+  return ladder.find((d) => d >= needed) ?? ladder[ladder.length - 1];
 };
 
 export const planFilm = (content: FilmContent): FilmPlan => {
@@ -631,7 +691,7 @@ export const planFilm = (content: FilmContent): FilmPlan => {
   const classical = planClassicalScenes(content);
   const closing = planClosingScene(content);
   const scenes = [hero, ...classical, closing];
-  const durationInFrames = requiredDuration(scenes);
+  const durationInFrames = requiredDuration(scenes, durationLadder(content));
 
   // Give every scene the time it needs to be read, then share the leftover in the same
   // proportion. The old split handed the hero and the closing the same weight as the
@@ -702,7 +762,8 @@ export const findOverflow = (scenes: ScenePlan[]): string[] => {
 };
 
 /** Every scene must be long enough to read. */
-export const findPacingProblems = (plan: FilmPlan): string[] => {  const problems: string[] = [];
+export const findPacingProblems = (plan: FilmPlan): string[] => {
+  const problems: string[] = [];
   const bounds = [0, ...plan.breaks, plan.durationInFrames];
   if (plan.breaks.length !== plan.scenes.length - 1) {
     problems.push(`${plan.scenes.length} scenes need ${plan.scenes.length - 1} breaks`);
@@ -713,7 +774,10 @@ export const findPacingProblems = (plan: FilmPlan): string[] => {  const problem
       problems.push(`scene ${i + 1} is ${length} frames, below ${MIN_SCENE_FRAMES}`);
     }
   }
-  if (!ALLOWED_DURATIONS.includes(plan.durationInFrames)) {
+  // Against the full ladder, not the standard one: the plan already encodes whether
+  // this film was allowed a rung above the cap, and `checkPlan` reports that
+  // separately under `duration`. Re-deciding it here would report it twice.
+  if (!(DURATION_LADDER as readonly number[]).includes(plan.durationInFrames)) {
     problems.push(`duration ${plan.durationInFrames} is not an allowed value`);
   }
   return problems;
