@@ -49,6 +49,7 @@
   .item .tag.p0{background:var(--seal);color:#fff;border-color:var(--seal)}
   .item .tag.p1{background:var(--gold);color:#fff;border-color:var(--gold)}
   .item .tag.p2{background:#5d6b52;color:#fff;border-color:#5d6b52}
+  .item .tag.done{background:var(--ok);color:#fff;border-color:var(--ok)}
   .item .title{font-weight:700;font-size:16px}
   .item .body{padding:6px 20px 18px}
   .lbl{font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--seal);margin:14px 0 2px}
@@ -88,7 +89,8 @@
   <div class="card"><div class="n">14</div><div class="t">允许字号</div><div class="d">封闭集合 <code>TYPE</code>：加新元素必须改共享引擎</div></div>
 </div>
 
-<h2><span class="num">FIXED</span>本轮修掉的三处</h2>
+<h2><span class="num">FIXED</span>本轮修掉的两处</h2>
+<p>这两处不需要判断——它们只是代码没跟上自己的文档。第三处（历史框定句）需要你的决定，已按你选的「语义检查」实施，记在下面的 DECISIONS 里。</p>
 
 <div class="item">
   <div class="head"><span class="tag p0">已修</span><span class="title">闸门校验了一个对输出毫无影响的字段</span></div>
@@ -115,24 +117,31 @@
   </div>
 </div>
 
-<h2><span class="num">DECISIONS</span>待你决策的六处</h2>
-<p>下面这些我没有单方面改。前四项是真的过拟合，后两项是有意的取舍但值得知道代价。</p>
+<h2><span class="num">DECISIONS</span>待你决策的五处（A 已定并实施）</h2>
+<p>A 你已定为「改成语义检查」，下面记了实现与验收。其余五项我没有单方面改——B、C、D、E 是真的过拟合，F 是有意的取舍但值得知道代价。</p>
 
 <div class="item">
-  <div class="head"><span class="tag p0">A</span><span class="title">历史框定句要求逐字相等，而规范自己说的是「诸如」</span></div>
+  <div class="head"><span class="tag done">A</span><span class="title">历史框定句要求逐字相等，而规范自己说的是「诸如」</span></div>
   <div class="body">
     <div class="lbl">证据</div>
-    <p><code>compliance.ts:93</code> 是 <code>content.historicalNote !== REQUIRED_NOTE</code>（字节相等）。<br>
+    <p><code>compliance.ts:93</code> 原是 <code>content.historicalNote !== REQUIRED_NOTE</code>（字节相等）。<br>
     SKILL.md 第 87 行：「<code>注释</code> 块必须带一行<strong>诸如</strong> <code>此为汉代认知，未经现代科学证实</code>」。</p>
     <div class="lbl">问题</div>
     <p>代码比规范严，而且严得没有产品理由——它固化的只是当初写下的那一串字。任何更好的措辞（「此为汉代说法，现代科学未予验证」）都会 FAIL，而且改措辞要改代码，规则不可证伪。</p>
-    <div class="lbl">三个选项</div>
+    <div class="lbl">决定：② 改成语义检查（已实施）</div>
+    <p>规则改为 <code>hasHistoricalFrame</code>（<code>src/layout.ts</code>），检查这句话<strong>做了三件事</strong>，不检查它等于哪串字：</p>
     <ul>
-      <li><strong>① 文档向代码看齐</strong>：把 SKILL.md 的「诸如」改成「必须逐字」。零风险，但正式放弃措辞灵活性。</li>
-      <li><strong>② 改成语义检查</strong>：要求同时点出时代（汉 / 古代 / 古籍）与否认现代验证（未…现代科学），用小的正则族。保留规范本意，代价是新增一处启发式。</li>
-      <li><strong>③ 逐字为默认 + 显式变体</strong>：保留逐字默认值，另开一个字段允许写明理由的变体。</li>
+      <li><strong>点名时代或古籍出处</strong>——汉代 / 古人 / 古代 / 古籍 / 历代 / 旧说 / 本草经 ……</li>
+      <li><strong>否认现代知识已证实它</strong>——否定词须在同一小句内够到「证实 / 验证 / 证明 / 确证 / 确认」。这条带窗口约束：<code>未经现代科学证实</code> 过，<code>未经删改，现代科学证实</code> 不过（否则「未」和「证实」分属两件事，等于没否认）。</li>
+      <li><strong>点名一个现代知识领域</strong>——现代 / 科学 / 医学 / 实验 / 临床 / 药理。单写「未经证实」不够：平台投诉针对的正是现代科学口径的功效主张，这句话要正面回应它。</li>
     </ul>
-    <p class="sub">风险提示：这是唯一直接关联平台处罚的规则，放宽需要你判断。我倾向 ②，但它不该由我单方面决定。</p>
+    <p>三个要件各自具名（<code>FRAME_PARTS</code>），所以失败信息会说<strong>缺哪一项</strong>，而不是只说「不匹配」。<code>REQUIRED_NOTE</code> 保留为推荐措辞，不再是唯一答案。</p>
+    <div class="lbl">验收</div>
+    <p>测试先反向证明能失败：空串 / 无否认 / 无时代 / 无现代领域 / 以及上面那个「假否认」窗口用例，五个都必须 FAIL；
+    另加一条正向用例证明灵活性真的到手——<code>《神农本草经》所载，现代医学尚未证实</code>、<code>古人旧说，未获现代实验确证</code> 均通过。
+    157 测试全绿、lint 干净、<code>check</code> 仍 1 renderable + 55 frozen。</p>
+    <p class="sub">零漂移：<code>npm run audit -- --markdown</code> 重跑后 <code>_frozen-disposition.md</code> 逐字节未变，仍是「55 部无历史框定句」。
+    <code>published-audit.ts</code> <strong>刻意保持严格字面匹配</strong>——它问的是事实（那部已发布影片当时有没有那行字），放宽会把从没展示过免责声明的旧片记成「有」。</p>
   </div>
 </div>
 
@@ -210,7 +219,7 @@
 
 <footer>
   核对范围：<code>src/layout.ts</code>、<code>src/entry-film.tsx</code>、<code>scripts/lib/*.ts</code>、<code>scripts/*.mjs</code>、<code>tests/*</code>。<br>
-  本轮改动后：155 测试通过 / lint 干净 / <code>npm run check</code> 1 renderable + 55 frozen / <code>Composition.tsx</code> 与 <code>progress.json</code> 零漂移。
+  本轮改动后：157 测试通过 / lint 干净 / <code>npm run check</code> 1 renderable + 55 frozen / <code>Composition.tsx</code>、<code>progress.json</code>、<code>_frozen-disposition.md</code> 三者零漂移。
 </footer>
 
 </div>

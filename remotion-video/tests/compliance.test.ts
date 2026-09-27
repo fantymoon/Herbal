@@ -85,9 +85,46 @@ test("the gate rejects a translation that drops the historical frame", () => {
   assert.ok(rules.includes("banned-wording"), "expected banned-wording for 主治");
 });
 
-test("the gate rejects a missing or reworded historical note", () => {
-  const broken = { ...compliantContent, historicalNote: "古代说法，仅供参考" };
-  assert.ok(rulesOf(checkContent(broken, knownPhotos)).includes("commentary"));
+test("the gate rejects a note that does not frame the claim as history", () => {
+  // Each sample drops exactly one of the three requirements, plus the empty case. The
+  // list is the point: a note fails for what it fails to *say*, not for differing from
+  // REQUIRED_NOTE — which is what the old `!==` check enforced.
+  const samples: [string, string][] = [
+    ["", "empty"],
+    ["古代说法，仅供参考", "no denial"],
+    ["此为汉代认知", "no denial"],
+    ["未经现代科学证实", "no era"],
+    ["此为汉代旧说，未经证实", "no modern-knowledge domain"],
+    ["此为汉代旧说，未经删改，现代科学证实", "the negation denies nothing"],
+  ];
+  for (const [historicalNote, why] of samples) {
+    const broken = { ...compliantContent, historicalNote };
+    assert.ok(
+      rulesOf(checkContent(broken, knownPhotos)).includes("commentary"),
+      `expected commentary to fail: ${why} (${JSON.stringify(historicalNote)})`,
+    );
+  }
+});
+
+test("the gate accepts any wording that frames the claim as history", () => {
+  // The flexibility the semantic rule buys: none of these is REQUIRED_NOTE, and all of
+  // them say the same three things, so all of them pass.
+  const variants = [
+    "此为汉代认知，未经现代科学证实",
+    "《神农本草经》所载，现代医学尚未证实",
+    "古人旧说，未获现代实验确证",
+  ];
+  for (const historicalNote of variants) {
+    const content = { ...compliantContent, historicalNote };
+    assert.deepEqual(rulesOf(checkContent(content, knownPhotos)), [], historicalNote);
+  }
+});
+
+test("a rejected note names the part of the frame it is missing", () => {
+  const broken = { ...compliantContent, historicalNote: "此为汉代认知" };
+  const detail =
+    checkContent(broken, knownPhotos).find((v) => v.rule === "commentary")?.detail ?? "";
+  assert.match(detail, /denial/, `detail should say what is missing, got: ${detail}`);
 });
 
 test("the gate rejects an unfinished scaffold", () => {

@@ -56,9 +56,42 @@ export const MAX_CLASSICAL_SCENES = 3;
  */
 /** Mandated opening for a 今译 clause that translates a 主…… efficacy statement. */
 export const REQUIRED_FRAME = "古籍称其主";
-/** Mandated 注释 line framing efficacy as historical belief. Verbatim from SKILL.md. */
+/** The wording SKILL.md offers as an example. A 注释 line need not use it verbatim. */
 export const REQUIRED_NOTE = "此为汉代认知，未经现代科学证实";
 export const DISCLAIMER_TEXT = "古籍内容展示，不构成诊疗建议";
+
+/**
+ * What a 注释 line has to *do* to frame a claim as history — three requirements, none of
+ * them a fixed string. SKILL.md says "诸如 `此为汉代认知，未经现代科学证实`", and the
+ * checker used to enforce that example with `!==`, so any better sentence failed the gate
+ * and improving the wording meant editing code. These are the properties that sentence
+ * actually has:
+ *
+ *   1. names an era or a classical source — the claim is attributed, not asserted;
+ *   2. denies that modern knowledge has settled it — the claim stays out of the present
+ *      tense. The negation must reach the denial verb inside one clause, so
+ *      "未经现代科学证实" passes while "未经删改，现代科学证实" does not;
+ *   3. names a modern-knowledge domain. A bare "未经证实" is not enough: the platform's
+ *      objection was specifically to modern-science claims, so the note has to answer it.
+ */
+const HISTORICAL_ERA = /(汉代|汉时|汉朝|古人|古代|古籍|古书|历代|旧说|旧时|先秦|本草经)/;
+const MODERN_DENIAL =
+  /未(?:经|获|被|得到|见|由|能|予|受)?[^。；;，,、！？!?\n]{0,10}(?:证实|验证|证明|确证|确认|检验)/;
+const MODERN_DOMAIN = /(现代|科学|医学|实验|临床|药理)/;
+
+/** The three parts of the historical frame, in the order `hasHistoricalFrame` tests them. */
+export const FRAME_PARTS = [
+  { name: "an era or classical source", test: HISTORICAL_ERA },
+  { name: "a denial that modern knowledge confirms it", test: MODERN_DENIAL },
+  { name: "a modern-knowledge domain", test: MODERN_DOMAIN },
+] as const;
+
+export const hasHistoricalFrame = (note: string): boolean =>
+  FRAME_PARTS.every((part) => part.test.test(note));
+
+/** Which parts of the frame a 注释 line is missing, for an actionable gate message. */
+export const missingFrameParts = (note: string): string[] =>
+  FRAME_PARTS.filter((part) => !part.test.test(note)).map((part) => part.name);
 
 /**
  * The seal glyph for a mode. SKILL.md § Input And Mode: one large character, `药` for a

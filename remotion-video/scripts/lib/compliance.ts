@@ -16,11 +16,12 @@ import {
   findOverlaps,
   findPacingProblems,
   findReadingProblems,
+  missingFrameParts,
   planFilm,
   type FilmContent,
 } from "../../src/layout.ts";
 
-export { REQUIRED_FRAME, REQUIRED_NOTE, DISCLAIMER_TEXT };
+export { REQUIRED_FRAME, REQUIRED_NOTE, DISCLAIMER_TEXT, missingFrameParts };
 
 export type Violation = { rule: string; detail: string };
 
@@ -90,8 +91,18 @@ export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Vi
   if (!content.commentary || content.commentary.trim().length === 0) {
     add("commentary", "commentary is empty");
   }
-  if (content.historicalNote !== REQUIRED_NOTE) {
-    add("commentary", `historicalNote must be exactly "${REQUIRED_NOTE}"`);
+  if (content.historicalNote.trim().length === 0) {
+    add("commentary", "historicalNote is empty");
+  } else {
+    // Three semantic requirements, not a fixed string — see `hasHistoricalFrame`.
+    const missing = missingFrameParts(content.historicalNote);
+    if (missing.length > 0) {
+      add(
+        "commentary",
+        `historicalNote does not frame the claim as history — missing ${missing.join("; ")}. ` +
+          `For example: "${REQUIRED_NOTE}"`,
+      );
+    }
   }
 
   // A 主…… efficacy statement must be translated behind the historical frame.

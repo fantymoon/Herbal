@@ -142,6 +142,10 @@ export const auditFilm = (
     duration: measured.duration,
     screens: measured.screens,
     worstRate: measured.screens.reduce((worst, s) => Math.max(worst, s.rate), 0),
+    // Deliberately strict, unlike the gate: `checkContent` accepts any note that meets
+    // the three semantic requirements, but the question here is the factual one — did
+    // this *published* film carry the sentence the rules named at the time. A loose
+    // match would credit an old film with a disclaimer it never showed.
     historicalFrame: prose.includes(REQUIRED_FRAME),
     historicalNote: prose.includes(REQUIRED_NOTE),
     banned: BANNED_THERAPEUTIC_WORDS.filter((word) => prose.includes(word)),
