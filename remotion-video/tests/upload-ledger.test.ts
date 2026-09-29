@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { isFrozen } from "../scripts/lib/frozen-films.ts";
 import { readFilmId } from "../scripts/lib/film-files.ts";
-import { readLedgerField, renderLedger } from "../scripts/lib/ledger.ts";
+import {
+  checkLedgerCopy,
+  checkTitleFrames,
+  readLedgerField,
+  renderLedger,
+  titleFrame,
+} from "../scripts/lib/ledger.ts";
 import { STATS_COLUMNS } from "../scripts/lib/stats-import.ts";
 import type { FilmContent } from "../src/layout.ts";
 
@@ -108,7 +114,7 @@ test("the ledger derives its copy fields from the content module", () => {
   assert.equal(readLedgerField(text, "标题").length <= 18, true, "the title must stay short");
   assert.equal(readLedgerField(text, "描述").includes("《神农本草经》卷一·上经载黄芝。"), true);
   assert.equal(readLedgerField(text, "描述").includes("古籍内容展示，不构成诊疗建议。"), true);
-  assert.equal(readLedgerField(text, "话题").includes("#黄芝"), true);
+  assert.equal(readLedgerField(text, "话题").includes("#古籍"), true);
   assert.equal(readLedgerField(text, "BGM").includes("music/yuzhou-changwan.mp3"), true);
 });
 
@@ -121,7 +127,7 @@ test("re-rendering a ledger never overwrites what a human filled in", () => {
   assert.equal(readLedgerField(again, "抖音"), "已发布 2026-09-25");
   // ...and the fields that were still blank get filled on the way through.
   assert.equal(readLedgerField(again, "视频号"), "未发布");
-  assert.equal(readLedgerField(again, "话题").includes("#黄芝"), true);
+  assert.equal(readLedgerField(again, "话题").includes("#古籍"), true);
 });
 
 test("a multi-line field survives being read back and rendered again", () => {
@@ -142,4 +148,103 @@ test("the stats table survives a re-render", () => {
   );
   const again = renderLedger(sample, withData);
   assert.equal(again.includes("| 09-25 | 抖音 | 12000 | 31% | 480 | 62 | 21 | 35 | 推荐 |"), true);
+});
+
+// ---- The copy the platforms actually read ------------------------------------
+//
+// The rules scanned the film's frames and left the title and description alone. The
+// channel's penalty was applied against copy, not against a frame, so a compliant
+// film could still ship with a title that promised a cure.
+
+test("the generated copy passes the ledger check", () => {
+  assert.deepEqual(checkLedgerCopy(renderLedger(sample, null)), []);
+});
+
+test("a banned claim in the title is reported, with the field that carries it", () => {
+  const text = renderLedger(sample, null).replace(
+    /- 标题：.*/,
+    "- 标题：黄芝能治疗失眠吗",
+  );
+  const problems = checkLedgerCopy(text);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /^标题 contains "治疗"/);
+});
+
+test("a banned claim in the description is reported too, not just the title", () => {
+  const text = renderLedger(sample, null).replace(
+    "  古籍内容展示，不构成诊疗建议。",
+    "  古籍内容展示，不构成诊疗建议。\n  本品可根治久咳。",
+  );
+  const problems = checkLedgerCopy(text);
+  assert.equal(problems.length, 1, problems.join("; "));
+  assert.match(problems[0], /^描述 contains "根治"/);
+});
+
+test("copy that reads as health advice is off-position, even with no banned word", () => {
+  // The account is 文化 / 读书 now. "养生" is not a banned therapeutic claim in the
+  // sense the penalty used, but it is exactly the framing the channel moved away from.
+  const text = renderLedger(sample, null).replace(/- 话题：.*/, "- 话题：#黄芝 #养生 #中草药");
+  const problems = checkLedgerCopy(text);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /话题 contains "养生"/);
+  assert.match(problems[0], /文化\/读书/);
+});
+
+test("an empty field is not reported twice", () => {
+  // `ledgerProblems` already fails a ledger with a missing field; the copy check
+  // staying quiet here is what keeps one gap from producing two failures.
+  const text = renderLedger(sample, null).replace(/- 话题：.*\n/, "- 话题：\n");
+  assert.deepEqual(checkLedgerCopy(text), []);
+});
+
+test("every new film's upload copy passes the ledger check", () => {
+  for (const file of newFilms) {
+    const kebab = file.replace(/\.tsx$/, "");
+    const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
+    assert.deepEqual(checkLedgerCopy(copy), [], `upload/${kebab}.md`);
+  }
+});
+
+// ---- Titles are read as a set, because "reused" is a property of the set ---------
+
+test("the entry name and the quoted term are the slots, not the frame", () => {
+  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」是什么");
+  assert.equal(
+    titleFrame("防风：古书说的「大风」是什么"),
+    titleFrame("决明子：古书说的「青盲」是什么"),
+  );
+  assert.notEqual(titleFrame("紫芝：六芝之一，形如桑"), titleFrame("决明子：又名草决明"));
+});
+
+test("two titles that are one sentence with the noun swapped are reported", () => {
+  const problems = checkTitleFrames([
+    { film: "fangfeng-first-film.tsx", title: "防风：古书说的「大风」是什么" },
+    { film: "juemingzi-first-film.tsx", title: "决明子：古书说的「青盲」是什么" },
+  ]);
+  assert.equal(problems.length, 1, problems.join("; "));
+  assert.match(problems[0], /^fangfeng-first-film\.tsx \/ juemingzi-first-film\.tsx share one title frame/);
+});
+
+test("titles that ask different things are not reported", () => {
+  assert.deepEqual(
+    checkTitleFrames([
+      { film: "a.tsx", title: "紫芝：六芝之一，形如桑" },
+      { film: "b.tsx", title: "蓝实：古书里的染青草" },
+      { film: "c.tsx", title: "防风：古书说的「大风」是什么" },
+      { film: "d.tsx", title: "决明子：又名草决明" },
+    ]),
+    [],
+  );
+});
+
+test("no two new films reuse one title frame", () => {
+  // The rule is in SKILL.md, and it is the easiest one to break without noticing:
+  // every title looks fine on its own. This is the version of the check that runs
+  // over the copy actually about to be posted.
+  const lines = newFilms.map((file) => {
+    const kebab = file.replace(/\.tsx$/, "");
+    const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
+    return { film: file, title: readLedgerField(copy, "标题") };
+  });
+  assert.deepEqual(checkTitleFrames(lines), []);
 });

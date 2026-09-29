@@ -9,6 +9,7 @@
 // left blank on purpose — the ones only a human knows (备注) and the ones that come
 // back from the platform (发布状态, 数据回填).
 import type { FilmContent } from "../../src/layout.ts";
+import { BANNED_THERAPEUTIC_WORDS } from "./compliance.ts";
 import { toKebab } from "./film-files.ts";
 import { mergeStatsSection, statsHeader, STATS_PREAMBLE } from "./stats-import.ts";
 
@@ -66,8 +67,17 @@ export const draftDescription = (content: FilmContent): string[] => {
   ];
 };
 
+/**
+ * The tag set follows the account's positioning, which is 文化 / 读书 — 「每日读一段本草
+ * 古籍」 — not 养生.
+ *
+ * Tags are not decoration: they decide which audience the platform shows the video to,
+ * and `#中草药` pulls in the audience the recommendation penalty was about. Leaving the
+ * old set as the default is a trap for the next film — the same trap the copy scan
+ * closes, one field over.
+ */
 export const draftTags = (content: FilmContent): string =>
-  `#${content.entry} #${content.book} #本草 #中草药`;
+  `#${content.book} #本草 #古籍 #传统文化 #读书`;
 
 export const LEDGER_FIELDS = [
   "film",
@@ -103,6 +113,72 @@ export const readLedgerField = (text: string, label: LedgerField): string => {
     block.push(lines[i].trim());
   }
   return inline || block.join("\n");
+};
+
+/**
+ * Positioning words the account moved away from after the platform's recommendation
+ * penalty. The brief is 文化 / 读书 — "每日读一段本草古籍" — so copy that reads as
+ * health advice is the failure mode this guards, and it is the copy the platform reads
+ * first, not the frames.
+ */
+export const OFF_POSITION_WORDS = ["养生", "调理", "健康科普", "疗效", "药效", "治病", "防病"] as const;
+
+/**
+ * The one place a banned claim can still reach a platform.
+ *
+ * `checkContent` scans what the film *says* on screen. Nothing scanned the upload copy,
+ * and the copy is the part the platforms act on — the channel's penalty was applied
+ * against a title and a description, not against a frame. So 标题 / 描述 / 话题 get the
+ * same treatment as the film's prose, plus the positioning words above.
+ *
+ * A field that is absent or empty is not reported here: `ledgerProblems` already fails
+ * a ledger with a missing field, and saying so twice helps nobody.
+ */
+export const checkLedgerCopy = (text: string): string[] => {
+  const problems: string[] = [];
+  for (const field of ["标题", "描述", "话题"] as const) {
+    const value = readLedgerField(text, field);
+    if (value === "") continue;
+    for (const word of BANNED_THERAPEUTIC_WORDS) {
+      if (value.includes(word)) problems.push(`${field} contains "${word}"`);
+    }
+    if (value.includes("主治")) problems.push(`${field} contains "主治"`);
+    for (const word of OFF_POSITION_WORDS) {
+      if (value.includes(word)) {
+        problems.push(`${field} contains "${word}" — the account is positioned as 文化/读书`);
+      }
+    }
+  }
+  return problems;
+};
+
+/**
+ * The title frame, with the parts that are supposed to vary taken out.
+ *
+ * SKILL.md forbids reusing one fixed question template across videos: "古书说的「X」
+ * 是什么" asked four times is one template, not four titles. The entry name and any
+ * quoted term are the slots — what survives is the frame, and two films sharing a
+ * frame is the thing the rule is about.
+ */
+export const titleFrame = (title: string): string =>
+  title
+    .replace(/^[^：:]*[：:]/, "")
+    .replace(/「[^」]*」/g, "「」")
+    .replace(/[，,。.？?！!、\s]/g, "");
+
+export type TitleLine = { film: string; title: string };
+
+/** Films whose titles are the same sentence with the noun swapped. */
+export const checkTitleFrames = (titles: readonly TitleLine[]): string[] => {
+  const byFrame = new Map<string, string[]>();
+  for (const { film, title } of titles) {
+    const frame = titleFrame(title);
+    if (frame === "") continue;
+    byFrame.set(frame, [...(byFrame.get(frame) ?? []), film]);
+  }
+  return [...byFrame.entries()]
+    .filter(([, films]) => films.length > 1)
+    .map(([frame, films]) => `${films.join(" / ")} share one title frame: "${frame}"`);
 };
 
 const renderField = (label: LedgerField, value: string | string[]): string => {

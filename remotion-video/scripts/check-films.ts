@@ -21,6 +21,8 @@ import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/complianc
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
+import { checkLedgerCopy, checkTitleFrames, readLedgerField } from "./lib/ledger.ts";
+import type { TitleLine } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { formatReadingBudget, planFilm, visibleText } from "../src/layout.ts";
 import type { FilmContent } from "../src/layout.ts";
@@ -63,7 +65,21 @@ const ledgerProblems = (kebab: string, filmId: string): string[] => {
   if (!copy.includes(filmId)) {
     problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
   }
+  // The copy is what the platforms read, and it used to be the only prose in the repo
+  // that no rule looked at.
+  for (const problem of checkLedgerCopy(copy)) {
+    problems.push(`upload/${kebab}.md ${problem}`);
+  }
   return problems;
+};
+
+/** The 标题 a film is going to be posted under, or "" if it has no ledger yet. */
+const ledgerTitle = (kebab: string): string => {
+  const ledger = path.join(uploadDir, `${kebab}.md`);
+  if (!fs.existsSync(ledger)) {
+    return "";
+  }
+  return readLedgerField(fs.readFileSync(ledger, "utf8"), "标题");
 };
 
 let all = fs
@@ -80,6 +96,7 @@ if (typeof args.film === "string") {
 }
 
 const failures: string[] = [];
+const titleLines: TitleLine[] = [];
 let frozenCount = 0;
 let draftCount = 0;
 
@@ -134,6 +151,10 @@ for (const file of all) {
   }
 
   const filmId = readFilmId(source);
+  const title = ledgerTitle(kebab);
+  if (title !== "") {
+    titleLines.push({ film: file, title });
+  }
   // A declared budget deviation renders and reports, but does not fail. `npm run check`
   // prints the film's own reason on the waived line, so "27s because the 经文 is 90
   // characters" is visible in the gate's output instead of being inferred from absence.
@@ -159,6 +180,18 @@ for (const file of all) {
     for (const line of readingReport(content)) {
       console.log(line);
     }
+  }
+}
+
+// One rule cannot be checked a film at a time: SKILL.md forbids reusing one fixed
+// question template across videos, and "reused" is a property of the set. It is also
+// the rule that is easiest to break without noticing — each title looks fine alone.
+const frameProblems = checkTitleFrames(titleLines);
+if (frameProblems.length > 0) {
+  failures.push(...frameProblems);
+  console.error("\nFAIL title frames reused across films");
+  for (const p of frameProblems) {
+    console.error(`  ${p}`);
   }
 }
 

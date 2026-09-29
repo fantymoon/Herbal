@@ -17,6 +17,7 @@ import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/complianc
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
+import { checkLedgerCopy } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
 import { planFilm, visibleText } from "../src/layout.ts";
@@ -94,8 +95,17 @@ if (isFrozen(`${kebab}.tsx`)) {
     problems.push("declares no exported film component");
   } else if (!fs.existsSync(ledger)) {
     problems.push(`upload/${kebab}.md is missing`);
-  } else if (!fs.readFileSync(ledger, "utf8").includes(filmId)) {
-    problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
+  } else {
+    const copy = fs.readFileSync(ledger, "utf8");
+    if (!copy.includes(filmId)) {
+      problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
+    }
+    // The upload copy is the only prose the platforms act on. Scanning the frames
+    // while leaving the title and description unchecked is how a compliant film
+    // ships with a non-compliant title.
+    for (const problem of checkLedgerCopy(copy)) {
+      problems.push(`upload/${kebab}.md ${problem}`);
+    }
   }
   if (problems.length > 0) {
     console.error(`pre-flight FAILED for ${kebab}.tsx:`);
