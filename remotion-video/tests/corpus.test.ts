@@ -134,10 +134,12 @@ test("a 产地 the 经文 does not name is reported", () => {
     "产地「池泽」 is not named by the 经文, which says 生平泽",
   ]);
   assert.deepEqual(originProblems([{ label: "产地", value: "平泽" }], dazao), []);
-  // A place the 经文 merely omits is not this rule's business: 别录 names 黄芝's 嵩山.
-  assert.deepEqual(originProblems([{ label: "产地", value: "嵩山" }], byName("黄芝").sutra), [
-    "产地「嵩山」 is not named by the 经文, which names no 生境",
-  ]);
+  // A 经文 that names no 生境 cannot be contradicted by one. 黄芝's 经文 stops at 一名金芝,
+  // and 别录 supplies 嵩山; the film's 注释 is what has to say where it came from. Flagging
+  // this made the sourced case indistinguishable from the careless one — 大枣's 池泽 is a
+  // real defect precisely because its own 经文 argues for 平泽.
+  assert.deepEqual(originProblems([{ label: "产地", value: "嵩山" }], byName("黄芝").sutra), []);
+  assert.deepEqual(originProblems([{ label: "产地", value: "华山" }], byName("黄芝").sutra), []);
   // No 产地 fact, nothing to check — and the other facts are not places.
   assert.deepEqual(originProblems([{ label: "部类", value: "果部" }], dazao), []);
   assert.deepEqual(originProblems([], dazao), []);
@@ -156,14 +158,18 @@ test("no film on screen names a 产地 its 经文 does not", () => {
     if (!entry || !origin) continue;
     const sutra = entries.find((e) => e.name === entry)?.sutra;
     if (!sutra || sutra.text.includes(origin)) continue;
-    stray.push(`${file}: ${entry} 产地=${origin}, 经文 says 生${originOf(sutra) ?? "—"}`);
+    // Only a named 生境 can be contradicted. Where the 经文 is silent there is nothing to
+    // quote and so nothing to argue with, and the check does not apply.
+    const named = originOf(sutra);
+    if (!named) continue;
+    stray.push(`${file}: ${entry} 产地=${origin}, 经文 says 生${named}`);
   }
-  // 蓝实, 紫芝 and 黄芝 are live on 抖音 and carry this defect. A published master cannot
-  // be recalled, so they are named here instead of quietly rewritten — the same reason
+  // 蓝实 and 紫芝 are live on 抖音 and carry this defect. A published master cannot be
+  // recalled, so they are named here instead of quietly rewritten — the same reason
   // `FROZEN_FILMS` is a snapshot. This list may only shrink, and it shrinks by retiring a
   // film and redoing it, never by editing the expectation to match a new film.
+  // 黄芝 came off it when the rule stopped treating a silent 经文 as a contradiction.
   assert.deepEqual(stray, [
-    "huangzhi-first-film.ts: 黄芝 产地=嵩山, 经文 says 生—",
     "lanshi-first-film.ts: 蓝实 产地=河内, 经文 says 生平泽",
     "zizhi-first-film.ts: 紫芝 产地=高夏, 经文 says 生山谷",
   ]);

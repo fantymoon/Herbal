@@ -5,7 +5,6 @@
 
 - film: `LuoshiFirstFilm`
 - 标题：络石：爬在石头上的风车茉莉
-- 钩子：爬在石头上的风车茉莉
 - 描述：
   《神农本草经》卷一·上经载络石。
   本片照录原文，逐句今译，附注释说明，并配络石照片（Trachelospermum jasminoides）。

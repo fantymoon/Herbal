@@ -5,7 +5,6 @@
 
 - film: `HuangzhiFirstFilm`
 - 标题：黄芝：古书说它黄如紫金
-- 钩子：
 - 描述：
   《神农本草经》卷一·上经载黄芝。
   本片照录原文，逐句今译，附注释说明，并配灵芝照片（Ganoderma curtisii）。

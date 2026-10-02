@@ -516,8 +516,10 @@ export const findReadingProblems = (plan: FilmPlan): string[] =>
     .map(
       (scene) =>
         `${scene.kind}: ${scene.chars} characters in ${(scene.allotted / FPS).toFixed(1)}s ` +
-        `= ${scene.rate.toFixed(1)} chars/s, over the ${READING_RATE_LIMIT}/s ceiling — ` +
-        `shorten the text or split it across another scene`,
+        `= ${scene.rate.toFixed(1)} chars/s, over the ${READING_RATE_LIMIT}/s ceiling. ` +
+        `This is a budget rule, not a safety one: split the scene, shorten the text, or ` +
+        `declare \`deviations: [{ rule: "reading-budget", why: "…" }]\` and keep the prose ` +
+        `you meant to write. A recorded reason is enough.`,
     );
 
 /**

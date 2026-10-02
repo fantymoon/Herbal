@@ -133,11 +133,14 @@ export const originProblems = (
   const origin = facts.find((f) => f.label === "产地");
   if (!origin || sutra.text.includes(origin.value)) return [];
   const named = originOf(sutra);
-  return [
-    `产地「${origin.value}」 is not named by the 经文, which ${
-      named ? `says 生${named}` : "names no 生境"
-    }`,
-  ];
+  // A 经文 that names no habitat cannot be contradicted by one. The rule exists to stop
+  // a film printing a place the source argues against — 大枣 shipped 池泽 while its own
+  // 经文 said 生平泽, and 池泽 is the *next* entry's habitat. Where the source is silent
+  // the value has to come from elsewhere (usually 别录), and the 注释 is what has to say
+  // where. Flagging that as a defect made the honest case indistinguishable from the
+  // careless one, which is how 黄芝's 嵩山 sat on the list.
+  if (!named) return [];
+  return [`产地「${origin.value}」 is not named by the 经文, which says 生${named}`];
 };
 
 /** Every `<篇名>` in the file that carries a readable 经文, in original order. */

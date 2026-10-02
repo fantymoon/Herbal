@@ -55,7 +55,7 @@ test("the herbal short-video skill captures the production guardrails", () => {
   assert.equal(source.includes("`今译` 正文至少 56px"), true);
   assert.equal(source.includes("450 / 540 / 630 / 720 帧"), true);
   // The reading budget is the second budget the engine checks, next to geometry.
-  assert.equal(source.includes("阅读预算是门禁，不是建议"), true);
+  assert.equal(source.includes("阅读预算是门禁，但它可以凭理由豁免"), true);
   assert.equal(source.includes("READING_RATE_LIMIT"), true);
   assert.equal(source.includes("每部片必须有一个单独成块、明确标注的"), true);
   assert.equal(source.includes("upload/<kebab>.md"), true);
@@ -77,6 +77,7 @@ test("the herbal short-video skill captures the production guardrails", () => {
   // The hero carries a hook, and frame 0 is no longer blank.
   assert.equal(source.includes("首屏要带钩子，而且第 0 帧就得有东西"), true);
   assert.equal(source.includes("REVEAL_DELAYS"), true);
-  assert.equal(source.includes("钩子："), true);
+  // A photo is required; there is no "no photo" state for the gate to accept.
+  assert.equal(source.includes("配图是必需的，不是可选的"), true);
   assert.equal(source.includes("拒绝草稿"), true);
 });

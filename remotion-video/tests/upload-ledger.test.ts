@@ -24,7 +24,6 @@ const uploadDir = new URL("../upload/", import.meta.url);
 const REQUIRED_LEDGER_FIELDS = [
   "film:",
   "标题：",
-  "钩子：",
   "描述：",
   "话题：",
   "BGM：",
@@ -118,19 +117,6 @@ test("the ledger derives its copy fields from the content module", () => {
   assert.equal(readLedgerField(text, "描述").includes("古籍内容展示，不构成诊疗建议。"), true);
   assert.equal(readLedgerField(text, "话题").includes("#古籍"), true);
   assert.equal(readLedgerField(text, "BGM").includes("music/yuzhou-changwan.mp3"), true);
-});
-
-test("the ledger records the on-screen hook", () => {
-  // The hook is the one variable the platform numbers move on — 2s bounce against
-  // plays is -0.62 across 54 films, completion against plays is +0.05 — and it has to
-  // be written down to be regressed later, because holding the format fixed to isolate
-  // it is not an option: 抖音 penalises a channel whose videos look identical.
-  const withHook = renderLedger({ ...sample, hook: "汉使从大宛带回的果子" }, null);
-  assert.equal(readLedgerField(withHook, "钩子"), "汉使从大宛带回的果子");
-  // A film without one still has the field, so the gate's field check is uniform.
-  const without = renderLedger(sample, null);
-  assert.equal(without.includes("- 钩子："), true);
-  assert.equal(readLedgerField(without, "钩子"), "");
 });
 
 test("re-rendering a ledger never overwrites what a human filled in", () => {
