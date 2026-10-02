@@ -74,5 +74,9 @@ test("the herbal short-video skill captures the production guardrails", () => {
   // The first frame is a blank card: the reveal starts at frame 2, so a platform that
   // defaults the cover to frame 0 gets an empty one.
   assert.equal(source.includes("第 0 帧是一张空白纸"), true);
+  // The hero carries a hook, and frame 0 is no longer blank.
+  assert.equal(source.includes("首屏要带钩子，而且第 0 帧就得有东西"), true);
+  assert.equal(source.includes("REVEAL_DELAYS"), true);
+  assert.equal(source.includes("钩子："), true);
   assert.equal(source.includes("拒绝草稿"), true);
 });

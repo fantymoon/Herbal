@@ -69,7 +69,7 @@ const ledgerProblems = (kebab: string, filmId: string, music: string): string[] 
   }
   const copy = fs.readFileSync(ledger, "utf8");
   const problems: string[] = [];
-  for (const field of ["film:", "标题：", "描述：", "话题：", "BGM：", "抖音：", "视频号："]) {
+  for (const field of ["film:", "标题：", "钩子：", "描述：", "话题：", "BGM：", "抖音：", "视频号："]) {
     if (!copy.includes(field)) {
       problems.push(`upload/${kebab}.md is missing "${field}"`);
     }

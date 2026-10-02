@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ALLOWED_DURATIONS,
+  revealDelay,
   CANVAS,
   MIN_CLEARANCE,
   MIN_SCENE_FRAMES,
@@ -366,6 +367,42 @@ test("a continuation screen does not label a block it does not have", () => {
       "the 今译 it does carry is labelled",
     );
   }
+});
+
+test("the hero carries a hook, and its name is on screen from the first frame", () => {
+  // Two things the platform numbers pointed at. The hero was a reference card — name,
+  // pinyin, division, photo, flavour — with nothing that gives a viewer who does not
+  // already know the herb a reason to stay; the hook lived only in the upload copy,
+  // while the 2s bounce the platform reports is measured on the video. And the reveal
+  // started at frame 2, so frame 0 — which is what the platform shows as the cover —
+  // was a blank card.
+  const plan = planFilm({ ...base, hook: "古书说它黄如紫金" });
+  const hero = plan.scenes[0];
+  const kinds = hero.blocks.map((b) => b.kind);
+  assert.equal(hero.blocks.find((b) => b.kind === "hook")?.text, "古书说它黄如紫金");
+  assert.ok(
+    kinds.indexOf("hook") > kinds.indexOf("heroVolume"),
+    "the hook belongs under the title block",
+  );
+  assert.ok(
+    kinds.indexOf("hook") < kinds.indexOf("photo"),
+    "and above the photo, where the opening seconds will actually show it",
+  );
+  assert.deepEqual(findOverflow(plan.scenes), []);
+  assert.deepEqual(findOverlaps(plan.scenes), []);
+
+  // Frame 0 is already the title card...
+  assert.ok(revealDelay("hero", 0) <= -26, "the hero's first block starts fully on");
+  assert.ok(revealDelay("hero", 1) <= -26, "so does the name");
+  // ...while a later scene still opens from a blank card, which is what makes a cut
+  // read as a cut rather than as more of the same screen.
+  assert.ok(revealDelay("scene", 0) >= 0);
+});
+
+test("a film with no hook still plans", () => {
+  const plan = planFilm(base);
+  assert.equal(plan.scenes[0].blocks.some((b) => b.kind === "hook"), false);
+  assert.deepEqual(findOverflow(plan.scenes), []);
 });
 
 test("the closing scene carries the disclaimer", () => {

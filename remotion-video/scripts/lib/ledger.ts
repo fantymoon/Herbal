@@ -82,6 +82,7 @@ export const draftTags = (content: FilmContent): string =>
 export const LEDGER_FIELDS = [
   "film",
   "标题",
+  "钩子",
   "描述",
   "话题",
   "BGM",
@@ -265,6 +266,11 @@ export const renderLedger = (
   const fields: string[] = [
     renderField("film", keep("film", `\`${content.id}\``)),
     renderField("标题", keep("标题", draftTitle(content))),
+    // The on-screen hook, recorded because it is the one variable the platform data
+    // moves on: 2s bounce against plays is -0.62 across 54 films, while completion
+    // against plays is +0.05. Keeping the line here is what makes it possible to
+    // regress the next batch without holding the format fixed — which 抖音 penalises.
+    renderField("钩子", keep("钩子", content.hook ?? "")),
     renderField("描述", keep("描述", draftDescription(content))),
     renderField("话题", keep("话题", draftTags(content))),
     renderField(

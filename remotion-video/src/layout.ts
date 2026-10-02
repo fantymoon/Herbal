@@ -166,6 +166,8 @@ export const TYPE = {
   heroTitle: 150,
   heroLatin: 36,
   heroVolume: 34,
+  /** The hero's hook line: larger than the bibliographic lines, smaller than the name. */
+  hook: 46,
   sectionLabel: 24,
   /** The hero's 原文 excerpt, set larger than the classical scene's copy. */
   heroClassical: 80,
@@ -225,6 +227,18 @@ export type FilmContent = {
   division: string | null;
   flavor: string;
   alias: string | null;
+  /**
+   * One short line that gives a viewer who does not know the entry a reason to stay,
+   * rendered on the hero under the title block.
+   *
+   * Why it exists: the hero was a reference card — book, name, pinyin, division, photo,
+   * flavour line — and every one of those describes the entry to someone who already
+   * cares about it. The hook was carried entirely by the upload copy, but the platform's
+   * 2-second bounce is measured on the *video*, so the opening seconds were spent on a
+   * name the viewer had no reason to recognise. Write it as the on-screen twin of the
+   * title's tail; do not spend it on a fact the closing scene already states.
+   */
+  hook?: string;
   /** Faithful original excerpt. */
   original: string;
   /** Clause-by-clause modern translation. Must open with 古籍称其主 for 主…… clauses. */
@@ -250,6 +264,7 @@ export type BlockKind =
   | "heroTitle"
   | "heroLatin"
   | "heroVolume"
+  | "hook"
   | "photo"
   | "classicalLabel"
   | "classical"
@@ -264,6 +279,29 @@ export type BlockKind =
   | "publicationNote"
   | "disclaimer"
   | "sign";
+
+/**
+ * The frame each of a scene's blocks starts appearing on.
+ *
+ * The hero's first two blocks are already fully on when the film starts. The platform
+ * shows frame 0 as the cover, and the previous schedule began at frame 2 — so the cover
+ * was a blank card and the most valuable half-second of the film showed nothing at all.
+ * Later scenes still open from a blank card, which is what makes a cut read as a cut
+ * rather than as more of the same screen.
+ */
+export const REVEAL_DELAYS = {
+  hero: [-26, -26, 0, 4, 8, 12, 16, 20],
+  scene: [2, 6, 10, 14, 18, 22, 26, 30],
+} as const;
+
+/** A negative delay means the block is already at full opacity on the scene's frame 0. */
+export const revealDelay = (scene: "hero" | "scene", index: number): number => {
+  const schedule = REVEAL_DELAYS[scene];
+  if (index < schedule.length) {
+    return schedule[index];
+  }
+  return schedule[schedule.length - 1] + (index - schedule.length + 1) * 4;
+};
 
 export type Block = {
   kind: BlockKind;
@@ -511,6 +549,15 @@ export const planHeroScene = (content: FilmContent): ScenePlan => {
         TYPE.heroVolume,
         Math.ceil(TYPE.heroVolume * SUBTITLE_LINE_HEIGHT),
       ),
+    );
+  }
+  // The hook sits with the title block, above the photo, so the opening seconds show it.
+  // Everything above it — the book, the name, the pinyin, the division — says what the
+  // entry *is*; none of it gives a viewer who does not already know the herb a reason to
+  // stay. See `FilmContent.hook`.
+  if (content.hook) {
+    drafts.push(
+      bodyDraft("hook", content.hook, TYPE.hook, content.hook, SUBTITLE_LINE_HEIGHT),
     );
   }
   drafts.push(

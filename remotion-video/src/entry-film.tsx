@@ -2,7 +2,7 @@ import { Img, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
 import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
-import { planFilm, sealGlyph, type Block, type FilmContent } from "./layout";
+import { planFilm, revealDelay, sealGlyph, type Block, type FilmContent } from "./layout";
 
 // Data-driven renderer for new films.
 //
@@ -192,6 +192,24 @@ const BlockView: React.FC<{
           {block.text}
         </div>
       );
+    case "hook":
+      // The one line on the hero that is not a bibliographic field. A short accent rule
+      // on the left is what stops it reading as another subtitle.
+      return (
+        <div style={{ ...frameStyle, display: "flex", gap: 16 }}>
+          <div style={{ width: 4, backgroundColor: accent, flexShrink: 0 }} />
+          <div
+            style={{
+              color: ink,
+              fontFamily: bodyFont,
+              fontSize: block.fontSize,
+              lineHeight: 1.1,
+            }}
+          >
+            {block.text}
+          </div>
+        </div>
+      );
     case "classical":
       return (
         <div
@@ -276,17 +294,18 @@ const SceneView: React.FC<{
   accent: string;
   photoFile: string;
   mode: FilmContent["mode"];
-}> = ({ blocks, frame, accent, photoFile, mode }) => (
+}> = ({ blocks, frame, accent, photoFile, mode }) => {
+  // The hero opens on its title card; later scenes fade in from a blank one. See
+  // `REVEAL_DELAYS`.
+  const opening = blocks.some((block) => block.kind === "heroTitle") ? "hero" : "scene";
+  return (
   <>
     {blocks.map((block, index) => (
       <BlockView
         key={`${block.kind}-${index}`}
         block={block}
         frame={frame}
-        // Front-loaded stagger: the published films finish revealing by frame ~56 of a
-        // 120-frame scene. A 9-frame step would still be fading in the last block at
-        // frame 95, so most of the scene would read as half-built.
-        delay={2 + index * 4}
+        delay={revealDelay(opening, index)}
         accent={accent}
         photoFile={photoFile}
       />
@@ -299,7 +318,8 @@ const SceneView: React.FC<{
       </div>
     ) : null}
   </>
-);
+  );
+};
 
 export const EntryFilm: React.FC<{ content: FilmContent }> = ({ content }) => {
   const plan = planFilm(content);
