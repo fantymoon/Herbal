@@ -116,6 +116,27 @@ export const readLedgerField = (text: string, label: LedgerField): string => {
 };
 
 /**
+ * The date a ledger records the film going live, or null while it is unpublished.
+ *
+ * `FROZEN_FILMS` is a snapshot of the 55 films that were live on 2026-09-21, and it is a
+ * snapshot because the legacy films have no ledgers to read — there is no other record of
+ * what they carried. Films published since *do* have one, so the gate can ask instead of
+ * guessing, and a film already on a platform cannot be un-published by a gate verdict: the
+ * same reason a frozen film is reported and never failed. 蓝实, 紫芝, 黄芝, 防风 and
+ * 决明子 are live and outside the snapshot; without this they would be judged as new work.
+ *
+ * Only a date counts. A blank `抖音：` means "not yet published", which keeps the default
+ * fail-closed — forgetting to record a date leaves the film gated, not exempt.
+ */
+export const publishedOn = (copy: string): string | null => {
+  for (const platform of ["抖音", "视频号"] as const) {
+    const m = /已发布\s*(\d{4}-\d{2}-\d{2})/.exec(readLedgerField(copy, platform));
+    if (m) return m[1];
+  }
+  return null;
+};
+
+/**
  * Positioning words the account moved away from after the platform's recommendation
  * penalty. The brief is 文化 / 读书 — "每日读一段本草古籍" — so copy that reads as
  * health advice is the failure mode this guards, and it is the copy the platform reads
@@ -159,12 +180,18 @@ export const checkLedgerCopy = (text: string): string[] => {
  * 是什么" asked four times is one template, not four titles. The entry name and any
  * quoted term are the slots — what survives is the frame, and two films sharing a
  * frame is the thing the rule is about.
+ *
+ * The interrogative tail is stripped too. Without that, 「古书说的「青盲」是什么」 and
+ * 「古书说的「厌食」」 compare as different frames because one carries a trailing 是什么
+ * — and they are plainly the same template. Whatever the template is, adding or
+ * dropping a question word does not make it a different one.
  */
 export const titleFrame = (title: string): string =>
   title
     .replace(/^[^：:]*[：:]/, "")
     .replace(/「[^」]*」/g, "「」")
-    .replace(/[，,。.？?！!、\s]/g, "");
+    .replace(/[，,。.？?！!、\s]/g, "")
+    .replace(/(是什么|指什么|为什么|有哪些|是谁|吗|呢)$/, "");
 
 export type TitleLine = { film: string; title: string };
 

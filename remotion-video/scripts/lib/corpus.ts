@@ -103,6 +103,43 @@ export const sutraOf = (body: string): Sutra | null => {
 
 export type Entry = { name: string; volume: string | null; sutra: Sutra };
 
+/**
+ * The 生境 the 经文 names, or null when it names none.
+ *
+ * 神农本草经 closes 278 of its 350 entries with a 生山谷 / 生川泽 / 生平泽 clause, and
+ * that clause is the only place a place-name comes from. Reading it out is what keeps the
+ * 产地 fact a quotation rather than a recollection — 大枣's 经文 says 生平泽, and a
+ * hand-written 产地 said 池泽, which is the 生境 of 藕实茎, the entry next to it.
+ */
+export const originOf = (sutra: Sutra): string | null =>
+  /生([\u4e00-\u9fff]{2,3})。?$/.exec(sutra.text)?.[1] ?? null;
+
+/**
+ * The 产地 shown on screen has to be a place the cited 经文 names.
+ *
+ * `facts` is the one block of on-screen prose that no rule looked at, and it is the only
+ * one written from memory rather than read out of the corpus — the scaffold derives 别名
+ * from the 一名 clause and 篇目位置 from the 目录, but it never derived 产地, so the value
+ * was whatever the author remembered. That is how 大枣 came to say 池泽 while quoting a
+ * text that says 生平泽, on a screen that cites 《神农本草经》· 卷一 · 上经.
+ *
+ * A place the 经文 names is checkable. A place it merely omits is not this rule's business
+ * — 别录 supplies 生境 for the 72 entries that have none, and 黄芝's 嵩山 is one of those.
+ */
+export const originProblems = (
+  facts: readonly { label: string; value: string }[],
+  sutra: Sutra,
+): string[] => {
+  const origin = facts.find((f) => f.label === "产地");
+  if (!origin || sutra.text.includes(origin.value)) return [];
+  const named = originOf(sutra);
+  return [
+    `产地「${origin.value}」 is not named by the 经文, which ${
+      named ? `says 生${named}` : "names no 生境"
+    }`,
+  ];
+};
+
 /** Every `<篇名>` in the file that carries a readable 经文, in original order. */
 export const findEntries = (lines: string[]): Entry[] => {
   const entries: Entry[] = [];

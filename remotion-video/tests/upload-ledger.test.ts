@@ -6,6 +6,7 @@ import { readFilmId } from "../scripts/lib/film-files.ts";
 import {
   checkLedgerCopy,
   checkTitleFrames,
+  publishedOn,
   readLedgerField,
   renderLedger,
   titleFrame,
@@ -208,7 +209,7 @@ test("every new film's upload copy passes the ledger check", () => {
 // ---- Titles are read as a set, because "reused" is a property of the set ---------
 
 test("the entry name and the quoted term are the slots, not the frame", () => {
-  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」是什么");
+  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」");
   assert.equal(
     titleFrame("防风：古书说的「大风」是什么"),
     titleFrame("决明子：古书说的「青盲」是什么"),
@@ -223,6 +224,14 @@ test("two titles that are one sentence with the noun swapped are reported", () =
   ]);
   assert.equal(problems.length, 1, problems.join("; "));
   assert.match(problems[0], /^fangfeng-first-film\.tsx \/ juemingzi-first-film\.tsx share one title frame/);
+});
+
+test("a question word does not make two titles different templates", () => {
+  // 「古书说的「青盲」是什么」 and 「古书说的「厌食」」 are the same template with the noun
+  // swapped; the trailing 是什么 is not a second idea. Without stripping it the frame
+  // comparison passes them, and the rule SKILL.md states goes unenforced.
+  assert.equal(titleFrame("防风：古书说的「大风」是什么"), titleFrame("龙眼：古书说的「厌食」"));
+  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」");
 });
 
 test("titles that ask different things are not reported", () => {
@@ -247,4 +256,56 @@ test("no two new films reuse one title frame", () => {
     return { film: file, title: readLedgerField(copy, "标题") };
   });
   assert.deepEqual(checkTitleFrames(lines), []);
+});
+
+// ---- A film that is live is not re-judged ---------------------------------------
+
+test("the publish date is read from the ledger, and a blank field is not a date", () => {
+  const ledger = (douyin: string, channels: string) =>
+    [
+      "## 上传台账",
+      "",
+      "- film: `XFirstFilm`",
+      "- 标题：X：试一下",
+      "- 描述：",
+      "  第一行。",
+      "- 话题：#本草",
+      "- BGM：母版配 `music/yuzhou-changwan.mp3`",
+      `- 抖音：${douyin}`,
+      `- 视频号：${channels}`,
+    ].join("\n");
+  assert.equal(publishedOn(ledger("已发布 2026-09-30", "未发布")), "2026-09-30");
+  assert.equal(publishedOn(ledger("未发布", "已发布 2026-08-14")), "2026-08-14");
+  // Both platforms, and 抖音 wins the tie only because it is read first — either date
+  // answers the same question, and the gate only needs to know that there is one.
+  assert.equal(publishedOn(ledger("已发布 2026-09-30", "已发布 2026-08-14")), "2026-09-30");
+  // Not yet published: fail-closed, so a forgotten date leaves the film gated.
+  assert.equal(publishedOn(ledger("未发布", "未发布")), null);
+  assert.equal(publishedOn(ledger("", "")), null);
+  assert.equal(publishedOn(""), null);
+  // A date without 已发布 is a note, not a record of an upload.
+  assert.equal(publishedOn(ledger("2026-09-30 待发", "未发布")), null);
+});
+
+test("the films published after the 2026-09-21 freeze are found by their ledgers", () => {
+  // FROZEN_FILMS is a snapshot because the 55 legacy films have no ledgers to read.
+  // These were published later and do have one, so the gate reads the date instead of
+  // treating them as new work — the rule has to hold for them too, not just the snapshot.
+  const live = newFilms
+    .map((file) => {
+      const kebab = file.replace(/\.tsx$/, "");
+      const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
+      return { kebab, date: publishedOn(copy) };
+    })
+    .filter((e) => e.date !== null);
+  assert.deepEqual(
+    live.map((e) => `${e.kebab} ${e.date}`),
+    [
+      "fangfeng-first-film 2026-10-01",
+      "huangzhi-first-film 2026-09-27",
+      "juemingzi-first-film 2026-10-01",
+      "lanshi-first-film 2026-09-30",
+      "zizhi-first-film 2026-09-30",
+    ],
+  );
 });

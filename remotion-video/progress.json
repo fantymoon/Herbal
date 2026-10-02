@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 59,
+  "doneCount": 65,
   "entries": [
     {
       "name": "丹沙",
@@ -627,7 +627,8 @@
     {
       "name": "橘柚",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "JuyouFirstFilm"
     },
     {
       "name": "发",
@@ -722,17 +723,20 @@
     {
       "name": "藕实茎",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "OushijingFirstFilm"
     },
     {
       "name": "大枣",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "DazaoFirstFilm"
     },
     {
       "name": "葡萄",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "PutaoFirstFilm"
     },
     {
       "name": "蓬",
@@ -747,7 +751,8 @@
     {
       "name": "胡麻",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "HumaFirstFilm"
     },
     {
       "name": "麻贲",
@@ -1150,7 +1155,8 @@
     {
       "name": "龙眼",
       "volume": "卷二 · 中经",
-      "status": "todo"
+      "status": "done",
+      "film": "LongyanFirstFilm"
     },
     {
       "name": "松罗",

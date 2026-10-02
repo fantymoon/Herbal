@@ -13,15 +13,18 @@
 //   FAIL    anything else: a rule broken, repeated on-screen text, a missing ledger.
 //
 // Published films are frozen: their known issues are reported for information but
-// never fail the run.
+// never fail the run. `FROZEN_FILMS` is the 2026-09-21 snapshot, which is all the legacy
+// films can support — they have no ledgers. Films published since carry the date in
+// `upload/<kebab>.md`, so the gate reads it and treats them the same way.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
+import { findEntries, originProblems, readCorpus, type Sutra } from "./lib/corpus.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
-import { checkLedgerCopy, checkTitleFrames, readLedgerField } from "./lib/ledger.ts";
+import { checkLedgerCopy, checkTitleFrames, publishedOn, readLedgerField } from "./lib/ledger.ts";
 import type { TitleLine } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { formatReadingBudget, planFilm, visibleText } from "../src/layout.ts";
@@ -31,6 +34,15 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload");
+const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
+
+/**
+ * The 经文 each entry is quoting, so the gate can check what a film says *about* the text
+ * and not only what the text says. Read once; GB18030, so it goes through `readCorpus`.
+ */
+const sutras = new Map<string, Sutra>(
+  findEntries(readCorpus(corpusFile)).map((e) => [e.name, e.sutra]),
+);
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -50,7 +62,7 @@ const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits
  */
 const readingReport = (content: FilmContent): string[] => formatReadingBudget(planFilm(content));
 
-const ledgerProblems = (kebab: string, filmId: string): string[] => {
+const ledgerProblems = (kebab: string, filmId: string, music: string): string[] => {
   const ledger = path.join(uploadDir, `${kebab}.md`);
   if (!fs.existsSync(ledger)) {
     return [`upload/${kebab}.md is missing`];
@@ -64,6 +76,15 @@ const ledgerProblems = (kebab: string, filmId: string): string[] => {
   }
   if (!copy.includes(filmId)) {
     problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
+  }
+  // The BGM line is written once, at scaffold time, from the content module. Change the
+  // module's music afterwards and the ledger keeps naming the old track — the ledger is
+  // the only record of what the master actually carries, so it has to be checked, not
+  // trusted. `npm run ledger` fills blanks and will not correct it.
+  const bgm = readLedgerField(copy, "BGM");
+  if (bgm !== "" && !bgm.includes(music)) {
+    const named = /`([^`]+)`/.exec(bgm)?.[1] ?? bgm;
+    problems.push(`upload/${kebab}.md names ${named} but the film uses ${music}`);
   }
   // The copy is what the platforms read, and it used to be the only prose in the repo
   // that no rule looked at.
@@ -82,6 +103,23 @@ const ledgerTitle = (kebab: string): string => {
   return readLedgerField(fs.readFileSync(ledger, "utf8"), "标题");
 };
 
+/**
+ * What the film claims about the 经文, checked against the 经文.
+ *
+ * `facts` was the last block of on-screen prose outside any rule, and it is written from
+ * memory: the scaffold derives 别名 and 篇目位置 out of the corpus but never derived 产地.
+ * 大枣 shipped saying 池泽 under a citation of a text that says 生平泽 — the 生境 of
+ * 藕实茎, the entry beside it. Every other block on that screen is a quotation; this one
+ * was a recollection, and nothing compared the two.
+ */
+const factProblems = (file: string, content: FilmContent): string[] => {
+  const sutra = sutras.get(content.entry);
+  if (!sutra) {
+    return [`${file}: entry「${content.entry}」 is not a 篇名 in the corpus`];
+  }
+  return originProblems(content.facts, sutra).map((p) => `${file}: ${p}`);
+};
+
 let all = fs
   .readdirSync(finishedDir)
   .filter((f) => f.endsWith(".tsx"))
@@ -98,21 +136,35 @@ if (typeof args.film === "string") {
 const failures: string[] = [];
 const titleLines: TitleLine[] = [];
 let frozenCount = 0;
+let liveCount = 0;
 let draftCount = 0;
 
 for (const file of all) {
   const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
   const kebab = file.replace(/\.tsx$/, "");
   const frozen = isFrozen(file);
+  const ledger = path.join(uploadDir, `${kebab}.md`);
+  const copy = fs.existsSync(ledger) ? fs.readFileSync(ledger, "utf8") : "";
+  const live = publishedOn(copy);
   const { content, error } = await loadContent(source, filmsDir);
   const violations = checkNewFilm(source, content, knownPhotos);
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
 
-  if (frozen) {
-    frozenCount += 1;
+  // A film that is already on a platform cannot be un-published by a verdict, so the
+  // verdict is information. `FROZEN_FILMS` is the 2026-09-21 snapshot of what was live
+  // then; films published since carry the date in their ledger, and reading it is how the
+  // rule stays true for them instead of only for the snapshot.
+  if (frozen || live !== null) {
+    if (frozen) {
+      frozenCount += 1;
+    } else {
+      liveCount += 1;
+    }
     if (args.verbose) {
       console.log(
-        `frozen ${file}: ${violations.length} known compliance gap(s), ${repeats.length} repeated phrase(s)`,
+        frozen
+          ? `frozen ${file}: ${violations.length} known compliance gap(s), ${repeats.length} repeated phrase(s)`
+          : `live ${file}: published ${live}, rules not re-applied — ${violations.length} gap(s)`,
       );
     }
     continue;
@@ -162,7 +214,8 @@ for (const file of all) {
   const problems = [
     ...hardViolations(violations).map((v) => `${file}: [${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(file, repeats)] : []),
-    ...(filmId ? ledgerProblems(kebab, filmId) : [`${file}: declares no exported film component`]),
+    ...factProblems(file, content),
+    ...(filmId ? ledgerProblems(kebab, filmId, content.music) : [`${file}: declares no exported film component`]),
   ];
   for (const w of waived) {
     console.log(`     waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
@@ -195,9 +248,10 @@ if (frameProblems.length > 0) {
   }
 }
 
-const renderable = all.length - frozenCount - draftCount;
+const renderable = all.length - frozenCount - liveCount - draftCount;
 console.log(
-  `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ${frozenCount} frozen`,
+  `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ` +
+    `${frozenCount} frozen, ${liveCount} published`,
 );
 if (failures.length > 0) {
   console.error(`\n${failures.length} problem(s) found.`);

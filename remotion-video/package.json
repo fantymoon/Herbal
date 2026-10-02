@@ -40,7 +40,8 @@
     "audit": "node --experimental-strip-types scripts/audit-published.ts",
     "stats": "node --experimental-strip-types scripts/stats.ts",
     "fetch-photo": "node scripts/fetch-photo.mjs",
-    "entry": "node --experimental-strip-types scripts/entry-text.ts"
+    "entry": "node --experimental-strip-types scripts/entry-text.ts",
+    "variants": "node --experimental-strip-types scripts/variants.ts"
   },
   "sideEffects": [
     "*.css"

@@ -1,20 +1,54 @@
-// One-off probe: which single characters is the 底本 alone in reading?
+// Where does the 底本 stand alone in its reading?
 //
-// Two weaker probes came first. "Diff against 证类本草" flagged 174 places, but almost
-// all are 异体字 (创/疮, 利/痢, 藏/脏) — variants, not errors. "Windows attested nowhere
-// else" flagged 291 of 377 entries, because a phrase can be unique to this book without
-// being wrong.
+//   npm run variants            # every entry that has a counterpart in 证类本草
+//   npm run variants -- --all   # also print the pairs the corpus backs on both sides
 //
-// The signal that actually isolates 大枣's 「肋十二经」 needs both halves: the 底本 and
-// 证类 disagree on the character AND the corpus overwhelmingly backs 证类. 肋十二经
-// appears in 2 files; 助十二经 in 53. A variant like 创/疮 is backed on both sides, so it
-// drops out on its own.
+// `corpus.ts` catches a character the recension *lost* — it leaves a space, and a space
+// inside a line is not typography. It cannot catch a character the recension got *wrong*:
+// 大枣's 「肋十二经」 for 「助十二经」 reads as valid Chinese and sat in the corpus unnoticed
+// until a film was being made from it.
+//
+// Two weaker tests came first, and both are in here as the reason this one is shaped the
+// way it is. "Diff against 证类本草" flags 174 places, but almost all are 异体字 (创/疮,
+// 利/痢, 藏/脏) or the 辑本 folding 别录 material into the 经文 — treating every
+// disagreement as an error would mean rewriting the text. "Windows attested nowhere else"
+// flags 291 of 377 entries, because a phrase can be unique to this book without being
+// wrong.
+//
+// What isolates a real 讹字 needs both halves: the 底本 and 证类 disagree on the character
+// AND the corpus overwhelmingly backs 证类. 大枣's 养脾，肋十二经 appears in 0 other files;
+// 养脾，助十二经 in 7.
+//
+// The filter is deliberately loose. 创/疮, 利/痢, 注/疰 are 古今字 — the 底本's reading is
+// defensible — yet they survive, because as *windows* the 底本's spelling is rare in the
+// corpus. Tightening until only 讹字 remain would mean encoding a judgement about every
+// pair into the filter, and then the report would only ever show what I already believe.
+// So it prints 24 and leaves the sorting to the eye.
+//
+// This reports; it does not fail. Detection is mechanical, but deciding whether a flagged
+// pair is a 讹字 or a 古今字 is a judgement about the word — and 24 across 356 entries is
+// read in a minute.
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = "D:/CodeProject/Herbal/TCM-Ancient-Books-master";
+const args = Object.fromEntries(
+  process.argv.slice(2).map((a) => {
+    const m = a.match(/^--([^=]+)(?:=(.*))?$/);
+    return [m?.[1] ?? a, m?.[2] ?? true];
+  }),
+);
+
+const root = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "TCM-Ancient-Books-master",
+);
 const base = path.join(root, "000-神农本草经.txt");
 const witness = path.join(root, "645-证类本草.txt");
+
+const CJK = /[\u4e00-\u9fff]/;
 
 const decode = (p: string): string => new TextDecoder("gb18030").decode(fs.readFileSync(p));
 const clean = (s: string): string => s.replace(/（[^）]*）/g, "").replace(/\s/g, "");
@@ -105,12 +139,31 @@ for (const file of files) {
   }
 }
 
-const flagged = suspects.filter(
+/** A 讹字 is a Chinese character written as another; a 、／， swap is style, not error. */
+const isCharacter = (s: { from: string; to: string }): boolean =>
+  CJK.test(s.from) && CJK.test(s.to);
+
+const scored = suspects.filter(isCharacter);
+const flagged = scored.filter(
   (s) => (count.get(s.there) ?? 0) >= 5 && (count.get(s.here) ?? 0) <= 1,
 );
 
-console.log(`${suspects.length} single-character disagreements between 底本 and 证类本草`);
-console.log(`${flagged.length} where the corpus backs 证类 and not the 底本\n`);
-for (const s of flagged) {
-  console.log(`${s.name}：底本「${s.here}」(${count.get(s.here)} 处) ／ 证类「${s.there}」(${count.get(s.there)} 处)  ← 「${s.from}」应为「${s.to}」`);
+const shown = args.all === true ? scored : flagged;
+const at = (s: { here: string; there: string }, which: "here" | "there"): number =>
+  count.get(which === "here" ? s.here : s.there) ?? 0;
+
+console.log(
+  `${suspects.length} disagreements between 底本 and 证类本草, ${scored.length} between two characters`,
+);
+console.log(
+  `${flagged.length} where the corpus backs 证类 and not the 底本` +
+    (args.all === true ? ` (showing all ${scored.length})` : "") +
+    "\n",
+);
+for (const s of shown) {
+  const mark = flagged.includes(s) ? "  ← " : "    ";
+  console.log(
+    `${s.name}：底本「${s.here}」(${at(s, "here")} 处) ／ 证类「${s.there}」(${at(s, "there")} 处)` +
+      `${mark}「${s.from}」应为「${s.to}」`,
+  );
 }

@@ -67,6 +67,12 @@ import { ZizhiFirstFilm } from "./finished/zizhi-first-film";
 import { FangfengFirstFilm } from "./finished/fangfeng-first-film";
 import { LanshiFirstFilm } from "./finished/lanshi-first-film";
 import { JuemingziFirstFilm } from "./finished/juemingzi-first-film";
+import { DazaoFirstFilm } from "./finished/dazao-first-film";
+import { HumaFirstFilm } from "./finished/huma-first-film";
+import { JuyouFirstFilm } from "./finished/juyou-first-film";
+import { LongyanFirstFilm } from "./finished/longyan-first-film";
+import { OushijingFirstFilm } from "./finished/oushijing-first-film";
+import { PutaoFirstFilm } from "./finished/putao-first-film";
 
 export const HerbalCompositions: React.FC = () => {
   return (
@@ -574,6 +580,54 @@ export const HerbalCompositions: React.FC = () => {
         id="JuemingziFirstFilm"
         component={JuemingziFirstFilm}
         durationInFrames={630}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="DazaoFirstFilm"
+        component={DazaoFirstFilm}
+        durationInFrames={900}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="HumaFirstFilm"
+        component={HumaFirstFilm}
+        durationInFrames={720}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="JuyouFirstFilm"
+        component={JuyouFirstFilm}
+        durationInFrames={630}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="LongyanFirstFilm"
+        component={LongyanFirstFilm}
+        durationInFrames={720}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="OushijingFirstFilm"
+        component={OushijingFirstFilm}
+        durationInFrames={630}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="PutaoFirstFilm"
+        component={PutaoFirstFilm}
+        durationInFrames={720}
         fps={30}
         width={1080}
         height={1920}

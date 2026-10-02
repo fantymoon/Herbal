@@ -1,10 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   GAP_MARK,
   defectOf,
   findEntries,
+  originOf,
+  originProblems,
   readCorpus,
   sutraOf,
 } from "../scripts/lib/corpus.ts";
@@ -107,4 +110,61 @@ test("a body with no 经文 is rejected rather than guessed at", () => {
   assert.equal(sutraOf("内容：（旧作矾石，据郭璞注，《山海经》引作涅石）"), null);
   assert.equal(sutraOf("内容：上药一百二十种，为君，主养命以应天，无毒。"), null);
   assert.equal(sutraOf(""), null);
+});
+
+// ---- The 产地 a film shows is a quotation, not a recollection ------------------
+
+test("the 生境 is read out of the 经文", () => {
+  assert.equal(originOf(byName("大枣").sutra), "平泽");
+  assert.equal(originOf(byName("藕实茎").sutra), "池泽");
+  assert.equal(originOf(byName("龙眼").sutra), "山谷");
+  // 黄芝's 经文 stops at 一名金芝 — 别录 supplies its 生境, so there is nothing to quote.
+  assert.equal(originOf(byName("黄芝").sutra), null);
+  assert.ok(
+    entries.filter((e) => originOf(e.sutra) !== null).length > 250,
+    "most entries name a 生境; a drop means the extraction stopped matching",
+  );
+});
+
+test("a 产地 the 经文 does not name is reported", () => {
+  const dazao = byName("大枣").sutra;
+  // The bug this rule exists for: 池泽 is 藕实茎's 生境, one entry away in the corpus,
+  // and it sat on 大枣's closing screen under a citation of a text that says 平泽.
+  assert.deepEqual(originProblems([{ label: "产地", value: "池泽" }], dazao), [
+    "产地「池泽」 is not named by the 经文, which says 生平泽",
+  ]);
+  assert.deepEqual(originProblems([{ label: "产地", value: "平泽" }], dazao), []);
+  // A place the 经文 merely omits is not this rule's business: 别录 names 黄芝's 嵩山.
+  assert.deepEqual(originProblems([{ label: "产地", value: "嵩山" }], byName("黄芝").sutra), [
+    "产地「嵩山」 is not named by the 经文, which names no 生境",
+  ]);
+  // No 产地 fact, nothing to check — and the other facts are not places.
+  assert.deepEqual(originProblems([{ label: "部类", value: "果部" }], dazao), []);
+  assert.deepEqual(originProblems([], dazao), []);
+});
+
+test("no film on screen names a 产地 its 经文 does not", () => {
+  // The same question `npm run check` asks, asked of every content module so that a
+  // regression is caught by `npm test` too. `check` skips films that are already
+  // published; this does not, because the point here is to keep the known ones visible.
+  const filmsDir = fileURLToPath(new URL("src/films/", repo));
+  const stray = [];
+  for (const file of readdirSync(filmsDir).filter((f) => f.endsWith(".ts"))) {
+    const text = readFileSync(`${filmsDir}${file}`, "utf8");
+    const entry = /^\s*entry:\s*"([^"]+)"/m.exec(text)?.[1];
+    const origin = /label:\s*"产地",\s*value:\s*"([^"]+)"/.exec(text)?.[1];
+    if (!entry || !origin) continue;
+    const sutra = entries.find((e) => e.name === entry)?.sutra;
+    if (!sutra || sutra.text.includes(origin)) continue;
+    stray.push(`${file}: ${entry} 产地=${origin}, 经文 says 生${originOf(sutra) ?? "—"}`);
+  }
+  // 蓝实, 紫芝 and 黄芝 are live on 抖音 and carry this defect. A published master cannot
+  // be recalled, so they are named here instead of quietly rewritten — the same reason
+  // `FROZEN_FILMS` is a snapshot. This list may only shrink, and it shrinks by retiring a
+  // film and redoing it, never by editing the expectation to match a new film.
+  assert.deepEqual(stray, [
+    "huangzhi-first-film.ts: 黄芝 产地=嵩山, 经文 says 生—",
+    "lanshi-first-film.ts: 蓝实 产地=河内, 经文 says 生平泽",
+    "zizhi-first-film.ts: 紫芝 产地=高夏, 经文 says 生山谷",
+  ]);
 });

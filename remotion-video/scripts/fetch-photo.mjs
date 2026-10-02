@@ -99,6 +99,15 @@ query.searchParams.set("photo_license", LICENSES.map((l) => l.code).join(","));
 query.searchParams.set("per_page", "50");
 query.searchParams.set("order_by", "votes");
 query.searchParams.set("order", "desc");
+// A hero insert has to show what the entry *is*. For a fruit entry, foliage does not —
+// 龙眼's default ranking returns 96 usable photos and the first ten are all leaves, because
+// the ranking can only see orientation, resolution and licence. iNaturalist's plant
+// phenology annotation is the one signal that says "this photo has the fruit in it", so
+// ask for it directly: term 12 is Plant Phenology, value 14 is Fruiting.
+if (args.fruiting) {
+  query.searchParams.set("term_id", "12");
+  query.searchParams.set("term_value_id", "14");
+}
 
 const payload = await get(query.href, "json");
 const candidates = [];
@@ -152,7 +161,14 @@ const usable = candidates.filter((c) => c.largeWidth >= 700);
 
 if (args.check) {
   console.log(`${args.taxon}: ${payload.total_results} observation(s), ${candidates.length} open-licensed photo(s), ${usable.length} usable`);
-  for (const c of usable.slice(0, 10)) {
+  // Ten is the default because the list is metadata, not pictures — but a taxon whose
+  // whole top ten is leaves needs a longer list to pick from, not a different tool.
+  const limit = Number(args.list ?? 10);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    console.error("--list takes a positive count, e.g. --list=25");
+    process.exit(2);
+  }
+  for (const c of usable.slice(0, limit)) {
     console.log(
       `  [${usable.indexOf(c)}] ${c.id}  ${c.width}x${c.height} ${c.landscape ? "landscape" : "portrait "} ` +
         `${c.size.padEnd(8)} ${c.license.label.padEnd(9)} ${c.author ?? c.observer ?? "(no author)"}`,

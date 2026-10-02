@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defectOf, fillGaps, findEntries, readCorpus } from "./lib/corpus.ts";
+import { defectOf, fillGaps, findEntries, originOf, readCorpus } from "./lib/corpus.ts";
 import { toKebab } from "./lib/film-files.ts";
 import { renderLedger } from "./lib/ledger.ts";
 import type { FilmContent } from "../src/layout.ts";
@@ -174,6 +174,16 @@ for (const [p, label] of [
 const keptLedger = fs.existsSync(ledgerPath);
 
 const factAlias = aliases[0] ?? null;
+// The 产地 is read out of the 经文 rather than remembered. It was the one on-screen fact
+// with no derivation behind it, and 大枣 shipped saying 池泽 — the 生境 of 藕实茎, the
+// entry beside it — under a citation of a text that says 生平泽. `npm run check` now fails
+// a 产地 the 经文 does not name, so the scaffold has to start from the right value.
+const origin = originOf(sutra);
+const factLines = [
+  ...(factAlias ? [`    { label: "别名", value: "${factAlias}" },`] : []),
+  ...(origin ? [`    { label: "产地", value: "${origin}" },`] : []),
+  `    { label: "篇目位置", value: "${showVolume(volume)}" },`,
+];
 fs.writeFileSync(
   dataPath,
   `import type { FilmContent } from "../layout";
@@ -202,7 +212,7 @@ export const content: FilmContent = {
   commentary: "TODO 注释",
   historicalNote: "此为汉代认知，未经现代科学证实",
   facts: [
-${factAlias ? `    { label: "别名", value: "${factAlias}" },\n` : ""}    { label: "篇目位置", value: "${showVolume(volume)}" },
+${factLines.join("\n")}
   ],
   photo: {
     file: "TODO-<ascii-name>.jpg",

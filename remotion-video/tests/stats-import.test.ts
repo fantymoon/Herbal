@@ -64,21 +64,33 @@ test("the 抖音 export reads as a grid, with the numbers the platform wrote", a
   const header = grid[0].map((c) => String(c));
   assert.ok(header.includes("作品名称"));
   assert.ok(header.includes("2s跳出率"));
-  assert.equal(grid.length, 50, "49 videos plus the header");
 
   const { rows, skipped } = parseExport(fs.readFileSync(douyin), ".xlsx", await entryNames());
+  // The export belongs to the creator centre, so its row count is whatever that centre
+  // wrote the last time the creator exported. Pinning it (this test used to say "49
+  // videos plus the header") only turns the suite red on the next export — which is what
+  // happened on 10-02, and the failure was about the fixture, not the parser. The
+  // invariant is structural: every video row is either placed or reported, none dropped.
+  assert.equal(
+    rows.length + skipped.length,
+    grid.length - 1,
+    "every video row is either placed or reported as unplaced",
+  );
   assert.equal(skipped.length, 0, `unplaced: ${skipped.join(" | ")}`);
-  assert.equal(rows.length, 49);
+  assert.ok(rows.length > 0);
   assert.ok(rows.every((row) => row.platform === "抖音"));
   const baizhi = rows.find((row) => row.entry === "白芝");
   assert.ok(baizhi);
   // 抖音 writes a ratio: 0.139808 is 14.0%, and 6.700458 is 6.7 seconds.
+  // These numbers are read off the export and move whenever the creator exports again
+  // (the 10-02 export nudged three of them). That is the point: what is under test is
+  // the *format* — 0.343812 must become 34.4, not 0.3 and not 343812.
   assert.equal(baizhi.completion, 14.0);
-  assert.equal(baizhi.fiveSecond, 34.5);
-  assert.equal(baizhi.bounce2s, 27.1);
+  assert.equal(baizhi.fiveSecond, 34.4);
+  assert.equal(baizhi.bounce2s, 27.3);
   assert.equal(baizhi.averageSeconds, 6.7);
   assert.equal(baizhi.date, "2026-09-25");
-  assert.equal(baizhi.plays, 1944);
+  assert.equal(baizhi.plays, 1961);
 });
 
 test("the 视频号 export reads the same shape out of different columns", async () => {

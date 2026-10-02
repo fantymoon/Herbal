@@ -14,16 +14,33 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
+import { findEntries, originProblems, readCorpus } from "./lib/corpus.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
-import { checkLedgerCopy } from "./lib/ledger.ts";
+import { checkLedgerCopy, publishedOn } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
 import { planFilm, visibleText } from "../src/layout.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.join(root, "..");
+
+// The 经文 each entry quotes, so pre-flight can check what a film says *about* the text.
+const sutras = new Map(
+  findEntries(readCorpus(path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt"))).map(
+    (e) => [e.name, e.sutra],
+  ),
+);
+
+/** Same rule as the gate's, so `verify` never renders something `check` would refuse. */
+const factProblems = (content) => {
+  const sutra = sutras.get(content.entry);
+  if (!sutra) {
+    return [`entry「${content.entry}」 is not a 篇名 in the corpus`];
+  }
+  return originProblems(content.facts, sutra);
+};
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -73,8 +90,14 @@ if (!duration) {
 }
 
 // ---- Pre-flight: rules that used to be checked by eye, or not at all. --------
-if (isFrozen(`${kebab}.tsx`)) {
-  console.log(`pre-flight: ${kebab} is a published film (frozen) — rules not re-applied`);
+// A film already on a platform is not re-judged, whether it is in the 2026-09-21 snapshot
+// or carries a publish date in its ledger. Otherwise a rule that tightened after the
+// upload would block a re-render of a film whose live copy cannot be recalled.
+const ledgerPath = path.join(repo, "upload", `${kebab}.md`);
+const ledgerCopy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : "";
+const live = publishedOn(ledgerCopy);
+if (isFrozen(`${kebab}.tsx`) || live !== null) {
+  console.log(`pre-flight: ${kebab} is already published — rules not re-applied`);
 } else {
   const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(filmSource);
@@ -85,25 +108,24 @@ if (isFrozen(`${kebab}.tsx`)) {
   const problems = [
     ...hardViolations(findings).map((v) => `[${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(`${kebab}.tsx`, repeats)] : []),
+    ...(content ? factProblems(content) : []),
   ];
   for (const w of waivers) {
     console.log(`pre-flight: waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
   }
   const filmId = readFilmId(filmSource);
-  const ledger = path.join(repo, "upload", `${kebab}.md`);
   if (!filmId) {
     problems.push("declares no exported film component");
-  } else if (!fs.existsSync(ledger)) {
+  } else if (ledgerCopy === "") {
     problems.push(`upload/${kebab}.md is missing`);
   } else {
-    const copy = fs.readFileSync(ledger, "utf8");
-    if (!copy.includes(filmId)) {
+    if (!ledgerCopy.includes(filmId)) {
       problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
     }
     // The upload copy is the only prose the platforms act on. Scanning the frames
     // while leaving the title and description unchecked is how a compliant film
     // ships with a non-compliant title.
-    for (const problem of checkLedgerCopy(copy)) {
+    for (const problem of checkLedgerCopy(ledgerCopy)) {
       problems.push(`upload/${kebab}.md ${problem}`);
     }
   }
