@@ -2,7 +2,7 @@ import { Img, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
 import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
-import { planFilm, revealDelay, sealGlyph, type Block, type FilmContent } from "./layout";
+import { openingFor, planFilm, revealDelay, sealGlyph, type Block, type FilmContent } from "./layout";
 
 // Data-driven renderer for new films.
 //
@@ -295,9 +295,10 @@ const SceneView: React.FC<{
   photoFile: string;
   mode: FilmContent["mode"];
 }> = ({ blocks, frame, accent, photoFile, mode }) => {
-  // The hero opens on its title card; later scenes fade in from a blank one. See
-  // `REVEAL_DELAYS`.
-  const opening = blocks.some((block) => block.kind === "heroTitle") ? "hero" : "scene";
+  // A film with a hook opens on its title card; one without keeps the schedule the
+  // published films use, so an existing master is unchanged by re-rendering. See
+  // `openingFor`.
+  const opening = openingFor(blocks.map((block) => block.kind));
   return (
   <>
     {blocks.map((block, index) => (

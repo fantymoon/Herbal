@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ALLOWED_DURATIONS,
+  openingFor,
   revealDelay,
   CANVAS,
   MIN_CLEARANCE,
@@ -397,6 +398,11 @@ test("the hero carries a hook, and its name is on screen from the first frame", 
   // ...while a later scene still opens from a blank card, which is what makes a cut
   // read as a cut rather than as more of the same screen.
   assert.ok(revealDelay("scene", 0) >= 0);
+
+  // The instant opening belongs to the hook, and only to the hook: a film without one
+  // renders exactly as it did before, so no master already on disk changes under it.
+  assert.equal(openingFor(hero.blocks.map((b) => b.kind)), "hero");
+  assert.equal(openingFor(planFilm(base).scenes[0].blocks.map((b) => b.kind)), "scene");
 });
 
 test("a film with no hook still plans", () => {

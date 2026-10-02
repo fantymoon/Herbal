@@ -294,6 +294,16 @@ export const REVEAL_DELAYS = {
   scene: [2, 6, 10, 14, 18, 22, 26, 30],
 } as const;
 
+/**
+ * Which reveal schedule a scene uses.
+ *
+ * A film with a hook opens on its title card; a film without one keeps the schedule the
+ * published films use, so nothing already rendered changes under it. The hook and the
+ * instant opening are one change — the new opening — and they ship together.
+ */
+export const openingFor = (kinds: readonly BlockKind[]): "hero" | "scene" =>
+  kinds.includes("hook") ? "hero" : "scene";
+
 /** A negative delay means the block is already at full opacity on the scene's frame 0. */
 export const revealDelay = (scene: "hero" | "scene", index: number): number => {
   const schedule = REVEAL_DELAYS[scene];
