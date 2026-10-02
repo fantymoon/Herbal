@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 66,
+  "doneCount": 67,
   "entries": [
     {
       "name": "丹沙",
@@ -364,7 +364,8 @@
     {
       "name": "蒺藜子",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "JiliziFirstFilm"
     },
     {
       "name": "黄",

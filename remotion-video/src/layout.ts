@@ -245,6 +245,22 @@ export type FilmContent = {
   translation: string;
   /** Commentary block text, without the 注释 label. */
   commentary: string;
+  /**
+   * Where the reading lives: on screen, or in the upload copy. Defaults to "screen".
+   *
+   * "screen" is the shape the series shipped with — hero, then one or more classical
+   * scenes carrying 原文 + 今译 + 注释, then the closing. It runs 18-24 seconds, and the
+   * platform numbers say the last seventeen of those are watched by nobody: average
+   * watch time is 7.2s on a 24-second film and 7.3s on a 12-second one, so the extra
+   * length buys nothing and the dense screens are exactly the part that goes unread.
+   *
+   * "copy" drops 今译 and 注释 to the description and leaves the film with what the book
+   * says, where it says it, and the mandated framing — three scenes, 12 seconds. The
+   * reading is not lost, it moves somewhere it can actually be read: nobody reads a
+   * 145-character screen in the six seconds it is up, and anyone who wants the
+   * translation can read it in the description at their own pace.
+   */
+  reading?: "screen" | "copy";
   /** Mandated historical framing line. */
   historicalNote: string;
   facts: Fact[];
@@ -324,6 +340,8 @@ export type Block = {
   height: number;
   /** Extra data for composite blocks (photo credits, fact pairs). */
   detail?: string;
+  /** Break lines at punctuation instead of anywhere. See `clauseLines`. */
+  wrap?: "clause";
 };
 
 export type ScenePlan = {
@@ -357,12 +375,55 @@ export const wrappedLineCount = (text: string, fontSize: number, width = CONTENT
   return Math.max(1, Math.ceil([...text].length / perLine));
 };
 
+/**
+ * Break a quotation where a Chinese typesetter would: after the punctuation, never inside
+ * a clause.
+ *
+ * Browsers break CJK anywhere, so at 102px the 原文 split as 破症结积 / 聚 and 久 / 服 —
+ * a mid-word break in a passage the series exists to reproduce faithfully, which is worse
+ * than leaving the screen half empty. Whole clauses are packed onto a line and a hard
+ * break is used only when one clause is wider than the line.
+ *
+ * The renderer applies the same rule by inserting a zero-width space after each mark, so
+ * the reserved height and the drawn text agree.
+ */
+export const BREAK_AFTER = /[，。、；：！？）」』]/;
+
+export const clauseLines = (text: string, perLine: number): string[] => {
+  const clauses = text.match(/[^，。、；：！？）」』]*[，。、；：！？）」』]?/g) ?? [];
+  const lines: string[] = [];
+  let line = "";
+  for (const clause of clauses) {
+    if (clause === "") continue;
+    if (line !== "" && [...line, ...clause].length > perLine) {
+      lines.push(line);
+      line = "";
+    }
+    line += clause;
+    // A clause wider than the whole line still has to go somewhere.
+    while ([...line].length > perLine) {
+      lines.push([...line].slice(0, perLine).join(""));
+      line = [...line].slice(perLine).join("");
+    }
+  }
+  if (line !== "") lines.push(line);
+  return lines.length > 0 ? lines : [""];
+};
+
+export const clauseLineCount = (text: string, fontSize: number, width = CONTENT_WIDTH): number =>
+  clauseLines(text, Math.max(1, Math.floor(width / fontSize))).length;
+
 export const textHeight = (
   text: string,
   fontSize: number,
   lineHeight = BODY_LINE_HEIGHT,
   width = CONTENT_WIDTH,
-): number => Math.ceil(wrappedLineCount(text, fontSize, width) * fontSize * lineHeight);
+  wrap?: "clause",
+): number => {
+  const lines =
+    wrap === "clause" ? clauseLineCount(text, fontSize, width) : wrappedLineCount(text, fontSize, width);
+  return Math.ceil(lines * fontSize * lineHeight);
+};
 
 type Draft = {
   kind: BlockKind;
@@ -373,6 +434,8 @@ type Draft = {
   /** Override the content width (e.g. the square brand mark). */
   width?: number;
   align?: "left" | "right";
+  /** Break lines at punctuation instead of anywhere. See `clauseLines`. */
+  wrap?: "clause";
 };
 
 const draft = (
@@ -381,7 +444,7 @@ const draft = (
   fontSize: number,
   height: number,
   detail?: string,
-  extra: { width?: number; align?: "left" | "right" } = {},
+  extra: { width?: number; align?: "left" | "right"; wrap?: "clause" } = {},
 ): Draft => ({ kind, text, fontSize, height, detail, ...extra });
 
 const bodyDraft = (
@@ -390,7 +453,11 @@ const bodyDraft = (
   fontSize: number,
   detail?: string,
   lineHeight = BODY_LINE_HEIGHT,
-): Draft => draft(kind, text, fontSize, textHeight(text, fontSize, lineHeight), detail);
+  wrap?: "clause",
+): Draft =>
+  draft(kind, text, fontSize, textHeight(text, fontSize, lineHeight, CONTENT_WIDTH, wrap), detail, {
+    ...(wrap === undefined ? {} : { wrap }),
+  });
 
 /** A labelled fact is a small label plus a large value, so its height covers both. */
 const FACT_HEIGHT =
@@ -436,6 +503,7 @@ export const stackBlocks = (
       width: blockWidth,
       height: d.height,
       ...(d.detail === undefined ? {} : { detail: d.detail }),
+      ...(d.wrap === undefined ? {} : { wrap: d.wrap }),
     });
     y += d.height;
   });
@@ -619,6 +687,42 @@ export const splitTranslation = (translation: string, maxScenes = 2): string[] =
 };
 
 export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
+  if (content.reading === "copy") {
+    // The short shape. What the book says, where it says it, and the framing that keeps
+    // an efficacy clause a historical claim rather than an instruction — nothing else.
+    // The 今译 and 注释 are in the upload copy; see `FilmContent.reading`.
+    // The 原文 is set larger than in the long shape. This screen carries four short blocks
+    // and nothing else, so at 68px the quotation left the canvas 60% empty wherever it was
+    // placed — centring it only moved the void from below to above. Bigger type is the one
+    // thing that fills the screen with the material that belongs on it, and `wrap: "clause"`
+    // is what keeps the bigger type from breaking mid-clause. Still under the 150px hero
+    // title, which stays dominant.
+    const quoteSize = Math.round(TYPE.classical * 1.6);
+    const drafts: Draft[] = [
+      draft("classicalLabel", "CLASSICAL ENTRY / 古籍原文", TYPE.sectionLabel, TYPE.sectionLabel),
+      bodyDraft(
+        "classical",
+        content.original,
+        quoteSize,
+        content.original,
+        CLASSICAL_LINE_HEIGHT,
+        "clause",
+      ),
+      // A quotation carries its source on the same screen, the way the hero's panel does.
+      // Bibliographic citations may repeat across scenes, which is why the citation is
+      // printed as 《书名》· 卷 · 篇 rather than concatenated bare.
+      draft("publicationNote", citation(content), TYPE.meta, TYPE.meta),
+      bodyDraft(
+        "commentary",
+        content.historicalNote,
+        TYPE.commentary,
+        content.historicalNote,
+        COMMENTARY_LINE_HEIGHT,
+      ),
+    ];
+    return [{ kind: "classical", blocks: stackBlocks(drafts, CLASSICAL_TOP).blocks }];
+  }
+
   const build = (chunks: string[]): ScenePlan[] =>
     chunks.map((chunk, index) => {
       const last = index === chunks.length - 1;

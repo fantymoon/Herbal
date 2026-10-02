@@ -405,6 +405,30 @@ test("the hero carries a hook, and its name is on screen from the first frame", 
   assert.equal(openingFor(planFilm(base).scenes[0].blocks.map((b) => b.kind)), "scene");
 });
 
+test("the short shape shows the original and the framing, and nothing else", () => {
+  // 12 seconds instead of 24. Average watch time is 7.2s on a 24-second film and 7.3s on
+  // a 12-second one, so the last seventeen seconds are watched by nobody — and the dense
+  // screens carrying 今译 and 注释 are exactly the part that goes unread. They move to the
+  // upload copy, where a reader can take their time. What stays is what the book says,
+  // where it says it, and the framing that keeps 主…… a historical claim.
+  const plan = planFilm({ ...base, reading: "copy" });
+  const kinds = plan.scenes.flatMap((s) => s.blocks.map((b) => b.kind));
+  assert.equal(plan.scenes.length, 3, "hero, one classical scene, closing");
+  assert.ok(kinds.includes("classical"));
+  assert.equal(kinds.includes("translation"), false, "the 今译 is not on screen");
+  assert.equal(kinds.includes("commentaryLabel"), false, "nor is the 注释 label");
+  assert.ok(
+    plan.scenes.some((s) => s.blocks.some((b) => b.text.includes("未经现代科学证实"))),
+    "the historical note stays on screen",
+  );
+  assert.ok(
+    plan.durationInFrames <= 450,
+    "expected a short film, got " + plan.durationInFrames + " frames",
+  );
+  assert.deepEqual(findOverflow(plan.scenes), []);
+  assert.deepEqual(findPacingProblems(plan), []);
+});
+
 test("a film with no hook still plans", () => {
   const plan = planFilm(base);
   assert.equal(plan.scenes[0].blocks.some((b) => b.kind === "hook"), false);

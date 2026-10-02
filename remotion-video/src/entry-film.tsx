@@ -210,7 +210,34 @@ const BlockView: React.FC<{
           </div>
         </div>
       );
-    case "classical":
+    case "classical": {
+      // The plan reserved height for lines broken at the punctuation. A zero-width space
+      // does not achieve that: CSS already allows a break between any two CJK characters,
+      // so adding an opportunity changes nothing. Each clause becomes its own atomic
+      // inline box instead, which cannot be broken internally and can only be broken
+      // between — the same rule `clauseLines` used to reserve the height.
+      if (block.wrap === "clause") {
+        const clauses = (block.text.match(/[^，。、；：！？）」』]*[，。、；：！？）」』]?/g) ?? []).filter(
+          (clause) => clause !== "",
+        );
+        return (
+          <div
+            style={{
+              ...frameStyle,
+              color: ink,
+              fontFamily: bodyFont,
+              fontSize: block.fontSize,
+              lineHeight: 1.35,
+            }}
+          >
+            {clauses.map((clause, index) => (
+              <span key={index} style={{ display: "inline-block" }}>
+                {clause}
+              </span>
+            ))}
+          </div>
+        );
+      }
       return (
         <div
           style={{
@@ -224,6 +251,7 @@ const BlockView: React.FC<{
           {block.text}
         </div>
       );
+    }
     case "translation":
       return (
         <div

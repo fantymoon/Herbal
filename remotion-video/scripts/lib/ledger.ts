@@ -60,8 +60,22 @@ export const draftTitle = (content: FilmContent): string => {
 
 export const draftDescription = (content: FilmContent): string[] => {
   const hasPhoto = content.photo.subject !== "" && !/TODO/.test(content.photo.subject);
+  const head = `《${content.book}》${tightVolume(content.volume)}载${content.entry}。`;
+  // When the reading is off-screen the description is the only place it can be read, so
+  // it carries it in full. That is the trade the short shape makes: the film stops
+  // holding a 145-character screen for six seconds nobody spends on it, and the
+  // translation goes where a reader can take their time.
+  if (content.reading === "copy") {
+    return [
+      head,
+      `本片照录原文${hasPhoto ? "，并配实物照片" : ""}；今译与注释见下。`,
+      `今译：${content.translation}`,
+      `注释：${content.commentary}`,
+      "古籍内容展示，不构成诊疗建议。",
+    ];
+  }
   return [
-    `《${content.book}》${tightVolume(content.volume)}载${content.entry}。`,
+    head,
     `本片照录原文，逐句今译，附注释说明${hasPhoto ? "，并配实物照片" : ""}。`,
     "古籍内容展示，不构成诊疗建议。",
   ];
