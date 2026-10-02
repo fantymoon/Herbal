@@ -73,6 +73,7 @@ import { JuyouFirstFilm } from "./finished/juyou-first-film";
 import { LongyanFirstFilm } from "./finished/longyan-first-film";
 import { OushijingFirstFilm } from "./finished/oushijing-first-film";
 import { PutaoFirstFilm } from "./finished/putao-first-film";
+import { LuoshiFirstFilm } from "./finished/luoshi-first-film";
 
 export const HerbalCompositions: React.FC = () => {
   return (
@@ -627,6 +628,14 @@ export const HerbalCompositions: React.FC = () => {
       <Composition
         id="PutaoFirstFilm"
         component={PutaoFirstFilm}
+        durationInFrames={720}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="LuoshiFirstFilm"
+        component={LuoshiFirstFilm}
         durationInFrames={720}
         fps={30}
         width={1080}
