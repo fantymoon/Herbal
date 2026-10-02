@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defectOf, findEntries, readCorpus } from "./lib/corpus.ts";
+import { defectOf, fillGaps, findEntries, readCorpus } from "./lib/corpus.ts";
 import { toKebab } from "./lib/film-files.ts";
 import { renderLedger } from "./lib/ledger.ts";
 import type { FilmContent } from "../src/layout.ts";
@@ -89,21 +89,47 @@ if (found.length > 1) {
   );
   process.exit(1);
 }
-const { name: entryName, volume, sutra } = found[0];
+const { name: entryName, volume } = found[0];
+let sutra = found[0].sutra;
 if (entryName !== entry) {
   console.warn(`note: <篇名> is "${entryName}"; the 经文 below is the evidence for it.`);
 }
 
 // A defective 经文 has nothing correct to put on screen, and guessing the missing
-// character is exactly what `原文照录` forbids. Refuse, and say which entry to use.
+// character is exactly what `原文照录` forbids. Refuse — unless the caller supplies the
+// reading *and names the witness it came from*, which is the 换底本 SKILL.md sanctions.
+// The correction is written into both the content module and the ledger, so a repaired
+// 经文 never looks like an untouched one.
+const recension = typeof args.recension === "string" ? args.recension : null;
+const why = typeof args.why === "string" ? args.why.trim() : "";
+let correction: string | null = null;
 const defect = defectOf(sutra);
 if (defect) {
-  console.error(
-    `${entry}: ${defect}\n` +
-      `  照录会把缺陷带上屏，而「原文照录」不允许改字。\n` +
-      `  换个底本核对，或改用 --entry=<另一条目>。`,
-  );
-  process.exit(1);
+  const fixable = sutra.gaps.length > 0 && !sutra.dangling;
+  const guidance =
+    `  照录会把缺陷带上屏，而「原文照录」不允许改字。\n` +
+    `  跳过（改用 --entry=<另一条目>），或换底本核对补字：\n` +
+    `    --recension=<补入的字> --why=<据何本补的>`;
+  if (!fixable || recension === null) {
+    console.error(`${entry}: ${defect}\n${guidance}`);
+    process.exit(1);
+  }
+  if ([...recension].length !== sutra.gapCount) {
+    console.error(
+      `${entry}: 缺 ${sutra.gapCount} 字，--recension 给了 ${[...recension].length} 字。\n` +
+        `  ${sutra.gaps.join(" / ")}`,
+    );
+    process.exit(1);
+  }
+  if (why === "") {
+    console.error(
+      `${entry}: --recension 必须配 --why，写清是哪一部书作证。\n` +
+        `  没有具名的依据，补字与猜字没有区别，而猜字是「原文照录」明令禁止的。`,
+    );
+    process.exit(1);
+  }
+  correction = `底本此处掉 ${sutra.gapCount} 字，据他本补「${recension}」——${why}`;
+  sutra = fillGaps(sutra, recension);
 }
 
 const text = sutra.text;
@@ -155,7 +181,7 @@ fs.writeFileSync(
 // ${entry} — ${config.book} ${showVolume(volume)}
 // Source: ${config.source} (原文照录，不要改动 original 字段)
 //
-// TODO while this film is a draft:
+${correction ? `// ${correction}\n//\n` : ""}// TODO while this film is a draft:
 //   Until these are filled in, the film is a draft: \`npm run check\` reports it,
 //   \`npm run gen\` does not register it, and \`npm run verify\` refuses to render it.
 //   1. translation — 逐句今译；功效句必须以「古籍称其主……」开头
@@ -235,7 +261,7 @@ if (!keptLedger) {
     mode: "single-herb",
   };
   // Same renderer as `npm run ledger`, so the scaffold and the refresher cannot drift.
-  fs.writeFileSync(ledgerPath, renderLedger(scaffold, null), "utf8");
+  fs.writeFileSync(ledgerPath, renderLedger(scaffold, null, correction ?? ""), "utf8");
 }
 
 console.log(`created:

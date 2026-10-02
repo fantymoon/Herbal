@@ -60,6 +60,8 @@ export type Sutra = {
   text: string;
   /** ±5 characters around each gap, with the gap shown as □. */
   gaps: string[];
+  /** How many characters the recension dropped. */
+  gapCount: number;
   /** The text ends on a conjunction, so the recension truncated it mid-sentence. */
   dangling: boolean;
 };
@@ -96,7 +98,7 @@ export const sutraOf = (body: string): Sutra | null => {
   // is cut mid-list and what is left ends on a conjunction. That is the signature of a
   // defect, not of a short entry, and the words would go on screen.
   const dangling = /[、，和与及]$/.test(flat.slice(0, cut));
-  return { text, gaps, dangling };
+  return { text, gaps, gapCount: gaps.length, dangling };
 };
 
 export type Entry = { name: string; volume: string | null; sutra: Sutra };
@@ -137,4 +139,25 @@ export const defectOf = (sutra: Sutra): string | null => {
     return `经文有 ${sutra.gaps.length} 处行内缺字：${sutra.gaps.join(" / ")}`;
   }
   return null;
+};
+
+/**
+ * Put back a character the recension dropped, from a witness that kept it.
+ *
+ * SKILL.md sanctions two answers to a damaged 经文 — 跳过 or 换底本核对补字 — and the
+ * second one needs a way to be *said*. Without it the CLI can only refuse, so the
+ * sanctioned action gets taken by hand-editing the scaffold, and a hand-edited 经文
+ * leaves no record of where the character came from. 胡麻 is the case: the recension
+ * reads 「叶，名青□」, 《吴普本草》 has 青襄 as a 篇名, and 蘘 — the reading an editor
+ * might assume — appears nowhere in the 701 files. Naming the witness is what makes
+ * that a correction rather than a guess, so the caller has to name it.
+ */
+export const fillGaps = (sutra: Sutra, reading: string): Sutra => {
+  const chars = [...reading];
+  if (chars.length !== sutra.gapCount) {
+    return sutra;
+  }
+  let i = 0;
+  const text = sutra.text.replace(new RegExp(GAP_MARK, "g"), () => chars[i++] ?? "");
+  return { text, gaps: [], gapCount: 0, dangling: sutra.dangling };
 };

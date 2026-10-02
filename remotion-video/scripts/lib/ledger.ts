@@ -220,8 +220,16 @@ const statsSection = (existing: string | null): string => {
  *
  * Filling only blanks is what makes this safe to re-run: the draft title a human
  * rewrote stays rewritten, and the platform fields a human recorded stay recorded.
+ *
+ * `note` is the one thing the content module cannot state about itself — a 经文 the
+ * recension damaged and another witness repaired. It belongs in the ledger because the
+ * ledger is what answers a question about a published film months later.
  */
-export const renderLedger = (content: FilmContent, existing: string | null): string => {
+export const renderLedger = (
+  content: FilmContent,
+  existing: string | null,
+  note = "",
+): string => {
   const keep = (label: LedgerField, fallback: string | string[]): string | string[] => {
     const current = existing ? readLedgerField(existing, label) : "";
     return current || fallback;
@@ -238,7 +246,7 @@ export const renderLedger = (content: FilmContent, existing: string | null): str
     ),
     renderField("抖音", keep("抖音", "未发布")),
     renderField("视频号", keep("视频号", "未发布")),
-    renderField("备注", keep("备注", "")),
+    renderField("备注", keep("备注", note)),
   ];
 
   return `# ${content.entry} · 上传台账
