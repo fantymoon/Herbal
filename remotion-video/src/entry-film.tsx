@@ -158,7 +158,46 @@ const BlockView: React.FC<{
     case "sectionLabel":
     case "classicalLabel":
     case "translationLabel":
-    case "commentaryLabel":
+    case "commentaryLabel": {
+      // The hero's book line doubles as the cover line. At frame 0 it is the Chinese book
+      // name at cover size — the thing that says the film is reading 本草经, which a
+      // romanised label at 24px cannot say in a feed thumbnail — and it cross-fades to the
+      // romanised label as it settles. Bottom-anchored, so the larger line grows upward
+      // instead of reaching the name below it.
+      if (block.coverScale && block.detail) {
+        const settle = interpolate(frame, [0, 26], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        const eased = 1 - (1 - settle) ** 3;
+        // The two book lines cross without both sitting at half opacity: the cover line is
+        // gone by the time the romanised label is more than a ghost.
+        const handover = Math.max(0, Math.min(1, eased * 1.6));
+        return (
+          <div style={frameStyle}>
+            <div style={{ opacity: Math.max(0, handover * 1.6 - 0.6) }}>
+              <SectionLabel accent={accent} size={block.fontSize}>
+                {block.text}
+              </SectionLabel>
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                bottom: 0,
+                opacity: 1 - handover,
+                color: ink,
+                fontFamily: bodyFont,
+                fontSize: block.fontSize * block.coverScale,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {block.detail}
+            </div>
+          </div>
+        );
+      }
       return (
         <div style={frameStyle}>
           <SectionLabel accent={accent} size={block.fontSize}>
@@ -166,6 +205,7 @@ const BlockView: React.FC<{
           </SectionLabel>
         </div>
       );
+    }
     case "heroTitle": {
       // Frame 0 is the cover. 抖音 reads that still at roughly a quarter of the canvas, so
       // the settled title is still too small to recognise in a feed; the name therefore

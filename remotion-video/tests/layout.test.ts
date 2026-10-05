@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import {
   ALLOWED_DURATIONS,
   COVER_BLOCKS,
+  COVER_TITLE_SIZE,
   DECLARED_TYPE_SIZES,
+  LABEL_COVER_SIZE,
+  coverTitleSize,
+  heroTitleSize,
   openingFor,
   revealDelay,
   CANVAS,
@@ -436,19 +440,20 @@ test("the short shape shows the original and the framing, and nothing else", () 
   assert.deepEqual(findPacingProblems(plan), []);
 });
 
-test("the cover carries the photo as well as the name", () => {
-  // A cover that is only the name is a pale rectangle with two characters on it. The name
-  // is the only thing legible at thumbnail size and has to stay, but a thumbnail is read
-  // for its picture, so the photo is on screen from frame 0 rather than fading in with the
-  // rest of the hero.
-  assert.deepEqual([...COVER_BLOCKS].sort(), ["heroTitle", "photo", "sectionLabel"]);
+test("the cover says what the account is, not just the name", () => {
+  // A plant name on its own is legible and anonymous: nothing on it says the film is
+  // reading 本草经. So the cover carries the Chinese book name as well as the name, and
+  // the book line is set large enough to survive a feed thumbnail.
+  assert.deepEqual([...COVER_BLOCKS].sort(), ["heroTitle", "sectionLabel"]);
   const hero = planFilm({ ...base, hook: "一句钩子" }).scenes[0];
-  for (const kind of COVER_BLOCKS) {
-    assert.ok(
-      hero.blocks.some((b) => b.kind === kind),
-      `the cover needs a ${kind} block to draw`,
-    );
-  }
+  const label = hero.blocks.find((b) => b.kind === "sectionLabel");
+  assert.ok(label);
+  assert.equal(label.detail, "《神农本草经》", "the cover line is the book, in Chinese");
+  assert.equal((label.fontSize ?? 0) * (label.coverScale ?? 1), LABEL_COVER_SIZE);
+  // The name opens larger than it settles, and stays under the title cap.
+  assert.ok(coverTitleSize("蒲黄") > heroTitleSize("蒲黄"));
+  assert.ok(coverTitleSize("蒲黄") <= COVER_TITLE_SIZE);
+  assert.ok(coverTitleSize("蒺藜子") <= COVER_TITLE_SIZE);
 });
 
 test("a film with no hook still plans", () => {

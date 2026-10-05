@@ -323,13 +323,21 @@ export const openingFor = (kinds: readonly BlockKind[]): "hero" | "scene" =>
 /**
  * The blocks already on screen on frame 0.
  *
- * Frame 0 is the cover, and a cover that is only the name is a pale rectangle with two
- * characters on it: legible at thumbnail size, which is what the name is for, but not
- * something anyone stops on. The photo is what a thumbnail is actually read for, so it
- * joins the name and the book label in being present from the start rather than fading in
- * with the rest of the hero. Only the hero uses this; later scenes still open from blank.
+ * Frame 0 is the cover, and the cover has to say what the account is: a plant name on its
+ * own is legible but anonymous — nothing on it says the film is reading 本草经. So the book
+ * and the name are both up from the start, at cover size. Only the hero uses this; later
+ * scenes still open from blank.
  */
-export const COVER_BLOCKS: readonly BlockKind[] = ["sectionLabel", "heroTitle", "photo"];
+export const COVER_BLOCKS: readonly BlockKind[] = ["sectionLabel", "heroTitle"];
+
+/**
+ * The book line's size while it is a cover, against the 24px it settles to.
+ *
+ * The romanised label is chrome — nobody reads it, and at 24px it is invisible in a feed
+ * thumbnail. The cover line is the Chinese book name, which is the thing that says what
+ * the account does, so it is set large enough to survive the thumbnail.
+ */
+export const LABEL_COVER_SIZE = 110;
 
 /** A negative delay means the block is already at full opacity on the scene's frame 0. */
 export const revealDelay = (scene: "hero" | "scene", index: number): number => {
@@ -651,22 +659,22 @@ export const heroTitleSize = (entry: string): number => {
 };
 
 /**
- * How much larger the name opens on frame 0 than it settles.
+ * The size the name opens at on frame 0, and the ratio that takes it there.
  *
  * Frame 0 is the cover, and 抖音 reads the still at roughly a quarter of the canvas — so
- * the settled title is still too small to recognise in a feed. The name therefore opens
- * at the full width of the column and settles into the layout over the first second.
- *
- * The boost is capped by the width, not fixed, because the settled size already fills the
- * column from four characters up: there is nothing left to grow into, and a four-character
- * entry opens at its settled size.
+ * the settled title is still too small to recognise in a feed. The cover size is a target
+ * rather than a multiple: the name has to leave the book line room above it, so it does
+ * not run to the full column width any more. Capped by the width as well, which is why a
+ * four-character entry opens at its settled size.
  */
-export const COVER_SCALE_MAX = 1.8;
+export const COVER_TITLE_SIZE = 300;
 
-export const coverScale = (entry: string): number => {
+export const coverTitleSize = (entry: string): number => {
   const chars = Math.max(1, [...entry].length);
-  return Math.min(COVER_SCALE_MAX, CONTENT_WIDTH / (heroTitleSize(entry) * chars));
+  return Math.max(heroTitleSize(entry), Math.min(COVER_TITLE_SIZE, Math.floor(CONTENT_WIDTH / chars)));
 };
+
+export const coverScale = (entry: string): number => coverTitleSize(entry) / heroTitleSize(entry);
 
 /** Every size the layout may put on screen. The rule against ad-hoc sizes checks this. */
 export const DECLARED_TYPE_SIZES: readonly number[] = [
@@ -676,7 +684,16 @@ export const DECLARED_TYPE_SIZES: readonly number[] = [
 export const planHeroScene = (content: FilmContent): ScenePlan => {
   const cite = citation(content);
   const drafts: Draft[] = [
-    draft("sectionLabel", content.bookLatin, TYPE.sectionLabel, TYPE.sectionLabel),
+    draft(
+      "sectionLabel",
+      content.bookLatin,
+      TYPE.sectionLabel,
+      TYPE.sectionLabel,
+      // The cover line: the Chinese book name, which is what says the film is reading
+      // 本草经. The romanised label cross-fades in as it settles.
+      `《${content.book}》`,
+      { coverScale: LABEL_COVER_SIZE / TYPE.sectionLabel },
+    ),
     draft(
       "heroTitle",
       content.entry,
