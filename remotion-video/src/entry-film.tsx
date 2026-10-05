@@ -3,7 +3,7 @@ import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
 import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
 import {
-  COVER_CENTER_Y,
+  COVER_BLOCKS,
   openingFor,
   planFilm,
   revealDelay,
@@ -178,8 +178,6 @@ const BlockView: React.FC<{
       const eased = 1 - (1 - settle) ** 3;
       const boost = block.coverScale ?? 1;
       const scale = 1 + (boost - 1) * (1 - eased);
-      // Centred while it is a cover, back on its layout mark once it has settled.
-      const lift = (1 - eased) * (COVER_CENTER_Y - (block.height * scale) / 2 - block.y);
       return (
         <div
           style={{
@@ -189,7 +187,7 @@ const BlockView: React.FC<{
             fontSize: block.fontSize,
             lineHeight: 0.92,
             transformOrigin: "left top",
-            transform: `translateY(${lift.toFixed(2)}px) scale(${scale.toFixed(4)})`,
+            transform: `scale(${scale.toFixed(4)})`,
           }}
         >
           {block.text}
@@ -358,7 +356,11 @@ const SceneView: React.FC<{
         key={`${block.kind}-${index}`}
         block={block}
         frame={frame}
-        delay={revealDelay(opening, index)}
+        delay={
+          opening === "hero" && COVER_BLOCKS.includes(block.kind)
+            ? -26
+            : revealDelay(opening, index)
+        }
         accent={accent}
         photoFile={photoFile}
       />

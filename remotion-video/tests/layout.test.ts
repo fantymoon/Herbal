@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ALLOWED_DURATIONS,
+  COVER_BLOCKS,
   DECLARED_TYPE_SIZES,
   openingFor,
   revealDelay,
@@ -433,6 +434,21 @@ test("the short shape shows the original and the framing, and nothing else", () 
   );
   assert.deepEqual(findOverflow(plan.scenes), []);
   assert.deepEqual(findPacingProblems(plan), []);
+});
+
+test("the cover carries the photo as well as the name", () => {
+  // A cover that is only the name is a pale rectangle with two characters on it. The name
+  // is the only thing legible at thumbnail size and has to stay, but a thumbnail is read
+  // for its picture, so the photo is on screen from frame 0 rather than fading in with the
+  // rest of the hero.
+  assert.deepEqual([...COVER_BLOCKS].sort(), ["heroTitle", "photo", "sectionLabel"]);
+  const hero = planFilm({ ...base, hook: "一句钩子" }).scenes[0];
+  for (const kind of COVER_BLOCKS) {
+    assert.ok(
+      hero.blocks.some((b) => b.kind === kind),
+      `the cover needs a ${kind} block to draw`,
+    );
+  }
 });
 
 test("a film with no hook still plans", () => {

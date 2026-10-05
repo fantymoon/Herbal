@@ -320,6 +320,17 @@ export const REVEAL_DELAYS = {
 export const openingFor = (kinds: readonly BlockKind[]): "hero" | "scene" =>
   kinds.includes("hook") ? "hero" : "scene";
 
+/**
+ * The blocks already on screen on frame 0.
+ *
+ * Frame 0 is the cover, and a cover that is only the name is a pale rectangle with two
+ * characters on it: legible at thumbnail size, which is what the name is for, but not
+ * something anyone stops on. The photo is what a thumbnail is actually read for, so it
+ * joins the name and the book label in being present from the start rather than fading in
+ * with the rest of the hero. Only the hero uses this; later scenes still open from blank.
+ */
+export const COVER_BLOCKS: readonly BlockKind[] = ["sectionLabel", "heroTitle", "photo"];
+
 /** A negative delay means the block is already at full opacity on the scene's frame 0. */
 export const revealDelay = (scene: "hero" | "scene", index: number): number => {
   const schedule = REVEAL_DELAYS[scene];
@@ -656,15 +667,6 @@ export const coverScale = (entry: string): number => {
   const chars = Math.max(1, [...entry].length);
   return Math.min(COVER_SCALE_MAX, CONTENT_WIDTH / (heroTitleSize(entry) * chars));
 };
-
-/**
- * Where the name sits while it is still a cover.
- *
- * Frame 0 is read as a still, so the name is centred in the paper area rather than left at
- * the top of the hero layout. Slightly below the true middle of that area, which reads as
- * centred and leaves the book label room to breathe above it.
- */
-export const COVER_CENTER_Y = 620;
 
 /** Every size the layout may put on screen. The rule against ad-hoc sizes checks this. */
 export const DECLARED_TYPE_SIZES: readonly number[] = [
