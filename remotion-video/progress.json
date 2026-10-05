@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 68,
+  "doneCount": 71,
   "entries": [
     {
       "name": "丹沙",
@@ -389,17 +389,20 @@
     {
       "name": "蒲黄",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "PuhuangFirstFilm"
     },
     {
       "name": "香蒲",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "XiangpuFirstFilm"
     },
     {
       "name": "续断",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "XuduanFirstFilm"
     },
     {
       "name": "漏芦",
