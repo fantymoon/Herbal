@@ -270,6 +270,14 @@ export const renderLedger = (
   content: FilmContent,
   existing: string | null,
   note = "",
+  /**
+   * Leave 标题 / 描述 / 话题 empty. The scaffold sets this: it writes the ledger before the
+   * prose exists, and the fill-only-blanks rule below then freezes whatever it wrote —
+   * so a film scaffolded in the morning kept that morning's placeholder copy forever,
+   * and `npm run ledger` could never refresh it from the finished content module. Empty
+   * fields are what let the first real run fill them.
+   */
+  blankCopy = false,
 ): string => {
   const keep = (label: LedgerField, fallback: string | string[]): string | string[] => {
     const current = existing ? readLedgerField(existing, label) : "";
@@ -278,9 +286,9 @@ export const renderLedger = (
 
   const fields: string[] = [
     renderField("film", keep("film", `\`${content.id}\``)),
-    renderField("标题", keep("标题", draftTitle(content))),
-    renderField("描述", keep("描述", draftDescription(content))),
-    renderField("话题", keep("话题", draftTags(content))),
+    renderField("标题", keep("标题", blankCopy ? "" : draftTitle(content))),
+    renderField("描述", keep("描述", blankCopy ? "" : draftDescription(content))),
+    renderField("话题", keep("话题", blankCopy ? "" : draftTags(content))),
     renderField(
       "BGM",
       keep("BGM", `母版配 \`${content.music}\`，上传时用平台曲库同款替换`),

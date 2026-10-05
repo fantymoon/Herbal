@@ -240,8 +240,9 @@ export const ${id}: React.FC = () => <EntryFilm content={content} />;
 );
 
 if (!keptLedger) {
-  // The ledger is rendered from the same shape the film will load, so its copy fields
-  // are already filled the moment the scaffold lands.
+  // The ledger is written with its copy fields blank on purpose: the prose does not exist
+  // yet, and whatever is written here is frozen by the fill-only-blanks rule. The first
+  // `npm run ledger` after the content module is filled in is what writes the copy.
   const scaffold: FilmContent = {
     id,
     entry,
@@ -271,7 +272,7 @@ if (!keptLedger) {
     mode: "single-herb",
   };
   // Same renderer as `npm run ledger`, so the scaffold and the refresher cannot drift.
-  fs.writeFileSync(ledgerPath, renderLedger(scaffold, null, correction ?? ""), "utf8");
+  fs.writeFileSync(ledgerPath, renderLedger(scaffold, null, correction ?? "", true), "utf8");
 }
 
 console.log(`created:

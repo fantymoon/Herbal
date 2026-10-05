@@ -691,36 +691,43 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
     // The short shape. What the book says, where it says it, and the framing that keeps
     // an efficacy clause a historical claim rather than an instruction — nothing else.
     // The 今译 and 注释 are in the upload copy; see `FilmContent.reading`.
-    // The 原文 is set larger than in the long shape. This screen carries four short blocks
-    // and nothing else, so at 68px the quotation left the canvas 60% empty wherever it was
-    // placed — centring it only moved the void from below to above. Bigger type is the one
-    // thing that fills the screen with the material that belongs on it, and `wrap: "clause"`
-    // is what keeps the bigger type from breaking mid-clause. Still under the 150px hero
-    // title, which stays dominant.
-    const quoteSize = Math.round(TYPE.classical * 1.6);
-    const drafts: Draft[] = [
-      draft("classicalLabel", "CLASSICAL ENTRY / 古籍原文", TYPE.sectionLabel, TYPE.sectionLabel),
-      bodyDraft(
-        "classical",
-        content.original,
-        quoteSize,
-        content.original,
-        CLASSICAL_LINE_HEIGHT,
-        "clause",
-      ),
-      // A quotation carries its source on the same screen, the way the hero's panel does.
-      // Bibliographic citations may repeat across scenes, which is why the citation is
-      // printed as 《书名》· 卷 · 篇 rather than concatenated bare.
-      draft("publicationNote", citation(content), TYPE.meta, TYPE.meta),
-      bodyDraft(
-        "commentary",
-        content.historicalNote,
-        TYPE.commentary,
-        content.historicalNote,
-        COMMENTARY_LINE_HEIGHT,
-      ),
-    ];
-    return [{ kind: "classical", blocks: stackBlocks(drafts, CLASSICAL_TOP).blocks }];
+    // The 原文 is set as large as it will fit. This screen carries four short blocks and
+    // nothing else, so at the long shape's 68px the quotation left the canvas 60% empty
+    // wherever it was placed — centring it only moved the void from below to above. A
+    // ladder rather than one size, because 原文 run from 30 to 130 characters and a size
+    // that fills a short one overflows a long one. `wrap: "clause"` is what keeps the
+    // larger type from breaking mid-clause. Every rung stays under the 150px hero title.
+    const room = CANVAS.height - BOTTOM_RESERVE - CLASSICAL_TOP;
+    const at = (quoteSize: number): { blocks: Block[]; used: number } =>
+      stackBlocks(
+        [
+          draft("classicalLabel", "CLASSICAL ENTRY / 古籍原文", TYPE.sectionLabel, TYPE.sectionLabel),
+          bodyDraft(
+            "classical",
+            content.original,
+            quoteSize,
+            content.original,
+            CLASSICAL_LINE_HEIGHT,
+            "clause",
+          ),
+          // A quotation carries its source on the same screen, the way the hero's panel
+          // does. Bibliographic citations may repeat across scenes, which is why the
+          // citation is printed as 《书名》· 卷 · 篇 rather than concatenated bare.
+          draft("publicationNote", citation(content), TYPE.meta, TYPE.meta),
+          bodyDraft(
+            "commentary",
+            content.historicalNote,
+            TYPE.commentary,
+            content.historicalNote,
+            COMMENTARY_LINE_HEIGHT,
+          ),
+        ],
+        CLASSICAL_TOP,
+      );
+    const fitting = [1.6, 1.45, 1.3, 1.15, 1]
+      .map((scale) => at(Math.round(TYPE.classical * scale)))
+      .find((plan) => plan.used <= room);
+    return [{ kind: "classical", blocks: (fitting ?? at(TYPE.classical)).blocks }];
   }
 
   const build = (chunks: string[]): ScenePlan[] =>

@@ -6,6 +6,31 @@ import { isDraft } from "../scripts/lib/compliance.ts";
 import { loadContent } from "../scripts/lib/film-content.ts";
 import { planFilm, type FilmContent } from "../src/layout.ts";
 
+// Hoisted above every `test(...)` registration on purpose. This block awaits
+// `loadContent`, and node:test begins running registered tests while a top-level await
+// is still pending — so a test declared above it could read `renderableFiles` before
+// the line that assigns it, which is a TDZ error rather than a stale value. It stayed
+// hidden until the corpus grew enough films to change when the await yielded.
+const finishedDirUrl = new URL("../src/finished/", import.meta.url);
+const filmsDirPath = fileURLToPath(new URL("../src/films/", import.meta.url));
+const finishedFiles = fs.readdirSync(finishedDirUrl).filter((f) => f.endsWith(".tsx")).sort();
+
+// A draft (content module still carrying TODOs) is not a finished film: `npm run gen`
+// does not register it, so it has no Composition and cannot be rendered. The sweeps
+// that treat a file as a shipped film therefore cover renderable files only; the
+// source-hygiene sweep still covers every file, drafts included.
+const draftFiles = new Set<string>();
+const contentOf = new Map<string, FilmContent | null>();
+for (const f of finishedFiles) {
+  const source = fs.readFileSync(new URL(f, finishedDirUrl), "utf8");
+  const { content } = await loadContent(source, filmsDirPath);
+  contentOf.set(f, content);
+  if (isDraft(content)) {
+    draftFiles.add(f);
+  }
+}
+const renderableFiles = finishedFiles.filter((f) => !draftFiles.has(f));
+
 const compositionSource = fs.readFileSync(new URL("../src/Composition.tsx", import.meta.url), "utf8");
 const finishedUrl = new URL("../src/finished/ginseng-first-film.tsx", import.meta.url);
 const licoriceUrl = new URL("../src/finished/licorice-second-film.tsx", import.meta.url);
@@ -361,25 +386,7 @@ for (const h of shangjingContinuation) {
   });
 }
 
-const finishedDirUrl = new URL("../src/finished/", import.meta.url);
-const filmsDirPath = fileURLToPath(new URL("../src/films/", import.meta.url));
-const finishedFiles = fs.readdirSync(finishedDirUrl).filter((f) => f.endsWith(".tsx")).sort();
 
-// A draft (content module still carrying TODOs) is not a finished film: `npm run gen`
-// does not register it, so it has no Composition and cannot be rendered. The sweeps
-// that treat a file as a shipped film therefore cover renderable files only; the
-// source-hygiene sweep still covers every file, drafts included.
-const draftFiles = new Set<string>();
-const contentOf = new Map<string, FilmContent | null>();
-for (const f of finishedFiles) {
-  const source = fs.readFileSync(new URL(f, finishedDirUrl), "utf8");
-  const { content } = await loadContent(source, filmsDirPath);
-  contentOf.set(f, content);
-  if (isDraft(content)) {
-    draftFiles.add(f);
-  }
-}
-const renderableFiles = finishedFiles.filter((f) => !draftFiles.has(f));
 
 // Grandfathered on-screen violations in two first-generation films: they show
 // a workflow-order label the skill now forbids for new films. The videos stay
