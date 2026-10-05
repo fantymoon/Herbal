@@ -1,8 +1,16 @@
-import { Img, staticFile } from "remotion";
+import { Img, interpolate, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
 import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
-import { openingFor, planFilm, revealDelay, sealGlyph, type Block, type FilmContent } from "./layout";
+import {
+  COVER_CENTER_Y,
+  openingFor,
+  planFilm,
+  revealDelay,
+  sealGlyph,
+  type Block,
+  type FilmContent,
+} from "./layout";
 
 // Data-driven renderer for new films.
 //
@@ -158,7 +166,20 @@ const BlockView: React.FC<{
           </SectionLabel>
         </div>
       );
-    case "heroTitle":
+    case "heroTitle": {
+      // Frame 0 is the cover. 抖音 reads that still at roughly a quarter of the canvas, so
+      // the settled title is still too small to recognise in a feed; the name therefore
+      // opens at the full width of the column and settles into the layout over the first
+      // second. `coverScale` is 1 for names that already fill the column.
+      const settle = interpolate(frame, [0, 26], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      });
+      const eased = 1 - (1 - settle) ** 3;
+      const boost = block.coverScale ?? 1;
+      const scale = 1 + (boost - 1) * (1 - eased);
+      // Centred while it is a cover, back on its layout mark once it has settled.
+      const lift = (1 - eased) * (COVER_CENTER_Y - (block.height * scale) / 2 - block.y);
       return (
         <div
           style={{
@@ -167,11 +188,14 @@ const BlockView: React.FC<{
             fontFamily: bodyFont,
             fontSize: block.fontSize,
             lineHeight: 0.92,
+            transformOrigin: "left top",
+            transform: `translateY(${lift.toFixed(2)}px) scale(${scale.toFixed(4)})`,
           }}
         >
           {block.text}
         </div>
       );
+    }
     case "heroLatin":
       return (
         <div

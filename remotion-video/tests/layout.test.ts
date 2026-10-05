@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ALLOWED_DURATIONS,
+  DECLARED_TYPE_SIZES,
   openingFor,
   revealDelay,
   CANVAS,
@@ -10,7 +11,6 @@ import {
   READING_RATE_LIMIT,
   SAFE_INSET,
   SEAL_GLYPH,
-  TYPE,
   findOverflow,
   findOverlaps,
   findPacingProblems,
@@ -85,7 +85,10 @@ test("every block stays inside the safe horizontal inset", () => {
 });
 
 test("the plan only uses the declared type scale", () => {
-  const allowed = new Set<number>(Object.values(TYPE));
+  // `DECLARED_TYPE_SIZES` is `TYPE` plus the hero-title ladder. The hero name is sized to
+  // its own length rather than to one number, and the rule this test defends is that no
+  // size is invented at a call site — not that every size is a constant.
+  const allowed = new Set<number>(DECLARED_TYPE_SIZES);
   const plan = planFilm(base);
   for (const scene of plan.scenes) {
     for (const block of scene.blocks) {
@@ -302,7 +305,10 @@ test("a block reserves the height its own line-height actually renders", () => {
   const hero = planFilm(base).scenes[0];
   const title = hero.blocks.find((b) => b.kind === "heroTitle");
   assert.ok(title);
-  assert.ok(title.height < TYPE.heroTitle * 1.2, `hero title reserved ${title.height}px`);
+  assert.ok(
+    title.height < title.fontSize * 1.2,
+    `hero title reserved ${title.height}px for a ${title.fontSize}px line`,
+  );
 
   const classical = planFilm(base)
     .scenes.filter((s) => s.kind === "classical")

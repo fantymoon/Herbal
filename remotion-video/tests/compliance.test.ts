@@ -18,7 +18,7 @@ import {
 } from "../scripts/lib/compliance.ts";
 import { readFilmId, readKnownPhotos } from "../scripts/lib/film-files.ts";
 import { loadContent } from "../scripts/lib/film-content.ts";
-import { TYPE, findPacingProblems, planFilm, type FilmContent } from "../src/layout.ts";
+import { DECLARED_TYPE_SIZES, findPacingProblems, planFilm, type FilmContent } from "../src/layout.ts";
 
 const repo = new URL("../", import.meta.url);
 const finishedDir = new URL("src/finished/", repo);
@@ -329,7 +329,7 @@ test("the layout gate passes a well-formed plan and reports no overlaps", () => 
 });
 
 test("every declared type size is one the layout engine can produce", () => {
-  const allowed = new Set<number>(Object.values(TYPE));
+  const allowed = new Set<number>(DECLARED_TYPE_SIZES);
   const plan = planFilm(compliantContent);
   for (const scene of plan.scenes) {
     for (const block of scene.blocks) {

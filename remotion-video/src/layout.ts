@@ -167,7 +167,7 @@ export const TYPE = {
   heroLatin: 36,
   heroVolume: 34,
   /** The hero's hook line: larger than the bibliographic lines, smaller than the name. */
-  hook: 46,
+  hook: 56,
   sectionLabel: 24,
   /** The hero's 原文 excerpt, set larger than the classical scene's copy. */
   heroClassical: 80,
@@ -342,6 +342,8 @@ export type Block = {
   detail?: string;
   /** Break lines at punctuation instead of anywhere. See `clauseLines`. */
   wrap?: "clause";
+  /** How much larger the block opens on frame 0. See `coverScale`. */
+  coverScale?: number;
 };
 
 export type ScenePlan = {
@@ -436,6 +438,8 @@ type Draft = {
   align?: "left" | "right";
   /** Break lines at punctuation instead of anywhere. See `clauseLines`. */
   wrap?: "clause";
+  /** How much larger the block opens on frame 0. See `coverScale`. */
+  coverScale?: number;
 };
 
 const draft = (
@@ -444,7 +448,7 @@ const draft = (
   fontSize: number,
   height: number,
   detail?: string,
-  extra: { width?: number; align?: "left" | "right"; wrap?: "clause" } = {},
+  extra: { width?: number; align?: "left" | "right"; wrap?: "clause"; coverScale?: number } = {},
 ): Draft => ({ kind, text, fontSize, height, detail, ...extra });
 
 const bodyDraft = (
@@ -504,6 +508,7 @@ export const stackBlocks = (
       height: d.height,
       ...(d.detail === undefined ? {} : { detail: d.detail }),
       ...(d.wrap === undefined ? {} : { wrap: d.wrap }),
+      ...(d.coverScale === undefined ? {} : { coverScale: d.coverScale }),
     });
     y += d.height;
   });
@@ -609,11 +614,75 @@ export const formatReadingBudget = (plan: FilmPlan): string[] =>
 const PHOTO_HEIGHT = 500;
 const PHOTO_CHROME = 28;
 
+/**
+ * The size the entry name settles at, and how much larger it opens.
+ *
+ * A fixed 150px was sized for the longest names in the book, so a two-character entry
+ * like 蒲黄 drew 300px of a 932px column — a third of the width, on the one element the
+ * cover and the feed thumbnail are read from. A feed thumbnail is roughly a quarter of
+ * the canvas, which puts 150px type at about 35px on a phone: fine for a reader who
+ * already knows the herb, useless for a 中老年 viewer meeting the name for the first
+ * time. 抖音's own cover tool enlarges the name for the same reason.
+ *
+ * The name now takes the width it needs and no more. Three characters and under reach
+ * the cap; from four up it scales down, which is also where a fixed size starts looking
+ * cramped. A ladder rather than one number so the sizes stay declared — `DECLARED_TYPE_SIZES`
+ * is what the "no ad-hoc font sizes" rule checks against.
+ */
+export const HERO_TITLE_LADDER = [260, 233, 186, 155, 133, 116] as const;
+
+export const heroTitleSize = (entry: string): number => {
+  const chars = Math.max(1, [...entry].length);
+  return (
+    HERO_TITLE_LADDER.find((size) => size * chars <= CONTENT_WIDTH) ??
+    HERO_TITLE_LADDER[HERO_TITLE_LADDER.length - 1]
+  );
+};
+
+/**
+ * How much larger the name opens on frame 0 than it settles.
+ *
+ * Frame 0 is the cover, and 抖音 reads the still at roughly a quarter of the canvas — so
+ * the settled title is still too small to recognise in a feed. The name therefore opens
+ * at the full width of the column and settles into the layout over the first second.
+ *
+ * The boost is capped by the width, not fixed, because the settled size already fills the
+ * column from four characters up: there is nothing left to grow into, and a four-character
+ * entry opens at its settled size.
+ */
+export const COVER_SCALE_MAX = 1.8;
+
+export const coverScale = (entry: string): number => {
+  const chars = Math.max(1, [...entry].length);
+  return Math.min(COVER_SCALE_MAX, CONTENT_WIDTH / (heroTitleSize(entry) * chars));
+};
+
+/**
+ * Where the name sits while it is still a cover.
+ *
+ * Frame 0 is read as a still, so the name is centred in the paper area rather than left at
+ * the top of the hero layout. Slightly below the true middle of that area, which reads as
+ * centred and leaves the book label room to breathe above it.
+ */
+export const COVER_CENTER_Y = 620;
+
+/** Every size the layout may put on screen. The rule against ad-hoc sizes checks this. */
+export const DECLARED_TYPE_SIZES: readonly number[] = [
+  ...new Set([...Object.values(TYPE), ...HERO_TITLE_LADDER]),
+];
+
 export const planHeroScene = (content: FilmContent): ScenePlan => {
   const cite = citation(content);
   const drafts: Draft[] = [
     draft("sectionLabel", content.bookLatin, TYPE.sectionLabel, TYPE.sectionLabel),
-    bodyDraft("heroTitle", content.entry, TYPE.heroTitle, content.entry, TITLE_LINE_HEIGHT),
+    draft(
+      "heroTitle",
+      content.entry,
+      heroTitleSize(content.entry),
+      textHeight(content.entry, heroTitleSize(content.entry), TITLE_LINE_HEIGHT),
+      undefined,
+      { coverScale: coverScale(content.entry) },
+    ),
     draft(
       "heroLatin",
       content.latin,
