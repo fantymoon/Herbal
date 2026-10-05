@@ -330,14 +330,6 @@ export const openingFor = (kinds: readonly BlockKind[]): "hero" | "scene" =>
  */
 export const COVER_BLOCKS: readonly BlockKind[] = ["sectionLabel", "heroTitle"];
 
-/**
- * The book line's size while it is a cover, against the 24px it settles to.
- *
- * The romanised label is chrome — nobody reads it, and at 24px it is invisible in a feed
- * thumbnail. The cover line is the Chinese book name, which is the thing that says what
- * the account does, so it is set large enough to survive the thumbnail.
- */
-export const LABEL_COVER_SIZE = 110;
 
 /** A negative delay means the block is already at full opacity on the scene's frame 0. */
 export const revealDelay = (scene: "hero" | "scene", index: number): number => {
@@ -363,6 +355,8 @@ export type Block = {
   wrap?: "clause";
   /** How much larger the block opens on frame 0. See `coverScale`. */
   coverScale?: number;
+  /** How far down the block sits while it is still the cover. See `COVER_CENTER_Y`. */
+  coverLift?: number;
 };
 
 export type ScenePlan = {
@@ -378,6 +372,15 @@ export type FilmPlan = {
 };
 
 export const CONTENT_WIDTH = CANVAS.width - SAFE_INSET * 2;
+
+/**
+ * The book line's size while it is a cover, against the 24px it settles to.
+ *
+ * The romanised label is chrome — nobody reads it, and at 24px it is invisible in a feed
+ * thumbnail. The cover line is the Chinese book name, which is the thing that says what
+ * the account does, so it is set large enough to survive the thumbnail.
+ */
+export const LABEL_COVER_SIZE = Math.floor(CONTENT_WIDTH / 8);
 
 /**
  * Bibliographic citation, printed exactly as the published films print it.
@@ -459,6 +462,8 @@ type Draft = {
   wrap?: "clause";
   /** How much larger the block opens on frame 0. See `coverScale`. */
   coverScale?: number;
+  /** How far down the block sits while it is still the cover. See `COVER_CENTER_Y`. */
+  coverLift?: number;
 };
 
 const draft = (
@@ -528,6 +533,7 @@ export const stackBlocks = (
       ...(d.detail === undefined ? {} : { detail: d.detail }),
       ...(d.wrap === undefined ? {} : { wrap: d.wrap }),
       ...(d.coverScale === undefined ? {} : { coverScale: d.coverScale }),
+      ...(d.coverLift === undefined ? {} : { coverLift: d.coverLift }),
     });
     y += d.height;
   });
@@ -667,7 +673,7 @@ export const heroTitleSize = (entry: string): number => {
  * not run to the full column width any more. Capped by the width as well, which is why a
  * four-character entry opens at its settled size.
  */
-export const COVER_TITLE_SIZE = 300;
+export const COVER_TITLE_SIZE = 400;
 
 export const coverTitleSize = (entry: string): number => {
   const chars = Math.max(1, [...entry].length);
@@ -675,6 +681,21 @@ export const coverTitleSize = (entry: string): number => {
 };
 
 export const coverScale = (entry: string): number => coverTitleSize(entry) / heroTitleSize(entry);
+
+/**
+ * Where the cover group is centred, and the band a 16:9 crop of the frame can take.
+ *
+ * 抖音 wants a vertical cover and a horizontal one, and both come off this single frame:
+ * the vertical one is the frame, the horizontal one is a 16:9 band cut out of it. So the
+ * cover has to be compact enough to sit inside one band, and it has to be placed where a
+ * band exists — a group stacked against the top of the paper is not, which is also what
+ * made the first attempt read as a corner of text with a hole under it.
+ *
+ * `COVER_BAND` is 1080 * 9 / 16. The group is centred in the paper area and the band is
+ * taken around that centre.
+ */
+export const COVER_BAND = Math.round((CANVAS.width * 9) / 16);
+export const COVER_CENTER_Y = 545;
 
 /** Every size the layout may put on screen. The rule against ad-hoc sizes checks this. */
 export const DECLARED_TYPE_SIZES: readonly number[] = [
@@ -745,7 +766,24 @@ export const planHeroScene = (content: FilmContent): ScenePlan => {
   }
   // No trailing citation: the panel above already prints it, and a second copy lands
   // on the landscape where it reads as a grey smudge.
-  return { kind: "hero", blocks: stackBlocks(drafts).blocks };
+  const blocks = stackBlocks(drafts).blocks;
+  // The cover is a group: the book line grows up from its baseline, the name grows down
+  // from its top, and together they have to land inside one 16:9 band. Both carry the
+  // lift that centres them; it settles to zero with the rest of the cover.
+  const label = blocks.find((b) => b.kind === "sectionLabel");
+  const title = blocks.find((b) => b.kind === "heroTitle");
+  let coverLift = 0;
+  if (label && title) {
+    const top = label.y + label.height - LABEL_COVER_SIZE;
+    const bottom = title.y + heroTitleSize(title.text) * coverScale(title.text) * TITLE_LINE_HEIGHT;
+    coverLift = Math.round(COVER_CENTER_Y - (top + bottom) / 2);
+  }
+  return {
+    kind: "hero" as const,
+    blocks: blocks.map((b) =>
+      b.kind === "sectionLabel" || b.kind === "heroTitle" ? { ...b, coverLift } : b,
+    ),
+  };
 };
 
 const CLASSICAL_TOP = 166;

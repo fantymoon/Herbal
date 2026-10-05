@@ -173,8 +173,9 @@ const BlockView: React.FC<{
         // The two book lines cross without both sitting at half opacity: the cover line is
         // gone by the time the romanised label is more than a ghost.
         const handover = Math.max(0, Math.min(1, eased * 1.6));
+        const drop = (block.coverLift ?? 0) * (1 - eased);
         return (
-          <div style={frameStyle}>
+          <div style={{ ...frameStyle, transform: `translateY(${drop.toFixed(2)}px)` }}>
             <div style={{ opacity: Math.max(0, handover * 1.6 - 0.6) }}>
               <SectionLabel accent={accent} size={block.fontSize}>
                 {block.text}
@@ -218,6 +219,9 @@ const BlockView: React.FC<{
       const eased = 1 - (1 - settle) ** 3;
       const boost = block.coverScale ?? 1;
       const scale = 1 + (boost - 1) * (1 - eased);
+      // While it is a cover the name sits lower, so that the book line above it and the
+      // name together land inside one 16:9 band. See COVER_CENTER_Y.
+      const drop = (block.coverLift ?? 0) * (1 - eased);
       return (
         <div
           style={{
@@ -227,7 +231,7 @@ const BlockView: React.FC<{
             fontSize: block.fontSize,
             lineHeight: 0.92,
             transformOrigin: "left top",
-            transform: `scale(${scale.toFixed(4)})`,
+            transform: `translateY(${drop.toFixed(2)}px) scale(${scale.toFixed(4)})`,
           }}
         >
           {block.text}
