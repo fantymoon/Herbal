@@ -24,7 +24,7 @@ import { findEntries, originProblems, readCorpus, type Sutra } from "./lib/corpu
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
-import { checkLedgerCopy, checkTitleFrames, publishedOn, readLedgerField } from "./lib/ledger.ts";
+import { checkLedgerCopy, checkTitleFrames, readLedgerField } from "./lib/ledger.ts";
 import type { TitleLine } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { adjacentTrackRepeats, readPublishPlan } from "./lib/publish-order.ts";
@@ -36,6 +36,7 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload");
+const outDir = path.join(repo, "out");
 const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
 
 /**
@@ -154,35 +155,39 @@ const titleLines: TitleLine[] = [];
 /** 条目 -> the track that film carries, for the films the schedule still has a say over. */
 const trackByEntry = new Map<string, string>();
 let frozenCount = 0;
-let liveCount = 0;
+let renderedCount = 0;
 let draftCount = 0;
 
 for (const file of all) {
   const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
   const kebab = file.replace(/\.tsx$/, "");
   const frozen = isFrozen(file);
-  const ledger = path.join(uploadDir, `${kebab}.md`);
-  const copy = fs.existsSync(ledger) ? fs.readFileSync(ledger, "utf8") : "";
-  const live = publishedOn(copy);
+  // A master on disk is what makes a film untouchable: re-rendering it is the one thing
+  // that would change what a viewer sees, and the answer to a style change is the next
+  // film, not this one. Nothing is reported by the creator — the file is the record.
+  const rendered = fs.existsSync(path.join(outDir, `${kebab}.mp4`));
   const { content, error } = await loadContent(source, filmsDir);
   const violations = checkNewFilm(source, content, knownPhotos);
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
 
-  // A film that is already on a platform cannot be un-published by a verdict, so the
-  // verdict is information. `FROZEN_FILMS` is the 2026-09-21 snapshot of what was live
-  // then; films published since carry the date in their ledger, and reading it is how the
-  // rule stays true for them instead of only for the snapshot.
-  if (frozen || live !== null) {
+  // A verdict cannot un-render a master, so it is information rather than a failure.
+  // `FROZEN_FILMS` is the 2026-09-21 snapshot of what was live then and has no master
+  // logic of its own; everything rendered since is found by looking at `out/`.
+  if (frozen || rendered) {
     if (frozen) {
       frozenCount += 1;
     } else {
-      liveCount += 1;
+      renderedCount += 1;
     }
-    if (args.verbose) {
+    // Printed whether or not --verbose is on: a rendered film is not re-judged, but a
+    // finding it carries is still a fact about a master that exists, and "do not touch a
+    // rendered film" has one exception — a real defect. Hiding those behind --verbose
+    // would make the exception unreachable.
+    if ((!frozen && violations.length > 0) || repeats.length > 0 || args.verbose) {
       console.log(
         frozen
           ? `frozen ${file}: ${violations.length} known compliance gap(s), ${repeats.length} repeated phrase(s)`
-          : `live ${file}: published ${live}, rules not re-applied — ${violations.length} gap(s)`,
+          : `rendered ${file}: master on disk, not re-judged — ${violations.length} gap(s), ${repeats.length} repeated phrase(s)`,
       );
     }
     continue;
@@ -293,10 +298,10 @@ if (planned.length < 20) {
   }
 }
 
-const renderable = all.length - frozenCount - liveCount - draftCount;
+const renderable = all.length - frozenCount - renderedCount - draftCount;
 console.log(
   `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ` +
-    `${frozenCount} frozen, ${liveCount} published`,
+    `${frozenCount} frozen, ${renderedCount} rendered`,
 );
 
 // The images have public/images/credits.json and a gate that keeps it exact. The music has

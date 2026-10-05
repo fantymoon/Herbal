@@ -99,8 +99,6 @@ export const LEDGER_FIELDS = [
   "描述",
   "话题",
   "BGM",
-  "抖音",
-  "视频号",
   "备注",
 ] as const;
 
@@ -129,26 +127,6 @@ export const readLedgerField = (text: string, label: LedgerField): string => {
   return inline || block.join("\n");
 };
 
-/**
- * The date a ledger records the film going live, or null while it is unpublished.
- *
- * `FROZEN_FILMS` is a snapshot of the 55 films that were live on 2026-09-21, and it is a
- * snapshot because the legacy films have no ledgers to read — there is no other record of
- * what they carried. Films published since *do* have one, so the gate can ask instead of
- * guessing, and a film already on a platform cannot be un-published by a gate verdict: the
- * same reason a frozen film is reported and never failed. 蓝实, 紫芝, 黄芝, 防风 and
- * 决明子 are live and outside the snapshot; without this they would be judged as new work.
- *
- * Only a date counts. A blank `抖音：` means "not yet published", which keeps the default
- * fail-closed — forgetting to record a date leaves the film gated, not exempt.
- */
-export const publishedOn = (copy: string): string | null => {
-  for (const platform of ["抖音", "视频号"] as const) {
-    const m = /已发布\s*(\d{4}-\d{2}-\d{2})/.exec(readLedgerField(copy, platform));
-    if (m) return m[1];
-  }
-  return null;
-};
 
 /**
  * Positioning words the account moved away from after the platform's recommendation
@@ -293,8 +271,6 @@ export const renderLedger = (
       "BGM",
       keep("BGM", `母版配 \`${content.music}\`，上传时用平台曲库同款替换`),
     ),
-    renderField("抖音", keep("抖音", "未发布")),
-    renderField("视频号", keep("视频号", "未发布")),
     renderField("备注", keep("备注", note)),
   ];
 

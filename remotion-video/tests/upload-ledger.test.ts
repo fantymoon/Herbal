@@ -6,7 +6,6 @@ import { readFilmId } from "../scripts/lib/film-files.ts";
 import {
   checkLedgerCopy,
   checkTitleFrames,
-  publishedOn,
   readLedgerField,
   renderLedger,
   titleFrame,
@@ -27,8 +26,6 @@ const REQUIRED_LEDGER_FIELDS = [
   "描述：",
   "话题：",
   "BGM：",
-  "抖音：",
-  "视频号：",
   "备注：",
 ];
 
@@ -109,8 +106,6 @@ const sample: FilmContent = {
 test("the ledger derives its copy fields from the content module", () => {
   const text = renderLedger(sample, null);
   assert.equal(readLedgerField(text, "film"), "`HuangzhiFirstFilm`");
-  assert.equal(readLedgerField(text, "抖音"), "未发布");
-  assert.equal(readLedgerField(text, "视频号"), "未发布");
   assert.equal(readLedgerField(text, "标题").length > 0, true, "a draft title must be filled");
   assert.equal(readLedgerField(text, "标题").length <= 18, true, "the title must stay short");
   assert.equal(readLedgerField(text, "描述").includes("《神农本草经》卷一·上经载黄芝。"), true);
@@ -121,13 +116,10 @@ test("the ledger derives its copy fields from the content module", () => {
 
 test("re-rendering a ledger never overwrites what a human filled in", () => {
   const edited = renderLedger(sample, null)
-    .replace(/- 标题：.*/, "- 标题：麻黄为何称“龙沙”？")
-    .replace(/- 抖音：.*/, "- 抖音：已发布 2026-09-25");
+    .replace(/- 标题：.*/, "- 标题：麻黄为何称“龙沙”？");
   const again = renderLedger(sample, edited);
   assert.equal(readLedgerField(again, "标题"), "麻黄为何称“龙沙”？");
-  assert.equal(readLedgerField(again, "抖音"), "已发布 2026-09-25");
   // ...and the fields that were still blank get filled on the way through.
-  assert.equal(readLedgerField(again, "视频号"), "未发布");
   assert.equal(readLedgerField(again, "话题").includes("#古籍"), true);
 });
 
@@ -260,52 +252,24 @@ test("no two new films reuse one title frame", () => {
 
 // ---- A film that is live is not re-judged ---------------------------------------
 
-test("the publish date is read from the ledger, and a blank field is not a date", () => {
-  const ledger = (douyin: string, channels: string) =>
-    [
-      "## 上传台账",
-      "",
-      "- film: `XFirstFilm`",
-      "- 标题：X：试一下",
-      "- 描述：",
-      "  第一行。",
-      "- 话题：#本草",
-      "- BGM：母版配 `music/yuzhou-changwan.mp3`",
-      `- 抖音：${douyin}`,
-      `- 视频号：${channels}`,
-    ].join("\n");
-  assert.equal(publishedOn(ledger("已发布 2026-09-30", "未发布")), "2026-09-30");
-  assert.equal(publishedOn(ledger("未发布", "已发布 2026-08-14")), "2026-08-14");
-  // Both platforms, and 抖音 wins the tie only because it is read first — either date
-  // answers the same question, and the gate only needs to know that there is one.
-  assert.equal(publishedOn(ledger("已发布 2026-09-30", "已发布 2026-08-14")), "2026-09-30");
-  // Not yet published: fail-closed, so a forgotten date leaves the film gated.
-  assert.equal(publishedOn(ledger("未发布", "未发布")), null);
-  assert.equal(publishedOn(ledger("", "")), null);
-  assert.equal(publishedOn(""), null);
-  // A date without 已发布 is a note, not a record of an upload.
-  assert.equal(publishedOn(ledger("2026-09-30 待发", "未发布")), null);
+test("the ledger does not ask anyone to report a publication", () => {
+  // The creator publishes several films a week and will not come back to say so, so a
+  // status field is a field that rots: it starts as 未发布, stays 未发布, and the gate
+  // then trusts a record nobody maintains. What makes a film untouchable is the master
+  // on disk — `check` looks at `out/`, not at what someone remembered to type here.
+  const text = renderLedger(sample, null);
+  assert.equal(text.includes("- 抖音："), false);
+  assert.equal(text.includes("- 视频号："), false);
+  // The fields that do carry weight are still there.
+  for (const field of ["film:", "标题：", "描述：", "话题：", "BGM："]) {
+    assert.equal(text.includes(field), true, `${field} should still be rendered`);
+  }
 });
 
-test("the films published after the 2026-09-21 freeze are found by their ledgers", () => {
-  // FROZEN_FILMS is a snapshot because the 55 legacy films have no ledgers to read.
-  // These were published later and do have one, so the gate reads the date instead of
-  // treating them as new work — the rule has to hold for them too, not just the snapshot.
-  const live = newFilms
-    .map((file) => {
-      const kebab = file.replace(/\.tsx$/, "");
-      const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
-      return { kebab, date: publishedOn(copy) };
-    })
-    .filter((e) => e.date !== null);
-  assert.deepEqual(
-    live.map((e) => `${e.kebab} ${e.date}`),
-    [
-      "fangfeng-first-film 2026-10-01",
-      "huangzhi-first-film 2026-09-27",
-      "juemingzi-first-film 2026-10-01",
-      "lanshi-first-film 2026-09-30",
-      "zizhi-first-film 2026-09-30",
-    ],
-  );
+test("a ledger that still carries the old status fields is read, not rejected", () => {
+  // Ledgers written before this change have the fields, and hand-written ones still do.
+  // Nothing reads them any more, and an extra line must not fail the gate.
+  const withStatus = renderLedger(sample, null) + "- 抖音：已发布 2026-09-25\n- 视频号：未发布\n";
+  assert.equal(readLedgerField(withStatus, "标题").length > 0, true);
+  assert.equal(checkLedgerCopy(withStatus).length, 0);
 });
