@@ -1,44 +1,176 @@
-// Sync music from ../../music (original Chinese filenames) into
-// public/music (ASCII names used at render time).
+// The single authority on the music bed: copies the tracks from ../../music (original
+// Chinese filenames) into public/music (ASCII names used at render time), and writes the
+// registry the renderer reads.
+//
+// Why a registry at all: `@remotion/media`'s `loop` takes the loop length from `trimAfter`.
+// When it cannot determine the asset duration it treats the media as infinitely long, so a
+// film-length `trimAfter` makes `loop` degenerate into "play once" — silently. Handing it
+// the track's real length is what makes the loop a loop, and that length has to come from
+// somewhere trustworthy. It comes from the file.
+//
 // Usage: npm run sync-music
-// New tracks: drop the mp3 into music/ and extend TRACKS below.
+// New track: drop the mp3 into ../../music and add an entry to TRACKS below.
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { bundledFfmpeg, decodeMono, edgeSilence } from "./lib/audio.ts";
+import { mp3DurationSeconds } from "./lib/mp3-duration.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const repo = path.join(root, "..");
 const srcDir = path.join(root, "..", "..", "music");
 const dstDir = path.join(root, "..", "public", "music");
+const registryPath = path.join(root, "..", "src", "music-registry.ts");
 
-const TRACKS = new Map([
-  ["高山流水 - 轻音乐网.mp3", "gaoshan-liushui.mp3"],
-  ["渔舟唱晚（古筝）_爱给网_aigei_com.mp3", "yuzhou-changwan.mp3"],
-]);
+/** The compositions run at 30fps; the registry speaks in the frames they use. */
+const FPS = 30;
+
+// `source` is read off the source filename, which is where the download came from.
+// `license` is deliberately not guessed. "unrecorded" is the honest value, and it is
+// printed on every run so the gap stays visible instead of being papered over — the
+// images have public/images/credits.json and a gate behind it; the music has this.
+const TRACKS = [
+  {
+    src: "高山流水 - 轻音乐网.mp3",
+    file: "gaoshan-liushui.mp3",
+    title: "高山流水",
+    source: "轻音乐网",
+    license: "unrecorded",
+  },
+  {
+    src: "渔舟唱晚（古筝）_爱给网_aigei_com.mp3",
+    file: "yuzhou-changwan.mp3",
+    title: "渔舟唱晚（古筝）",
+    source: "爱给网",
+    license: "unrecorded",
+  },
+];
 
 const hash = (p) => crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");
 
+const ffmpeg = bundledFfmpeg(repo);
+if (!ffmpeg) {
+  console.warn("no bundled ffmpeg found; track edges will be recorded as starting on sound");
+}
+
 let changed = 0;
-for (const [src, dst] of TRACKS) {
-  const srcFile = path.join(srcDir, src);
-  const dstFile = path.join(dstDir, dst);
+const tracks = [];
+
+for (const track of TRACKS) {
+  const srcFile = path.join(srcDir, track.src);
+  const dstFile = path.join(dstDir, track.file);
   if (!fs.existsSync(srcFile)) {
-    console.error(`missing source: music/${src}`);
+    console.error(`missing source: music/${track.src}`);
     process.exitCode = 1;
     continue;
   }
   if (!fs.existsSync(dstFile) || hash(srcFile) !== hash(dstFile)) {
     fs.copyFileSync(srcFile, dstFile);
     changed += 1;
-    console.log(`copied music/${src} -> public/music/${dst}`);
+    console.log(`copied music/${track.src} -> public/music/${track.file}`);
   } else {
-    console.log(`ok public/music/${dst}`);
+    console.log(`ok public/music/${track.file}`);
+  }
+
+  const seconds = mp3DurationSeconds(fs.readFileSync(dstFile));
+  if (seconds === null) {
+    console.error(`could not read a frame header from public/music/${track.file}`);
+    process.exitCode = 1;
+    continue;
+  }
+
+  // Where the track's own silence ends and begins. `yuzhou-changwan.mp3` opens on 0.96s of
+  // it and closes on 0.55s; looped naively, every seam is a 1.5s hole. Skipping the head
+  // leaves the track's natural ending to run into its natural opening, which is what a
+  // listener hears if they simply play it twice.
+  const decoded = ffmpeg ? await decodeMono(ffmpeg, dstFile) : null;
+  const edges = decoded ? edgeSilence(decoded) : { head: 0, tail: 0 };
+  if (!decoded) {
+    console.warn(`could not decode public/music/${track.file}; assuming it starts on sound`);
+  }
+
+  tracks.push({
+    ...track,
+    seconds: Number(seconds.toFixed(3)),
+    frames: Math.round(seconds * FPS),
+    leadFrames: Math.round(edges.head * FPS),
+    tailSeconds: Number(edges.tail.toFixed(3)),
+  });
+}
+
+if (process.exitCode) {
+  console.error("registry not written");
+} else {
+  const body = tracks
+    .map(
+      (t) => `  {
+    file: ${JSON.stringify(t.file)},
+    title: ${JSON.stringify(t.title)},
+    source: ${JSON.stringify(t.source)},
+    license: ${JSON.stringify(t.license)},
+    seconds: ${t.seconds},
+    frames: ${t.frames},
+    leadFrames: ${t.leadFrames},
+    tailSeconds: ${t.tailSeconds},
+  },`,
+    )
+    .join("\n");
+
+  const generated = `// AUTO-GENERATED by scripts/sync-music.mjs - do not edit by hand.
+// Run \`npm run sync-music\` after changing anything in ../../music.
+//
+// \`frames\` is the track's own length in the 30fps frames the compositions run at, counted
+// from the file's frame headers rather than estimated from its size. FinishedMusic needs
+// it: @remotion/media's \`loop\` takes the loop length from \`trimAfter\`, and a film-length
+// \`trimAfter\` makes the loop silently degenerate into "play once". See the comment on
+// \`FinishedMusic\` in src/finished-shell.tsx.
+//
+// \`leadFrames\` is how long the track spends silent before its first note. Looping from
+// frame 0 puts that silence at every seam; skipping it is what keeps the bed continuous.
+
+export type MusicTrack = {
+  /** Basename under public/music. */
+  file: string;
+  title: string;
+  /** Where the file came from. */
+  source: string;
+  /** "unrecorded" until someone writes down what the licence actually is. */
+  license: string;
+  seconds: number;
+  /** The track's own length at 30fps. */
+  frames: number;
+  /** Silent frames at the head of the track; where a loop should start. */
+  leadFrames: number;
+  /** Silent seconds at the tail, kept as the track's natural ending. */
+  tailSeconds: number;
+};
+
+export const MUSIC_REGISTRY: readonly MusicTrack[] = [
+${body}
+];
+`;
+
+  const existing = fs.existsSync(registryPath) ? fs.readFileSync(registryPath, "utf8") : null;
+  if (existing === generated) {
+    console.log("registry unchanged");
+  } else {
+    fs.writeFileSync(registryPath, generated);
+    console.log(`wrote src/music-registry.ts (${tracks.length} track(s))`);
   }
 }
 
 for (const f of fs.readdirSync(srcDir).filter((f) => f.endsWith(".mp3"))) {
-  if (!TRACKS.has(f)) {
+  if (!TRACKS.some((t) => t.src === f)) {
     console.warn(`unmapped source (add to TRACKS in scripts/sync-music.mjs): music/${f}`);
   }
+}
+
+const unrecorded = tracks.filter((t) => t.license === "unrecorded");
+if (unrecorded.length > 0) {
+  console.warn(
+    `${unrecorded.length} of ${tracks.length} track(s) have no recorded licence: ` +
+      unrecorded.map((t) => t.file).join(", "),
+  );
 }
 console.log(changed === 0 ? "music in sync" : `synced ${changed} track(s)`);

@@ -27,8 +27,10 @@ import { loadContent } from "./lib/film-content.ts";
 import { checkLedgerCopy, checkTitleFrames, publishedOn, readLedgerField } from "./lib/ledger.ts";
 import type { TitleLine } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
+import { adjacentTrackRepeats, readPublishPlan } from "./lib/publish-order.ts";
 import { formatReadingBudget, planFilm, visibleText } from "../src/layout.ts";
 import type { FilmContent } from "../src/layout.ts";
+import { trackOf, unrecordedLicences } from "../src/music.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
@@ -120,6 +122,20 @@ const factProblems = (file: string, content: FilmContent): string[] => {
   return originProblems(content.facts, sutra).map((p) => `${file}: ${p}`);
 };
 
+/**
+ * The track a film names has to be one `npm run sync-music` has measured.
+ *
+ * Not bookkeeping. `FinishedMusic` only consults the registry when it has to loop, and an
+ * unregistered track under `loop` throws — that is the loud version of this mistake. The
+ * quiet version already shipped: a six-minute film whose 4:16 bed ran out and left the last
+ * 1:46 playing against digital silence, because `loop` silently degenerates into "play
+ * once" when it cannot work out how long the track is.
+ */
+const musicProblems = (file: string, content: FilmContent): string[] =>
+  trackOf(content.music) === null
+    ? [`${file}: music「${content.music}」 is not in src/music-registry.ts — run \`npm run sync-music\``]
+    : [];
+
 let all = fs
   .readdirSync(finishedDir)
   .filter((f) => f.endsWith(".tsx"))
@@ -135,6 +151,8 @@ if (typeof args.film === "string") {
 
 const failures: string[] = [];
 const titleLines: TitleLine[] = [];
+/** 条目 -> the track that film carries, for the films the schedule still has a say over. */
+const trackByEntry = new Map<string, string>();
 let frozenCount = 0;
 let liveCount = 0;
 let draftCount = 0;
@@ -207,6 +225,7 @@ for (const file of all) {
   if (title !== "") {
     titleLines.push({ film: file, title });
   }
+  trackByEntry.set(content.entry, content.music);
   // A declared budget deviation renders and reports, but does not fail. `npm run check`
   // prints the film's own reason on the waived line, so "27s because the 经文 is 90
   // characters" is visible in the gate's output instead of being inferred from absence.
@@ -215,6 +234,7 @@ for (const file of all) {
     ...hardViolations(violations).map((v) => `${file}: [${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(file, repeats)] : []),
     ...factProblems(file, content),
+    ...musicProblems(file, content),
     ...(filmId ? ledgerProblems(kebab, filmId, content.music) : [`${file}: declares no exported film component`]),
   ];
   for (const w of waived) {
@@ -248,11 +268,50 @@ if (frameProblems.length > 0) {
   }
 }
 
+// The second set-level rule. Which track a film carries is a per-film field, but whether
+// two films in a row sound the same is a property of the sequence — and the sequence that
+// matters is the publish order, not `progress.json`'s 卷次 order. Reading the plan instead
+// of assuming is the whole point: measured against the book order, this batch looked like it
+// repeated eight times in a row, and it does not.
+const planPath = path.join(repo, "..", "publish-plan.md");
+const planned = readPublishPlan(planPath);
+if (planned.length < 20) {
+  // A parse that quietly returns nothing would make this check quietly pass, which is the
+  // failure mode the check exists to prevent.
+  failures.push(
+    `publish-plan.md yielded only ${planned.length} scheduled row(s); expected the first 30`,
+  );
+  console.error(`\nFAIL publish order could not be read from ${planPath}`);
+} else {
+  const bgmProblems = adjacentTrackRepeats(planned, trackByEntry);
+  if (bgmProblems.length > 0) {
+    failures.push(...bgmProblems);
+    console.error("\nFAIL two films in a row share a music track");
+    for (const p of bgmProblems) {
+      console.error(`  ${p}`);
+    }
+  }
+}
+
 const renderable = all.length - frozenCount - liveCount - draftCount;
 console.log(
   `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ` +
     `${frozenCount} frozen, ${liveCount} published`,
 );
+
+// The images have public/images/credits.json and a gate that keeps it exact. The music has
+// a registry that records where each track came from and nothing that records what it may
+// be used for, because nobody has written that down. Reported on every run rather than
+// fixed by assumption: an invented licence is worse than a missing one, and a channel
+// already carrying a platform warning is the last place to guess.
+const unlicensed = unrecordedLicences();
+if (unlicensed.length > 0) {
+  console.log(
+    `note ${unlicensed.length} track(s) have no recorded licence: ` +
+      unlicensed.map((t) => `${t.file} (${t.source})`).join(", "),
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\n${failures.length} problem(s) found.`);
   process.exit(1);

@@ -55,7 +55,9 @@ test("finished films share one music/film shell instead of copying it", () => {
   const shell = fs.readFileSync(new URL("../src/finished-shell.tsx", import.meta.url), "utf8");
   assert.equal(shell.includes("export const FinishedMusic"), true);
   assert.equal(shell.includes("export const FinishedFilm"), true);
-  assert.equal(shell.includes("trimAfter={durationInFrames}"), true);
+  // The bed is trimmed at the composition's end for the short films, and at the track's own
+  // length when the film is longer than its track — that number is what makes `loop` a loop.
+  assert.equal(shell.includes("trimAfter={track ? track.frames : durationInFrames}"), true);
   assert.equal(shell.includes("peakVolume = 0.12"), true);
   assert.equal(shell.includes("[0, peakVolume, peakVolume, 0]"), true);
   assert.equal(shell.includes("<SceneShell"), true);

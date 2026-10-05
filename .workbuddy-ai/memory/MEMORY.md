@@ -115,11 +115,30 @@
   **注意 `--id=` 查的是未过滤列表**，要 `--fruiting --id=` 一起给，否则报「no candidate with photo id」。
   果部条目优先用这个开关——「配图为<X>」写在台账描述里，青果/叶子与条目名对不上就是内容错误。
 - **Node 走代理**：`fetch` 默认不读 `http_proxy`，脚本里设 `process.env.NODE_USE_ENV_PROXY = "1"` 即可（Node 22 就支持）。
-  沙箱**禁止 Node spawn 子进程**（curl 直接 EBUSY），所以下载必须在 Node 内完成，不能 shell out。
+  **子进程：异步 `spawn` 可用，同步形式（`execFileSync`/`spawnSync`）会返回 EBUSY。** 旧记录写的
+  「沙箱禁止 Node spawn 子进程」是错的——`verify-film.mjs` 早就在 `run` 的注释里写了这条。用同步形式
+  写音床检查时，ffmpeg 解码静默失败，表现成「这个文件没有音频」，是个会把人带偏的假象。
+  所以下载类脚本仍留在 Node 内（不为沙箱，是为了重试与代理），但需要 ffmpeg 时可以 spawn 它。
 - 其他可达的图源（备用）：`plants.sc.egov.usda.gov`（USDA PLANTS，公有领域）、`calphotos.berkeley.edu`（伯克利，CC 带署名）、
   `api.gbif.org`（聚合，但媒体直链常指向被封的 CDN）、`raw.githubusercontent.com`。
 - 台账约束不变：`credits.json` 必须与 `public/images/` **完全一致**，且**每张图都要被某部成片引用**——
   下载与建片必须成对，不能先囤图。
+
+## 音乐通道（2026-10-05）
+
+- **曲长是门禁的输入，不是注释。** `npm run sync-music` 复制曲目并写 `src/music-registry.ts`：
+  曲长（纯 JS 走 mp3 帧头数出来）、开头静音、来源。片子写的曲子不在表里，`npm run check` FAIL。
+- **`@remotion/media` 的 `loop` 会静默失效。** 它从 `trimAfter` 推循环长度；取不到资源时长时把媒体当
+  无限长，于是「`loop` + 整片长度的 `trimAfter`」= 只播一遍。没有报错、没有警告，只是音床在曲子
+  放完处停了。`FinishedMusic` 因此查注册表，把 `trimAfter` 设成曲子自身长度。
+  **判据：库的「聪明默认」在取不到输入时会退化成无操作，而退化路径不报警。**
+- **`trimBefore` 用曲子的开头静音长度**，否则每个循环接缝会多一个 0.96+0.55 秒的空洞。
+- **`ffprobe` 通过不代表音轨没问题**：它报的是流，不是采样。`verify` 与 `topic:verify` 都会解码
+  音轨，断言曲子起播后没有 ≥1 秒纯零段（判据是 `-180 dBFS` 这种只有「什么都没有」才到得了的地板）。
+- **长视频系列此前完全没有检查**，缺陷正活在那里。`npm run topic:verify [--verbose]` 补上了。
+- **发布顺序 ≠ 书内原序。** 按 `progress.json` 原序量 BGM 轮换，14 部新片相邻同曲 8 处；按
+  `publish-plan.md` 的发布顺序量，前六部完美交替。**数字没错，是序列错了。** 现在
+  `adjacentTrackRepeats` 从 `publish-plan.md` 解析排期表做这条检查，解析不出 30 行就 FAIL。
 
 ## 已知缺口（截至 2026-10-02）
 
@@ -127,9 +146,17 @@
   挂死，探测 github.com 本身是通的）。`out/` 母版仍仅存本地单点，约 180MB 不在仓库里。
 - **方剂线（`mode: "formula"` / "方"印）从未产出**。印章已改为 `sealGlyph(mode)`，出片即可用，但还没有一条方剂内容验证过这条路径。
 - BGM 只有 2 首轮播；无口播/人格；封面未与首帧分离。
+- **曲库没有授权记录。** 图片有 `credits.json` 加门禁；音乐只有 `src/music-registry.ts` 记了
+  `source`，`license` 全是 `unrecorded`，`npm run check` 每次打一行 note。**不要猜一个许可证填进去。**
+- **`upload/_incidents.md:30` 的「上传时用平台曲库同款替换」是声明、不是证据。** 它决定了 BGM 这件事
+  往哪投入：若真做了替换，母版配乐与线上观感无关，扩库只买母版层面的多样性；若没做，扩库才直接影响观感。
+  **只有用户能答。** 在确认之前别拿它当论据。
 - 存量处置清单（`upload/_frozen-disposition.md`，55 部）**已生成但尚未执行**——视频号上仍公开的 33 部等待转私密，这是止血动作，只有用户能操作平台后台。
 - **B 项（声明 `duration`）已于 2026-10-02 首次用于生产**：大枣 900 帧（30 秒）。经文 76 字、12 句，
-  逐句今译后古典屏 336 字，720 帧下中段两屏需 21.5 与 29.0 字/秒。810 帧那条路径仍未跑过真片。
+  是其余新片的 1.5–2 倍，720 帧下中段两屏需 21.5 与 28.3 字/秒。810 帧那条路径仍未跑过真片。
+  **2026-10-05 更正过它的理由文本**：原文写「逐句今译后古典屏共 336 字」，那是十二秒改版之前的数字；
+  重渲之前先跑了一遍 `planFilm`（带偏离 / 不带偏离）核对，偏离本身仍然承重（去掉就掉到 720 帧并报
+  21.5/28.3 字每秒），只是理由里的数字过期了。**门禁会把 `why` 原样打印出来当依据，所以它是要被核对的内容，不是注释。**
   `deviations` 的用法到此不再是「未验证」。
 - **三部在线片带着已知缺陷，且不能改**：蓝实、紫芝、黄芝的 `产地` 不是经文点名的地名
   （河内／高夏／嵩山）。母版撤不回来，重传才是错的动作；已在 `tests/corpus.test.ts` 里钉住。
@@ -146,7 +173,8 @@
 - `npm run entry -- --name=<条目>` 读经文、算容量、查残缺（截断 + 掉字）；`--list [--fits]` 列出全部条目；`--grep=<词>` 跨 701 个语料文件检索（唯一能搜中文的通道）。
 - `npm run variants [-- --all]` 底本与《证类本草》对读，报讹字候选（报告，不判失败）。
 - `npm run fetch-photo -- --taxon="<学名>" --file=<主干> [--check] [--list=N] [--fruiting] [--id=<photoId> | --pick=N]` 取真实授权配图并登记。
-- `npm run new-film` 建片，`npm run gen` 注册，`npm run check` 全量门禁，`npm run verify` 单部渲染验证。
+- `npm run sync-music` 复制曲目并重写 `src/music-registry.ts`（曲长、开头静音、来源）。**加曲目：把 mp3 丢进 `music/`，在 `scripts/sync-music.mjs` 的 `TRACKS` 加一条，再跑它。**
+- `npm run new-film` 建片，`npm run gen` 注册，`npm run check` 全量门禁，`npm run verify` 单部渲染验证（含音床检查），`npm run topic:verify [--verbose]` 检查长视频系列（含音床与静音时刻）。
 - 过拟合审计见工作区根目录 `overfit-audit.html`：A 项（历史框定句）已定并实施，余 B/C/D/E/F 五项已授权由我决定。
 
 优化计划见工作区根目录 `optimization-plan.html`，发布排期见 `publish-plan.md`。

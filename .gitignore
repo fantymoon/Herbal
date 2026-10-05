@@ -7,3 +7,7 @@ dist
 # repo, so keep a copy elsewhere: `npm run manifest` writes masters-manifest.json,
 # which records which masters existed and their sizes so a loss is detectable.
 out
+
+# Per-segment TTS transcripts for the long-form series. Regenerable from the voice
+# modules via `npm run topic:build`, and rewritten on every run.
+remotion-video/.topic-work

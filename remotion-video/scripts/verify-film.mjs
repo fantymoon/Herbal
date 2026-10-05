@@ -21,6 +21,7 @@ import { loadContent } from "./lib/film-content.ts";
 import { checkLedgerCopy, publishedOn } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
+import { checkAudioBed } from "./lib/audio.ts";
 import { planFilm, visibleText } from "../src/layout.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -261,6 +262,10 @@ const checks = checkProbe(info, {
   fps: 30,
   durationSeconds: duration / 30,
 });
+// ffprobe reports the stream, not the samples. A film whose music stops halfway has a
+// perfectly healthy AAC stream — that is how `out/tu-que-h.mp4` passed every check while
+// playing its last 1:46 against digital silence. So the samples get read too.
+checks.push(await checkAudioBed(mp4, repo));
 let ok = true;
 for (const check of checks) {
   console.log(`  ${check.passed ? "PASS" : "FAIL"} ${check.label} (${check.detail})`);
