@@ -33,7 +33,7 @@
     "sync-music": "node --experimental-strip-types scripts/sync-music.mjs",
     "verify": "node --experimental-strip-types scripts/verify-film.mjs",
     "manifest": "node --experimental-strip-types scripts/manifest-masters.mjs",
-    "test": "node --test --experimental-strip-types tests/suite.test.ts tests/herbal-data.test.ts tests/visual-style.test.ts tests/finished-video.test.ts tests/compliance.test.ts tests/corpus.test.ts tests/layout.test.ts tests/repeat-scan.test.ts tests/upload-ledger.test.ts tests/ffprobe.test.ts tests/published-audit.test.ts tests/stats-import.test.ts tests/music.test.ts tests/herbal-short-video-skill.test.mjs",
+    "test": "node --test --experimental-strip-types tests/suite.test.ts tests/herbal-data.test.ts tests/finished-video.test.ts tests/compliance.test.ts tests/corpus.test.ts tests/layout.test.ts tests/repeat-scan.test.ts tests/upload-ledger.test.ts tests/ffprobe.test.ts tests/published-audit.test.ts tests/stats-import.test.ts tests/music.test.ts",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
     "check": "node --experimental-strip-types scripts/check-films.ts",

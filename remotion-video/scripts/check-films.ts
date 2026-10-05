@@ -72,7 +72,13 @@ const ledgerProblems = (kebab: string, filmId: string, music: string): string[] 
   }
   const copy = fs.readFileSync(ledger, "utf8");
   const problems: string[] = [];
-  for (const field of ["film:", "标题：", "描述：", "话题：", "BGM：", "抖音：", "视频号："]) {
+  // Only the fields the scaffold actually writes. 抖音：/视频号： were dropped from
+  // `ledger.ts` when the workflow stopped recording publication state — but this list
+  // kept demanding them, and the demand never fired because a master on disk short-circuits
+  // the ledger check. Every film had a master, so the gate sat one render away from
+  // failing every new film on a field nobody writes. Caught by moving one master aside
+  // and watching it FAIL.
+  for (const field of ["film:", "标题：", "描述：", "话题：", "BGM："]) {
     if (!copy.includes(field)) {
       problems.push(`upload/${kebab}.md is missing "${field}"`);
     }

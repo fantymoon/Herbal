@@ -45,6 +45,31 @@ const TRACKS = [
     source: "爱给网",
     license: "unrecorded",
   },
+  // Dropped into ../../music on 2026-10-05. Registering a track is what makes it usable
+  // at all — an unregistered file is invisible to `FinishedMusic`, and a film that names
+  // one fails `npm run check`. Which film gets which track is a judgement call made when
+  // the film is authored; this list only says what exists and how long it is.
+  {
+    src: "古镇旅行-中国风-人文纪录片配乐：适合江南古镇、石板巷、传统_爱给网_aigei_com.mp3",
+    file: "guzhen-lvxing.mp3",
+    title: "古镇旅行（中国风）",
+    source: "爱给网",
+    license: "unrecorded",
+  },
+  {
+    src: "箜音古涧｜箜篌石磬小众国风BGM.沉静古朴国风纯配乐，箜篌为_爱给网_aigei_com.mp3",
+    file: "kongyin-gujian.mp3",
+    title: "箜音古涧（箜篌）",
+    source: "爱给网",
+    license: "unrecorded",
+  },
+  {
+    src: "Fingertip-Glow抒情氛围轻音乐-《风过檐角轻》极_爱给网_aigei_com.mp3",
+    file: "fengguo-yanjiao.mp3",
+    title: "风过檐角轻",
+    source: "爱给网",
+    license: "unrecorded",
+  },
 ];
 
 const hash = (p) => crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");

@@ -269,7 +269,13 @@ export const renderLedger = (
     renderField("话题", keep("话题", blankCopy ? "" : draftTags(content))),
     renderField(
       "BGM",
-      keep("BGM", `母版配 \`${content.music}\`，上传时用平台曲库同款替换`),
+      // This used to read "上传时用平台曲库同款替换", which is not something the platform
+      // can do: the BGM is mixed into the master's audio track, and a platform's music
+      // feature overlays a second track rather than replacing the first. The line was
+      // an instruction to do the impossible, and it stayed in 17 ledgers until the user
+      // said so. What is true is shorter and more useful: the master's track is what a
+      // viewer hears, so changing the music means re-rendering.
+      keep("BGM", `母版配 \`${content.music}\`（已混入母版音轨，线上听到的就是它；平台配乐只能叠加，换曲必须重渲）`),
     ),
     renderField("备注", keep("备注", note)),
   ];
