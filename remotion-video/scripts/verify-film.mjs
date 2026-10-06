@@ -14,11 +14,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
-import { findEntries, originProblems, readCorpus } from "./lib/corpus.ts";
+import { findEntries, readCorpus } from "./lib/corpus.ts";
+import { factProblems, ledgerProblems, musicProblems } from "./lib/film-rules.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
-import { checkLedgerCopy, publishedOn } from "./lib/ledger.ts";
+import { publishedOn } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
 import { checkAudioBed } from "./lib/audio.ts";
@@ -33,15 +34,6 @@ const sutras = new Map(
     (e) => [e.name, e.sutra],
   ),
 );
-
-/** Same rule as the gate's, so `verify` never renders something `check` would refuse. */
-const factProblems = (content) => {
-  const sutra = sutras.get(content.entry);
-  if (!sutra) {
-    return [`entry「${content.entry}」 is not a 篇名 in the corpus`];
-  }
-  return originProblems(content.facts, sutra);
-};
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -90,14 +82,16 @@ if (!duration) {
   fail(`${kebab}.tsx has no durationInFrames literal`);
 }
 
-// ---- Pre-flight: rules that used to be checked by eye, or not at all. --------
+// ---- Pre-flight: the same rules `npm run check` applies, from the same functions. -------
 // A film already on a platform is not re-judged, whether it is in the 2026-09-21 snapshot
-// or carries a publish date in its ledger. Otherwise a rule that tightened after the
-// upload would block a re-render of a film whose live copy cannot be recalled.
+// or carries a publish date in its ledger. Otherwise a rule that tightened after the upload
+// would block a re-render of a film whose live copy cannot be recalled. The date comes from
+// the ledger rather than from a master sitting in `out/`: a local render is not a publication,
+// and `out/` does not exist in CI.
 const ledgerPath = path.join(repo, "upload", `${kebab}.md`);
 const ledgerCopy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : "";
-const live = publishedOn(ledgerCopy);
-if (isFrozen(`${kebab}.tsx`) || live !== null) {
+const live = publishedOn(ledgerCopy) !== null;
+if (isFrozen(`${kebab}.tsx`) || live) {
   console.log(`pre-flight: ${kebab} is already published — rules not re-applied`);
 } else {
   const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits.json"));
@@ -106,29 +100,19 @@ if (isFrozen(`${kebab}.tsx`) || live !== null) {
   // A declared budget deviation is reported and rendered, not blocked. Everything else
   // stops the render — the gate's whole value is that a rendered film is a compliant one.
   const waivers = findings.filter(isWaived);
+  const filmId = readFilmId(filmSource);
   const problems = [
     ...hardViolations(findings).map((v) => `[${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(`${kebab}.tsx`, repeats)] : []),
-    ...(content ? factProblems(content) : []),
+    ...(content ? [...factProblems(sutras, `${kebab}.tsx`, content), ...musicProblems(`${kebab}.tsx`, content)] : []),
+    ...(filmId === null
+      ? ["declares no exported film component"]
+      : ledgerCopy === ""
+        ? [`upload/${kebab}.md is missing`]
+        : ledgerProblems(kebab, filmId, content, ledgerCopy)),
   ];
   for (const w of waivers) {
     console.log(`pre-flight: waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
-  }
-  const filmId = readFilmId(filmSource);
-  if (!filmId) {
-    problems.push("declares no exported film component");
-  } else if (ledgerCopy === "") {
-    problems.push(`upload/${kebab}.md is missing`);
-  } else {
-    if (!ledgerCopy.includes(filmId)) {
-      problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
-    }
-    // The upload copy is the only prose the platforms act on. Scanning the frames
-    // while leaving the title and description unchecked is how a compliant film
-    // ships with a non-compliant title.
-    for (const problem of checkLedgerCopy(ledgerCopy)) {
-      problems.push(`upload/${kebab}.md ${problem}`);
-    }
   }
   if (problems.length > 0) {
     console.error(`pre-flight FAILED for ${kebab}.tsx:`);
