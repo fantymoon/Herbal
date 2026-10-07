@@ -235,7 +235,7 @@ if (args["skip-render"]) {
 }
 
 const mp4 = path.join(repo, "out", `${kebab}.mp4`);
-await remotionCommand("render", film, `out/${kebab}.mp4`, "--codec=h264", "--concurrency=1", "--overwrite");
+await remotionCommand("render", film, `out/${kebab}.mp4`, "--codec=h264", "--concurrency=1", "--timeout=180000", "--overwrite");
 console.log(`  render -> out/${kebab}.mp4`);
 
 const probe = await remotionCommand("ffprobe", `out/${kebab}.mp4`);

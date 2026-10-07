@@ -455,6 +455,12 @@ export const EntryFilm: React.FC<{ content: FilmContent }> = ({ content }) => {
       accent={content.accent}
       durationInFrames={plan.durationInFrames}
       music={staticFile(content.music)}
+      // A narrated film keeps the bed under the voice. Measured on the master: the bed alone
+      // reads -44.5 dBFS mean against -25.0 with the voice over it, so 0.055 put the music
+      // past the point of being felt. 0.08 keeps it there without it disappearing.
+      // 0.12 is the level the silent films use, where the music is the only thing there is.
+      peakVolume={content.narration === undefined ? 0.12 : 0.08}
+      narration={content.narration === undefined ? undefined : staticFile(`voice/${content.id}.mp3`)}
       breaks={plan.breaks}
       scenes={scenes}
     />

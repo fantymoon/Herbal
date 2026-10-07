@@ -82,7 +82,17 @@ export const FinishedFilm: React.FC<{
   breaks: number[];
   scenes: FinishedScene[];
   peakVolume?: number;
-}> = ({ accent, durationInFrames, music, breaks, scenes, peakVolume = 0.12 }) => {
+  /** Narration audio, already resolved to a URL. See `FilmContent.narration`. */
+  narration?: string;
+}> = ({
+  accent,
+  durationInFrames,
+  music,
+  breaks,
+  scenes,
+  peakVolume = 0.12,
+  narration,
+}) => {
   const frame = useCurrentFrame();
   const found = breaks.findIndex((breakFrame) => frame < breakFrame);
   const index = found === -1 ? breaks.length : found;
@@ -92,6 +102,9 @@ export const FinishedFilm: React.FC<{
   return (
     <>
       <FinishedMusic src={music} peakVolume={peakVolume} />
+      {/* The voice sits on top of the bed rather than replacing it; the caller lowers
+          `peakVolume` so the two do not compete. */}
+      {narration === undefined ? null : <Audio src={narration} />}
       <SceneShell accent={accent} mode="tall" durationInFrames={durationInFrames}>
         <Scene frame={frame - start} />
       </SceneShell>

@@ -307,6 +307,21 @@ export type FilmContent = {
   original: string;
   /** Clause-by-clause modern translation. Must open with 古籍称其主 for 主…… clauses. */
   translation: string;
+  /**
+   * The passage read aloud, verbatim as it should be spoken.
+   *
+   * Set it and `npm run film:voice` synthesises `public/voice/<id>.mp3`, which the renderer
+   * plays under the music. The text is written out rather than derived from `original`
+   * because what is spoken is not always what is printed — the 经文 on screen can be read
+   * with its clause marks aloud or without, and a hook line may or may not be voiced.
+   *
+   * It is explicit rather than "play the file if one exists": a film whose audio went
+   * missing would then render in silence and pass, which is the failure mode this repo
+   * keeps rediscovering. `npm run check` fails a film that declares narration and has no
+   * audio for it.
+   */
+  narration?: string;
+
   /** Commentary block text, without the 注释 label. */
   commentary: string;
   /**

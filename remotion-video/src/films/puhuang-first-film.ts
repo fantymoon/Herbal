@@ -27,6 +27,8 @@ export const content: FilmContent = {
   alias: null,
   hook: "是香蒲穗子上的黄粉",
   reading: "copy",
+  // Read aloud: the passage, and nothing else. The 今译 and 注释 are in the copy.
+  narration: "主心腹、膀胱寒热，利小便，止血，消瘀血。久服，轻身、益气力，延年、神仙。",
   original: "主心腹、膀胱寒热，利小便，止血，消瘀血。久服，轻身、益气力，延年、神仙。",
   translation:
     "古籍称其主心腹、膀胱寒热，指胸腹与膀胱的寒热之病；利小便，指使小便通利；止血，指止住出血；消瘀血，指消散瘀血。久食，指长期服食，身体轻健、气力增益，延长寿命。",

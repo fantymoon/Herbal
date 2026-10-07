@@ -2,7 +2,7 @@
 //
 //   npm run check                      # check every film
 //   npm run check -- --film=DanshaFirstFilm
-//   npm run check -- --verbose         # also list the frozen films' known issues
+//   npm run check -- --verbose         # reading budget per screen, and every film's title
 //
 // Three states, and only one of them is a failure:
 //
@@ -12,31 +12,38 @@
 //           rendered or published. Clearing the placeholders is what makes it `ok`.
 //   FAIL    anything else: a rule broken, repeated on-screen text, a missing ledger.
 //
-// Published films are frozen: their known issues are reported for information but
-// never fail the run. `FROZEN_FILMS` is the 2026-09-21 snapshot, which is all the legacy
-// films can support — they have no ledgers. Films published since carry the date in
-// `upload/<kebab>.md`, so the gate reads it and treats them the same way.
+// Published films cannot be un-published by a verdict, so they are never failed. They are
+// still *read*: a film that is live carrying a wrong fact is a fact about the channel, and
+// hiding it behind an exemption is how 蓝实 and 紫芝 shipped a 产地 their own cited 经文
+// contradicts while `npm run check` printed "0 gap(s)". So the run splits in two —
+//
+//   judgement   what a film may still be stopped from doing (a new film: FAIL is meaningful)
+//   fact        what a film already says (printed for every film, published or not)
+//
+// `FROZEN_FILMS` is the 2026-09-21 snapshot of what was live then, which is all the legacy
+// films can support — they have no ledgers. Everything published since is recognised by the
+// date the platform export filled into its own ledger (`publishedOn`), so the exemption is a
+// committed record rather than a file on my disk.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
-import { findEntries, originProblems, readCorpus, type Sutra } from "./lib/corpus.ts";
+import { findEntries, readCorpus, type Sutra } from "./lib/corpus.ts";
+import { factProblems, ledgerProblems, musicProblems } from "./lib/film-rules.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
-import { checkLedgerCopy, checkTitleFrames, readLedgerField } from "./lib/ledger.ts";
-import type { TitleLine } from "./lib/ledger.ts";
+import { publishedOn, readLedgerField } from "./lib/ledger.ts";
 import { findRepeats, findRepeatsIn, formatRepeats } from "./lib/repeat-scan.ts";
 import { adjacentTrackRepeats, readPublishPlan } from "./lib/publish-order.ts";
 import { formatReadingBudget, planFilm, visibleText } from "../src/layout.ts";
 import type { FilmContent } from "../src/layout.ts";
-import { trackOf, unrecordedLicences } from "../src/music.ts";
+import { unrecordedLicences } from "../src/music.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload");
-const outDir = path.join(repo, "out");
 const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
 
 /**
@@ -65,83 +72,8 @@ const knownPhotos = readKnownPhotos(path.join(repo, "public", "images", "credits
  */
 const readingReport = (content: FilmContent): string[] => formatReadingBudget(planFilm(content));
 
-const ledgerProblems = (kebab: string, filmId: string, music: string): string[] => {
-  const ledger = path.join(uploadDir, `${kebab}.md`);
-  if (!fs.existsSync(ledger)) {
-    return [`upload/${kebab}.md is missing`];
-  }
-  const copy = fs.readFileSync(ledger, "utf8");
-  const problems: string[] = [];
-  // Only the fields the scaffold actually writes. 抖音：/视频号： were dropped from
-  // `ledger.ts` when the workflow stopped recording publication state — but this list
-  // kept demanding them, and the demand never fired because a master on disk short-circuits
-  // the ledger check. Every film had a master, so the gate sat one render away from
-  // failing every new film on a field nobody writes. Caught by moving one master aside
-  // and watching it FAIL.
-  for (const field of ["film:", "标题：", "描述：", "话题：", "BGM："]) {
-    if (!copy.includes(field)) {
-      problems.push(`upload/${kebab}.md is missing "${field}"`);
-    }
-  }
-  if (!copy.includes(filmId)) {
-    problems.push(`upload/${kebab}.md does not name the film id ${filmId}`);
-  }
-  // The BGM line is written once, at scaffold time, from the content module. Change the
-  // module's music afterwards and the ledger keeps naming the old track — the ledger is
-  // the only record of what the master actually carries, so it has to be checked, not
-  // trusted. `npm run ledger` fills blanks and will not correct it.
-  const bgm = readLedgerField(copy, "BGM");
-  if (bgm !== "" && !bgm.includes(music)) {
-    const named = /`([^`]+)`/.exec(bgm)?.[1] ?? bgm;
-    problems.push(`upload/${kebab}.md names ${named} but the film uses ${music}`);
-  }
-  // The copy is what the platforms read, and it used to be the only prose in the repo
-  // that no rule looked at.
-  for (const problem of checkLedgerCopy(copy)) {
-    problems.push(`upload/${kebab}.md ${problem}`);
-  }
-  return problems;
-};
-
 /** The 标题 a film is going to be posted under, or "" if it has no ledger yet. */
-const ledgerTitle = (kebab: string): string => {
-  const ledger = path.join(uploadDir, `${kebab}.md`);
-  if (!fs.existsSync(ledger)) {
-    return "";
-  }
-  return readLedgerField(fs.readFileSync(ledger, "utf8"), "标题");
-};
-
-/**
- * What the film claims about the 经文, checked against the 经文.
- *
- * `facts` was the last block of on-screen prose outside any rule, and it is written from
- * memory: the scaffold derives 别名 and 篇目位置 out of the corpus but never derived 产地.
- * 大枣 shipped saying 池泽 under a citation of a text that says 生平泽 — the 生境 of
- * 藕实茎, the entry beside it. Every other block on that screen is a quotation; this one
- * was a recollection, and nothing compared the two.
- */
-const factProblems = (file: string, content: FilmContent): string[] => {
-  const sutra = sutras.get(content.entry);
-  if (!sutra) {
-    return [`${file}: entry「${content.entry}」 is not a 篇名 in the corpus`];
-  }
-  return originProblems(content.facts, sutra).map((p) => `${file}: ${p}`);
-};
-
-/**
- * The track a film names has to be one `npm run sync-music` has measured.
- *
- * Not bookkeeping. `FinishedMusic` only consults the registry when it has to loop, and an
- * unregistered track under `loop` throws — that is the loud version of this mistake. The
- * quiet version already shipped: a six-minute film whose 4:16 bed ran out and left the last
- * 1:46 playing against digital silence, because `loop` silently degenerates into "play
- * once" when it cannot work out how long the track is.
- */
-const musicProblems = (file: string, content: FilmContent): string[] =>
-  trackOf(content.music) === null
-    ? [`${file}: music「${content.music}」 is not in src/music-registry.ts — run \`npm run sync-music\``]
-    : [];
+const ledgerTitle = (copy: string): string => readLedgerField(copy, "标题");
 
 let all = fs
   .readdirSync(finishedDir)
@@ -157,44 +89,72 @@ if (typeof args.film === "string") {
 }
 
 const failures: string[] = [];
-const titleLines: TitleLine[] = [];
+/** Every ledger title in the run, printed by `--verbose`. */
+const titles: { film: string; title: string }[] = [];
 /** 条目 -> the track that film carries, for the films the schedule still has a say over. */
 const trackByEntry = new Map<string, string>();
+/** Entries already on a platform: their track is fixed and cannot be moved by this run. */
+const liveEntries = new Set<string>();
 let frozenCount = 0;
-let renderedCount = 0;
+let liveCount = 0;
 let draftCount = 0;
 
 for (const file of all) {
   const source = fs.readFileSync(path.join(finishedDir, file), "utf8");
   const kebab = file.replace(/\.tsx$/, "");
   const frozen = isFrozen(file);
-  // A master on disk is what makes a film untouchable: re-rendering it is the one thing
-  // that would change what a viewer sees, and the answer to a style change is the next
-  // film, not this one. Nothing is reported by the creator — the file is the record.
-  const rendered = fs.existsSync(path.join(outDir, `${kebab}.mp4`));
+  const ledgerPath = path.join(uploadDir, `${kebab}.md`);
+  const copy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : null;
+  // What makes a film untouchable is that a platform has it, and the export records that in
+  // the ledger. It is not that a master sits in a gitignored `out/` on this machine — under
+  // that rule rendering a draft granted it immunity, CI (no `out/`) judged the same films a
+  // different way, and nothing anywhere said what is actually live.
+  const live = copy !== null && publishedOn(copy) !== null;
   const { content, error } = await loadContent(source, filmsDir);
   const violations = checkNewFilm(source, content, knownPhotos);
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
+  // Facts about what the film says, as opposed to judgements about whether it may still be
+  // made. These are computed for every film that can be read, published or not.
+  const facts = content
+    ? [...factProblems(sutras, file, content), ...musicProblems(file, content)]
+    : [];
+  // A film that declares narration and has no audio for it would render in silence and pass
+  // every other check. The declaration is what makes the audio load-bearing, so the missing
+  // file is a fact about the film rather than a warning about the environment.
+  if (content?.narration && !fs.existsSync(path.join(repo, "public", "voice", `${content.id}.mp3`))) {
+    facts.push(
+      `declares narration but public/voice/${content.id}.mp3 is missing — run npm run film:voice`,
+    );
+  }
+  if (content) {
+    trackByEntry.set(content.entry, content.music);
+    if (frozen || live) liveEntries.add(content.entry);
+  }
+  const title = copy === null ? "" : ledgerTitle(copy);
+  if (title !== "") titles.push({ film: file, title });
 
-  // A verdict cannot un-render a master, so it is information rather than a failure.
-  // `FROZEN_FILMS` is the 2026-09-21 snapshot of what was live then and has no master
-  // logic of its own; everything rendered since is found by looking at `out/`.
-  if (frozen || rendered) {
+  // A verdict cannot un-publish a film, so it does not fail one — but it does say what the
+  // film says. `FROZEN_FILMS` is the 2026-09-21 snapshot and has no master logic of its own;
+  // everything published since is recognised from its own ledger.
+  if (frozen || live) {
     if (frozen) {
       frozenCount += 1;
     } else {
-      renderedCount += 1;
+      liveCount += 1;
     }
-    // Printed whether or not --verbose is on: a rendered film is not re-judged, but a
-    // finding it carries is still a fact about a master that exists, and "do not touch a
-    // rendered film" has one exception — a real defect. Hiding those behind --verbose
-    // would make the exception unreachable.
-    if ((!frozen && violations.length > 0) || repeats.length > 0 || args.verbose) {
-      console.log(
-        frozen
-          ? `frozen ${file}: ${violations.length} known compliance gap(s), ${repeats.length} repeated phrase(s)`
-          : `rendered ${file}: master on disk, not re-judged — ${violations.length} gap(s), ${repeats.length} repeated phrase(s)`,
-      );
+    console.log(
+      `${frozen ? "frozen" : "live"} ${file}: ` +
+        `${frozen ? `${violations.length} known compliance gap(s)` : `${violations.length} gap(s)`}, ` +
+        `${facts.length} fact(s), ${repeats.length} repeated phrase(s) — not re-judged`,
+    );
+    // Printed without `--verbose`, for the films published *after* the ledgers began: a film
+    // that is public carrying a wrong 产地 or a quotation the book does not support is a fact
+    // about the channel, and an exemption that hides it is the difference between a known
+    // defect and a discovered one. `FROZEN_FILMS` is a snapshot of 55 films whose copy nobody
+    // will ever act on, so those stay a count.
+    if (live) {
+      for (const fact of facts) console.log(`     ${fact}`);
+      if (repeats.length > 0) console.log(`     ${formatRepeats(file, repeats)}`);
     }
     continue;
   }
@@ -232,11 +192,6 @@ for (const file of all) {
   }
 
   const filmId = readFilmId(source);
-  const title = ledgerTitle(kebab);
-  if (title !== "") {
-    titleLines.push({ film: file, title });
-  }
-  trackByEntry.set(content.entry, content.music);
   // A declared budget deviation renders and reports, but does not fail. `npm run check`
   // prints the film's own reason on the waived line, so "27s because the 经文 is 90
   // characters" is visible in the gate's output instead of being inferred from absence.
@@ -244,9 +199,12 @@ for (const file of all) {
   const problems = [
     ...hardViolations(violations).map((v) => `${file}: [${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(file, repeats)] : []),
-    ...factProblems(file, content),
-    ...musicProblems(file, content),
-    ...(filmId ? ledgerProblems(kebab, filmId, content.music) : [`${file}: declares no exported film component`]),
+    ...facts,
+    ...(filmId === null
+      ? [`${file}: declares no exported film component`]
+      : copy === null
+        ? [`upload/${kebab}.md is missing`]
+        : ledgerProblems(kebab, filmId, content, copy)),
   ];
   for (const w of waived) {
     console.log(`     waived [${w.rule}] ${w.detail}\n            reason: ${w.waived}`);
@@ -267,16 +225,14 @@ for (const file of all) {
   }
 }
 
-// One rule cannot be checked a film at a time: SKILL.md forbids reusing one fixed
-// question template across videos, and "reused" is a property of the set. It is also
-// the rule that is easiest to break without noticing — each title looks fine alone.
-const frameProblems = checkTitleFrames(titleLines);
-if (frameProblems.length > 0) {
-  failures.push(...frameProblems);
-  console.error("\nFAIL title frames reused across films");
-  for (const p of frameProblems) {
-    console.error(`  ${p}`);
-  }
+// Titles are not a gate: "is this sentence one I have already written" is judgement, and a
+// regex that strips 「」 slots misses the case it claims to catch (古书里的X是什么 and
+// 古书里的Y是什么 compare as two frames). What a regex can supply is the *set* — 74 titles is
+// more than anyone holds in memory, so `--verbose` prints them and the writer looks instead of
+// remembering.
+if (args.verbose) {
+  console.log(`\nledger titles in this run (${titles.length}):`);
+  for (const { film, title } of titles) console.log(`  ${film.padEnd(32)} ${title}`);
 }
 
 // The second set-level rule. Which track a film carries is a per-film field, but whether
@@ -294,7 +250,7 @@ if (planned.length < 20) {
   );
   console.error(`\nFAIL publish order could not be read from ${planPath}`);
 } else {
-  const bgmProblems = adjacentTrackRepeats(planned, trackByEntry);
+  const bgmProblems = adjacentTrackRepeats(planned, trackByEntry, liveEntries);
   if (bgmProblems.length > 0) {
     failures.push(...bgmProblems);
     console.error("\nFAIL two films in a row share a music track");
@@ -304,10 +260,10 @@ if (planned.length < 20) {
   }
 }
 
-const renderable = all.length - frozenCount - renderedCount - draftCount;
+const renderable = all.length - frozenCount - liveCount - draftCount;
 console.log(
   `\nchecked ${all.length} film(s): ${renderable} renderable, ${draftCount} draft, ` +
-    `${frozenCount} frozen, ${renderedCount} rendered`,
+    `${frozenCount} frozen, ${liveCount} live`,
 );
 
 // The images have public/images/credits.json and a gate that keeps it exact. The music has
