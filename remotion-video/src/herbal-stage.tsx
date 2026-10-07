@@ -26,14 +26,18 @@ export const SceneShell: React.FC<{
       }}
       durationInFrames={resolvedDuration}
     >
+      {/* A generated fibre sheet rather than a dot pattern: the three radial gradients that
+          used to sit here read as halftone, which is a printing artefact, not paper. The file
+          is one image (120 KB) made by scripts/make-paper-texture.py — procedural, so there is
+          no scan and no provenance question. */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage:
-            "radial-gradient(circle at 20% 18%, rgba(113, 93, 60, .09) 0 1px, transparent 1px), radial-gradient(circle at 76% 24%, rgba(113, 93, 60, .07) 0 1px, transparent 1px), radial-gradient(circle at 44% 68%, rgba(113, 93, 60, .05) 0 1px, transparent 1px)",
-          backgroundSize: "11px 11px, 17px 17px, 23px 23px",
-          opacity: 0.45,
+          backgroundImage: `url(${staticFile("textures/paper-fibre.jpg")})`,
+          backgroundSize: "cover",
+          mixBlendMode: "multiply",
+          opacity: 0.85,
         }}
       />
       <div
@@ -85,8 +89,26 @@ export const InkLandscape: React.FC<{ mode: "wide" | "tall" }> = ({ mode }) => {
         <filter id="mist" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="18" />
         </filter>
+        {/* Ink, not a curve. The paths were smooth vectors under a plain blur, which is why
+            the hills read as a colour block: real ink spreads unevenly and its edge is
+            irregular at a scale far larger than the blur. Turbulence displaces the outline
+            before the blur softens it, so the silhouette wanders the way a wash does. */}
         <filter id="softInk" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="7" />
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.013 0.026"
+            numOctaves="5"
+            seed="11"
+            result="grain"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="grain"
+            scale="34"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+          <feGaussianBlur stdDeviation="5" />
         </filter>
       </defs>
       <g opacity="0.22" filter="url(#mist)">
@@ -120,7 +142,7 @@ export const InkLandscape: React.FC<{ mode: "wide" | "tall" }> = ({ mode }) => {
               : "M0 520 C92 454 172 474 250 432 C318 394 374 362 482 382 C584 402 653 350 748 370 C848 392 926 444 1080 404 L1280 396 L1280 720 L0 720 Z"
           }
           fill="#6b645b"
-          opacity="0.16"
+          opacity="0.10"
           filter="url(#softInk)"
         />
         <path
@@ -130,7 +152,7 @@ export const InkLandscape: React.FC<{ mode: "wide" | "tall" }> = ({ mode }) => {
               : "M0 540 C102 482 146 506 224 474 C306 438 372 408 452 424 C530 442 604 406 698 420 C786 432 884 486 980 452 C1044 430 1112 414 1280 444 L1280 720 L0 720 Z"
           }
           fill="#4d4740"
-          opacity="0.22"
+          opacity="0.14"
           filter="url(#softInk)"
         />
         <path
@@ -140,7 +162,8 @@ export const InkLandscape: React.FC<{ mode: "wide" | "tall" }> = ({ mode }) => {
               : "M0 548 C84 500 156 516 216 492 C292 462 382 446 460 462 C534 476 620 452 692 466 C780 482 868 524 950 492 C1030 464 1138 460 1280 486 L1280 720 L0 720 Z"
           }
           fill="#2a2621"
-          opacity="0.26"
+          opacity="0.15"
+          filter="url(#softInk)"
         />
       </g>
       <g opacity="0.18" stroke="#2b2722" strokeWidth="2" fill="none">
