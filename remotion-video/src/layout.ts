@@ -607,7 +607,7 @@ export const stackBlocks = (
 
 /**
  * Labels, the brand mark and the ASCII credit line are chrome, not prose: nobody reads
- * "CLASSICAL ENTRY / 古籍原文" as content. Everything else on screen has to be read.
+ * "原文" as content. Everything else on screen has to be read.
  */
 const CHROME_KINDS: readonly BlockKind[] = [
   "sectionLabel",
@@ -921,7 +921,7 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
     const at = (quoteSize: number): { blocks: Block[]; used: number } =>
       stackBlocks(
         [
-          draft("classicalLabel", "CLASSICAL ENTRY / 古籍原文", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("classicalLabel", "原文", TYPE.sectionLabel, TYPE.sectionLabel),
           bodyDraft(
             "classical",
             content.original,
@@ -956,7 +956,7 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
       const drafts: Draft[] = [];
       if (index === 0) {
         drafts.push(
-          draft("classicalLabel", "CLASSICAL ENTRY / 古籍原文", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("classicalLabel", "原文", TYPE.sectionLabel, TYPE.sectionLabel),
           bodyDraft(
             "classical",
             content.original,
@@ -970,18 +970,18 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
         // label would sit above empty space and read as a missing block. The label
         // belongs on the block that is actually there.
         drafts.push(
-          draft("translationLabel", "MODERN READING / 今译（续）", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("translationLabel", "今译（续）", TYPE.sectionLabel, TYPE.sectionLabel),
         );
       }
       if (index === 0) {
         drafts.push(
-          draft("translationLabel", "MODERN READING / 今译", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("translationLabel", "今译", TYPE.sectionLabel, TYPE.sectionLabel),
         );
       }
       drafts.push(bodyDraft("translation", chunk, TYPE.translation, chunk, BODY_LINE_HEIGHT));
       if (last) {
         drafts.push(
-          draft("commentaryLabel", "COMMENTARY / 注释", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("commentaryLabel", "注", TYPE.sectionLabel, TYPE.sectionLabel),
           bodyDraft(
             "commentary",
             content.commentary,
@@ -1016,7 +1016,7 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
 
 export const planClosingScene = (content: FilmContent): ScenePlan => {
   const drafts: Draft[] = [
-    draft("sectionLabel", "FIELD NOTE", TYPE.sectionLabel, TYPE.sectionLabel),
+    draft("sectionLabel", "小识", TYPE.sectionLabel, TYPE.sectionLabel),
     draft(
       "closingTitle",
       "本草初识",
@@ -1028,7 +1028,7 @@ export const planClosingScene = (content: FilmContent): ScenePlan => {
     drafts.push(draft("fact", fact.value, TYPE.factValue, FACT_HEIGHT, fact.label));
   }
   drafts.push(
-    draft("sectionLabel", "PUBLICATION NOTE", TYPE.sectionLabel, TYPE.sectionLabel),
+    draft("sectionLabel", "出处", TYPE.sectionLabel, TYPE.sectionLabel),
     bodyDraft(
       "publicationNote",
       citation(content),

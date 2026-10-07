@@ -58,13 +58,14 @@ export const SceneShell: React.FC<{
           top: 18,
           right: 22,
           color: accent,
-          fontSize: mode === "tall" ? 18 : 12,
+          fontFamily: "'LXGW WenKai', STKaiti, KaiTi, serif",
+          fontSize: mode === "tall" ? 22 : 14,
           fontWeight: 700,
           letterSpacing: 0,
           opacity: 0.8,
         }}
       >
-        TCM / HERBAL
+        本草
       </div>
       {children}
     </AbsoluteFill>
@@ -217,13 +218,16 @@ export const SectionLabel: React.FC<{
   accent?: string;
   size?: number;
 }> = ({ children, accent = sealRed, size = 13 }) => (
+  // A seal, not a rule: the label names a part of the book, and a bordered tag reads as one.
+  // The type is the film's own, too — this used to be Arial, so the Chinese in these labels
+  // was drawn with whatever CJK face the system paired with Arial rather than the 楷体 the
+  // rest of the film is set in.
   <div
     style={{
       display: "flex",
       alignItems: "center",
-      gap: 12,
       color: accent,
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "'LXGW WenKai', STKaiti, KaiTi, serif",
       fontSize: size,
       fontWeight: 700,
       letterSpacing: 0,
@@ -231,12 +235,16 @@ export const SectionLabel: React.FC<{
   >
     <span
       style={{
-        width: size >= 20 ? 46 : 34,
-        height: size >= 20 ? 3 : 2,
-        backgroundColor: accent,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: `2px solid ${accent}`,
+        borderRadius: 4,
+        padding: `${Math.round(size * 0.16)}px ${Math.round(size * 0.4)}px`,
       }}
-    />
-    <span>{children}</span>
+    >
+      {children}
+    </span>
   </div>
 );
 
