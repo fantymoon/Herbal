@@ -44,6 +44,7 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload");
+const outDir = path.join(repo, "out");
 const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
 
 /**
@@ -105,11 +106,20 @@ for (const file of all) {
   const frozen = isFrozen(file);
   const ledgerPath = path.join(uploadDir, `${kebab}.md`);
   const copy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : null;
-  // What makes a film untouchable is that a platform has it, and the export records that in
-  // the ledger. It is not that a master sits in a gitignored `out/` on this machine — under
-  // that rule rendering a draft granted it immunity, CI (no `out/`) judged the same films a
-  // different way, and nothing anywhere said what is actually live.
-  const live = copy !== null && publishedOn(copy) !== null;
+  // What makes a film untouchable is that a platform has it. Two signals, and both are
+  // needed, because each covers what the other cannot see.
+  //
+  // The export is one: `npm run stats` merges it into 数据回填, and a row means the platform
+  // has data for the film. It works in CI, where there is no `out/`.
+  //
+  // The master is the other, and it is the stronger one in this workflow: the creator
+  // publishes as soon as a film renders, so a master in `out/` is a film that is already up.
+  // Treating it as unpublished because the next export has not landed is how a style change
+  // gets rendered over a film that is live — which is exactly what happened to 蒲黄.
+  //
+  // A draft cannot abuse the master signal: the gate refuses to render one, so no draft has
+  // a master to hide behind.
+  const live = (copy !== null && publishedOn(copy) !== null) || fs.existsSync(path.join(outDir, `${kebab}.mp4`));
   const { content, error } = await loadContent(source, filmsDir);
   const violations = checkNewFilm(source, content, knownPhotos);
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
