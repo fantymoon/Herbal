@@ -718,8 +718,19 @@ export const formatReadingBudget = (plan: FilmPlan): string[] =>
       `${scene.over ? "  OVER" : ""}`,
   );
 
-/** Photo insert height, matching the published films' framed 932x500 insert. */
-const PHOTO_HEIGHT = 500;
+/**
+ * Photo insert height.
+ *
+ * The insert used to be 932x500 — 1.86:1 — while the images in  have a median
+ * aspect of 1.33 and a third of them are portrait. The median photo therefore lost about a
+ * third of its height to the crop and a portrait one lost nearly two thirds; picking
+ * landscape shots was hiding the problem, not solving it. At 610 the frame is about 1.53:1, which
+ * takes the median photo's crop down to about a tenth and lets a portrait shot be used.
+ *
+ * It cannot go higher: the hero is a fixed stack, and 620 put 络石 two pixels past the bottom
+ * of the canvas at 1826 against 1824. The limit is set by the film with the most hero blocks.
+ */
+const PHOTO_HEIGHT = 610;
 const PHOTO_CHROME = 28;
 
 /**
