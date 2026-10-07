@@ -52,6 +52,9 @@ const BlockView: React.FC<{
         }}
       >
         <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+          {/* A slow push-in. A still photograph held for four seconds reads as a slide; the
+              same photograph drifting 7% reads as a shot. It starts once the frame has
+              finished fading in, so the movement is never competing with the transition. */}
           <Img
             src={staticFile(`images/${photoFile}`)}
             style={{
@@ -60,6 +63,12 @@ const BlockView: React.FC<{
               objectFit: "cover",
               objectPosition: "50% 50%",
               filter: "saturate(.85) contrast(.95) sepia(.08)",
+              transform: `scale(${interpolate(
+                frame,
+                [delay + 26, delay + 26 + 150],
+                [1, 1.07],
+                { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+              ).toFixed(4)})`,
             }}
           />
           <div
