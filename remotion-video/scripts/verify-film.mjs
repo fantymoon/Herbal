@@ -48,6 +48,8 @@ const fail = (msg) => {
 };
 
 const film = args.film;
+/** Replacing a master is deliberate: without this the render goes to out/_verify/. */
+const force = args.force === true;
 if (!film || typeof film !== "string" || !/^[A-Za-z0-9]+$/.test(film)) {
   fail("pass --film=CompositionId (e.g. npm run verify -- --film=DanshaFirstFilm)");
 }
@@ -234,11 +236,26 @@ if (args["skip-render"]) {
   process.exit(0);
 }
 
-const mp4 = path.join(repo, "out", `${kebab}.mp4`);
-await remotionCommand("render", film, `out/${kebab}.mp4`, "--codec=h264", "--concurrency=1", "--timeout=180000", "--overwrite");
-console.log(`  render -> out/${kebab}.mp4`);
+// A master that already exists is not overwritten by a verification run.
+//
+// It used to be, and that is how a rule as simple as "do not touch a rendered film" turned
+// out to be unenforceable with this tooling: verifying a change to a film re-rendered that
+// film, so the one command for checking your work was also the command that invalidated it.
+// Render to a scratch path instead and say where it went; `--force` is the deliberate way to
+// replace a master.
+const master = path.join(repo, "out", `${kebab}.mp4`);
+const replacing = force || !fs.existsSync(master);
+const target = replacing ? `out/${kebab}.mp4` : `out/_verify/${kebab}.mp4`;
+if (!replacing) {
+  fs.mkdirSync(path.join(repo, "out", "_verify"), { recursive: true });
+  console.log(
+    `  a master already exists at out/${kebab}.mp4 — rendering to ${target} instead, pass --force to replace it`,
+  );
+}
+await remotionCommand("render", film, target, "--codec=h264", "--concurrency=1", "--timeout=180000", "--overwrite");
+console.log(`  render -> ${target}`);
 
-const probe = await remotionCommand("ffprobe", `out/${kebab}.mp4`);
+const probe = await remotionCommand("ffprobe", target);
 const info = parseProbe(probe);
 const checks = checkProbe(info, {
   width: 1080,
@@ -257,7 +274,7 @@ for (const check of checks) {
 }
 if (!ok) {
   console.log(probe.split("\n").slice(-25).join("\n"));
-  fail(`out/${kebab}.mp4 does not meet 1080x1920 / 30fps / H.264 / AAC / duration`);
+  fail(`${target} does not meet 1080x1920 / 30fps / H.264 / AAC / duration`);
 }
 
 let size = 0;
@@ -265,13 +282,13 @@ try {
   size = fs.statSync(mp4).size;
   console.log(`  size ${(size / 1024 / 1024).toFixed(1)} MB`);
 } catch {
-  fail(`expected output missing: out/${kebab}.mp4`);
+  fail(`expected output missing: ${target}`);
 }
 // A 12s 1080x1920 clip lands well inside this band; outside it something went wrong
 // (silent/blank render, or an accidental multi-minute export).
 const MIN_BYTES = 200 * 1024;
 const MAX_BYTES = 200 * 1024 * 1024;
 if (size < MIN_BYTES || size > MAX_BYTES) {
-  fail(`out/${kebab}.mp4 is ${size} bytes, outside the expected range`);
+  fail(`${target} is ${size} bytes, outside the expected range`);
 }
 console.log(`verify OK: ${film}. Refresh Remotion Studio to leave the composition previewable.`);
