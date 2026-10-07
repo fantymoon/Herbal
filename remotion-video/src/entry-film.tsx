@@ -1,7 +1,7 @@
 import { Img, interpolate, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
-import { ink, mutedInk, SectionLabel, Seal } from "./herbal-stage";
+import { ink, mutedInk, sealRed, SectionLabel, Seal } from "./herbal-stage";
 import {
   COVER_BLOCKS,
   openingFor,
@@ -286,6 +286,20 @@ const BlockView: React.FC<{
         const clauses = (block.text.match(/[^，。、；：！？）」』]*[，。、；：！？）」』]?/g) ?? []).filter(
           (clause) => clause !== "",
         );
+        // 句读 in 朱红. The marks are in the text already — the book has always punctuated
+        // it — but printing them in the same black as the characters loses the thing that
+        // makes a page of 古籍 look like a page of 古籍: the reader's marks are a second
+        // hand, added after, and a different colour is how that reads.
+        const marked = clauses.map((clause, index) => {
+          const trailing = clause.match(/[，。、；：！？）」』]+$/)?.[0] ?? "";
+          const body = trailing === "" ? clause : clause.slice(0, -trailing.length);
+          return (
+            <span key={index} style={{ display: "inline-block" }}>
+              {body}
+              {trailing === "" ? null : <span style={{ color: sealRed }}>{trailing}</span>}
+            </span>
+          );
+        });
         return (
           <div
             style={{
@@ -294,13 +308,14 @@ const BlockView: React.FC<{
               fontFamily: bodyFont,
               fontSize: block.fontSize,
               lineHeight: 1.35,
+              // Columns read right to left, and each clause is atomic so a break can only
+              // land between them — the same rule the horizontal layout reserves height by.
+              ...(block.vertical === true
+                ? { writingMode: "vertical-rl" as const, textOrientation: "upright" as const }
+                : {}),
             }}
           >
-            {clauses.map((clause, index) => (
-              <span key={index} style={{ display: "inline-block" }}>
-                {clause}
-              </span>
-            ))}
+            {marked}
           </div>
         );
       }

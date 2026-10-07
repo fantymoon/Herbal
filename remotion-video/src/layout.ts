@@ -422,6 +422,8 @@ export type Block = {
   coverScale?: number;
   /** How far down the block sits while it is still the cover. See `COVER_CENTER_Y`. */
   coverLift?: number;
+  /** Set the text in columns, right to left, the way the book is printed. */
+  vertical?: true;
 };
 
 export type ScenePlan = {
@@ -529,6 +531,8 @@ type Draft = {
   coverScale?: number;
   /** How far down the block sits while it is still the cover. See `COVER_CENTER_Y`. */
   coverLift?: number;
+  /** Set the text in columns, right to left, the way the book is printed. */
+  vertical?: true;
 };
 
 const draft = (
@@ -537,7 +541,13 @@ const draft = (
   fontSize: number,
   height: number,
   detail?: string,
-  extra: { width?: number; align?: "left" | "right"; wrap?: "clause"; coverScale?: number } = {},
+  extra: {
+    width?: number;
+    align?: "left" | "right";
+    wrap?: "clause";
+    coverScale?: number;
+    vertical?: true;
+  } = {},
 ): Draft => ({ kind, text, fontSize, height, detail, ...extra });
 
 const bodyDraft = (
@@ -599,6 +609,7 @@ export const stackBlocks = (
       ...(d.wrap === undefined ? {} : { wrap: d.wrap }),
       ...(d.coverScale === undefined ? {} : { coverScale: d.coverScale }),
       ...(d.coverLift === undefined ? {} : { coverLift: d.coverLift }),
+      ...(d.vertical === undefined ? {} : { vertical: d.vertical }),
     });
     y += d.height;
   });
@@ -918,18 +929,65 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
     // that fills a short one overflows a long one. `wrap: "clause"` is what keeps the
     // larger type from breaking mid-clause. Every rung stays under the 150px hero title.
     const room = CANVAS.height - BOTTOM_RESERVE - CLASSICAL_TOP;
+    // The 原文 is set in columns, right to left. Two things follow from that. It is how the
+    // book is actually printed, so the screen reads as a page rather than as a paragraph
+    // about a page. And it buys size: a column holds `room / (size * 1.35)` characters, so
+    // the same passage that is capped at 109px laid out horizontally fits at 130px in
+    // columns — the width stops being the binding constraint, the page height does.
+    const verticalQuote = (): { draft: Draft; size: number } => {
+      // The columns are as tall as the page, so the page has to be measured first: the
+      // citation and the framing sit under the quotation and the columns must not run into
+      // them. Stacking the chrome on its own is how much room they take.
+      const chrome = stackBlocks(
+        [
+          draft("classicalLabel", "原文", TYPE.sectionLabel, TYPE.sectionLabel),
+          draft("publicationNote", citation(content), TYPE.meta, TYPE.meta),
+          bodyDraft(
+            "commentary",
+            content.historicalNote,
+            TYPE.commentary,
+            content.historicalNote,
+            COMMENTARY_LINE_HEIGHT,
+          ),
+        ],
+        CLASSICAL_TOP,
+      ).used;
+      // The chrome was stacked without the quotation, so it carries one gap fewer than the
+      // real stack does. Without adding it back the columns run into the framing below.
+      const columnRoom = Math.max(200, room - chrome - MIN_CLEARANCE);
+      const chars = [...content.original].length;
+      const fits = (size: number): boolean => {
+        const perColumn = Math.max(1, Math.floor(columnRoom / (size * CLASSICAL_LINE_HEIGHT)));
+        return Math.ceil(chars / perColumn) * size * CLASSICAL_LINE_HEIGHT <= CONTENT_WIDTH;
+      };
+      const size = [150, 140, 130, 120, 110, 100, 90, 80, 70, 60].find(fits) ?? 60;
+      const perColumn = Math.max(1, Math.floor(columnRoom / (size * CLASSICAL_LINE_HEIGHT)));
+      const columns = Math.ceil(chars / perColumn);
+      return {
+        size,
+        draft: draft("classical", content.original, size, columnRoom, undefined, {
+          width: columns * size * CLASSICAL_LINE_HEIGHT,
+          align: "right",
+          wrap: "clause",
+          vertical: true,
+        }),
+      };
+    };
+    const vertical = verticalQuote();
     const at = (quoteSize: number): { blocks: Block[]; used: number } =>
       stackBlocks(
         [
           draft("classicalLabel", "原文", TYPE.sectionLabel, TYPE.sectionLabel),
-          bodyDraft(
-            "classical",
-            content.original,
-            quoteSize,
-            content.original,
-            CLASSICAL_LINE_HEIGHT,
-            "clause",
-          ),
+          quoteSize === 0
+            ? vertical.draft
+            : bodyDraft(
+                "classical",
+                content.original,
+                quoteSize,
+                content.original,
+                CLASSICAL_LINE_HEIGHT,
+                "clause",
+              ),
           // A quotation carries its source on the same screen, the way the hero's panel
           // does. Bibliographic citations may repeat across scenes, which is why the
           // citation is printed as 《书名》· 卷 · 篇 rather than concatenated bare.
@@ -944,10 +1002,9 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
         ],
         CLASSICAL_TOP,
       );
-    const fitting = [1.6, 1.45, 1.3, 1.15, 1]
-      .map((scale) => at(Math.round(TYPE.classical * scale)))
-      .find((plan) => plan.used <= room);
-    return [{ kind: "classical", blocks: (fitting ?? at(TYPE.classical)).blocks }];
+    // `at(0)` is the column layout, which is already sized to the room it was given.
+    const fitting = [0].map(at).find((plan) => plan.used <= room);
+    return [{ kind: "classical", blocks: (fitting ?? at(0)).blocks }];
   }
 
   const build = (chunks: string[]): ScenePlan[] =>
