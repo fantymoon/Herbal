@@ -20,7 +20,7 @@ import {
 // language matches the 55 hand-written films (same paper, same 74px inset, same
 // framed photo insert) so a new film does not look like a different series.
 
-const bodyFont = "STKaiti, KaiTi, serif";
+const bodyFont = "'LXGW WenKai', STKaiti, KaiTi, serif";
 const latinFont = "Arial, sans-serif";
 
 const BlockView: React.FC<{

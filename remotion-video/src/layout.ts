@@ -92,6 +92,16 @@ export const durationLadder = (content: FilmContent): readonly PlannedDuration[]
  */
 export const READING_RATE_LIMIT = 15;
 /**
+ * The density no reason can make readable, and therefore not negotiable.
+ *
+ * `reading-budget` is a budget rule and a film can waive it with a reason — which meant a
+ * film naming all three negotiable rules switched off the whole density guard: `checkPlan`
+ * produced no hard violation at 27 characters/second, the rate the published-film audit
+ * itself calls unreadable. The waiver is about *this entry's* translation running long; it
+ * was never a licence to make a screen impossible to finish.
+ */
+export const READING_HARD_FLOOR = 20;
+/**
  * A classical scene longer than this is split, so the picture changes at least every
  * 9 seconds. Splitting does not reduce the reading time a film needs — it only decides
  * how many screens that time is spread over.
@@ -106,6 +116,13 @@ export const MAX_CLASSICAL_SCENES = 3;
  */
 /** Mandated opening for a 今译 clause that translates a 主…… efficacy statement. */
 export const REQUIRED_FRAME = "古籍称其主";
+/**
+ * Markings that all do the same job as `REQUIRED_FRAME`: they put the book in front of the
+ * claim instead of the film. One string was enforced before, and every film used it — 19 of
+ * 19 今译 open with the same five characters, which is the gate buying safety with variety.
+ * Any of these frames the clause; which one to use per entry is writing.
+ */
+export const FRAME_MARKERS = ["古籍称其", "古书说其", "古人谓其", "经中言其", "书称其"] as const;
 /** The wording SKILL.md offers as an example. A 注释 line need not use it verbatim. */
 export const REQUIRED_NOTE = "此为汉代认知，未经现代科学证实";
 export const DISCLAIMER_TEXT = "古籍内容展示，不构成诊疗建议";
@@ -125,23 +142,70 @@ export const DISCLAIMER_TEXT = "古籍内容展示，不构成诊疗建议";
  *      objection was specifically to modern-science claims, so the note has to answer it.
  */
 const HISTORICAL_ERA = /(汉代|汉时|汉朝|古人|古代|古籍|古书|历代|旧说|旧时|先秦|本草经)/;
+/**
+ * A denial that reaches the verb, inside one clause. `未` alone is not a negation — 未来 or
+ * 未知 inside the filler would pretend to be one — so it only counts as the head of a denial
+ * idiom. The long filler is what lets 尚无现代药理学证据可以证实 count: a frame that can only
+ * be written one way is a fixed string again, which is what these rules moved away from.
+ */
 const MODERN_DENIAL =
-  /未(?:经|获|被|得到|见|由|能|予|受)?[^。；;，,、！？!?\n]{0,10}(?:证实|验证|证明|确证|确认|检验)/;
+  /(?:尚未|未经|未获|未被|未曾|未能|未(?!来|知|明|免)|尚无|尚待|未有|缺乏|没有|有待)[^。；;，,、！？!?\n]{0,14}(?:证实|验证|证明|确证|确认|检验|证据|依据)/;
 const MODERN_DOMAIN = /(现代|科学|医学|实验|临床|药理)/;
+/** A clause that says modern knowledge *has* settled it. The opposite of the frame. */
+const MODERN_ASSERTION =
+  /(?:已经|已|经|得到|获得|完成|通过|正在)[^。；;，,、！？!?\n]{0,8}(?:证实|验证|证明|确证|确认)/;
+const ASSERTION_VERB = /(证实|验证|证明|确证|确认|检验)/;
 
-/** The three parts of the historical frame, in the order `hasHistoricalFrame` tests them. */
+/**
+ * What a 注释 line has to *do* to frame a claim as history — none of them a fixed string.
+ * SKILL.md says "诸如 `此为汉代认知，未经现代科学证实`", and the checker used to enforce that
+ * example with `!==`, so any better sentence failed the gate and improving the wording meant
+ * editing code. The properties that sentence has:
+ *
+ *   1. names an era or a classical source — the claim is attributed, not asserted;
+ *   2. denies that modern knowledge has settled it;
+ *   3. names a modern-knowledge domain, because the platform's objection was specifically to
+ *      modern-science efficacy — a bare "未经证实" does not answer it;
+ *   4. never *affirms* it. Requirements 1-3 used to be three independent regexes over the
+ *      whole note, so "古籍所载，未来或可确认其科学价值" and "汉代旧说，未经证实。现代临床已证实
+ *      其效" both passed while saying the opposite of what the rule exists to say. A clause
+ *      that affirms confirmation now fails on its own, wherever the other parts appear.
+ */
 export const FRAME_PARTS = [
   { name: "an era or classical source", test: HISTORICAL_ERA },
   { name: "a denial that modern knowledge confirms it", test: MODERN_DENIAL },
   { name: "a modern-knowledge domain", test: MODERN_DOMAIN },
 ] as const;
 
-export const hasHistoricalFrame = (note: string): boolean =>
-  FRAME_PARTS.every((part) => part.test.test(note));
+/** Clauses that claim modern knowledge has confirmed the old text. */
+export const affirmingClauses = (note: string): string[] =>
+  note
+    .split(/[。！？；;\n]/)
+    .map((clause) => clause.trim())
+    .filter(
+      (clause) =>
+        ASSERTION_VERB.test(clause) &&
+        MODERN_ASSERTION.test(clause) &&
+        // A denial in the same clause outranks it: 未经现代科学证实 says the opposite of
+        // 现代科学证实, and the negation is what the clause means. Without this the required
+        // wording itself read as an affirmation and every film in the series failed.
+        !MODERN_DENIAL.test(clause),
+    );
 
-/** Which parts of the frame a 注释 line is missing, for an actionable gate message. */
-export const missingFrameParts = (note: string): string[] =>
-  FRAME_PARTS.filter((part) => !part.test.test(note)).map((part) => part.name);
+export const hasHistoricalFrame = (note: string): boolean =>
+  FRAME_PARTS.every((part) => part.test.test(note)) && affirmingClauses(note).length === 0;
+
+/** What the 注释 line is missing or getting wrong, for an actionable gate message. */
+export const missingFrameParts = (note: string): string[] => {
+  const problems: string[] = FRAME_PARTS.filter((part) => !part.test.test(note)).map(
+    (part) => part.name,
+  );
+  const affirming = affirmingClauses(note);
+  if (affirming.length > 0) {
+    problems.push(`it asserts that modern knowledge has confirmed the claim: 「${affirming[0]}」`);
+  }
+  return problems;
+};
 
 /**
  * The seal glyph for a mode. SKILL.md § Input And Mode: one large character, `药` for a
@@ -174,7 +238,7 @@ export const TYPE = {
   classical: 68,
   /** Comfortably above the enforced 56px floor. */
   translation: 60,
-  commentary: 36,
+  commentary: 42,
   factValue: 48,
   factLabel: 24,
   closingTitle: 84,
@@ -313,12 +377,13 @@ export const REVEAL_DELAYS = {
 /**
  * Which reveal schedule a scene uses.
  *
- * A film with a hook opens on its title card; a film without one keeps the schedule the
- * published films use, so nothing already rendered changes under it. The hook and the
- * instant opening are one change — the new opening — and they ship together.
+ * The scene that carries the title is the cover, so that is what decides it. This used to
+ * key off the hook, which meant the ten films without one still opened on a blank card —
+ * and a blank card is what the platform shows in the feed. The cover is a property of the
+ * hero scene, not of whether the copy happens to have a hook in it.
  */
 export const openingFor = (kinds: readonly BlockKind[]): "hero" | "scene" =>
-  kinds.includes("hook") ? "hero" : "scene";
+  kinds.includes("heroTitle") ? "hero" : "scene";
 
 /**
  * The blocks already on screen on frame 0.
@@ -618,6 +683,24 @@ export const findReadingProblems = (plan: FilmPlan): string[] =>
         `This is a budget rule, not a safety one: split the scene, shorten the text, or ` +
         `declare \`deviations: [{ rule: "reading-budget", why: "…" }]\` and keep the prose ` +
         `you meant to write. A recorded reason is enough.`,
+    );
+
+/**
+ * Scenes past `READING_HARD_FLOOR` — reported under a rule that cannot be waived.
+ *
+ * Kept separate from `findReadingProblems` on purpose: that one is a budget the film may
+ * dispute with a reason, this one is the point where the screen stops being finishable and
+ * the dispute would be about a claim nobody can check. Naming `reading-budget` in
+ * `deviations` no longer buys a free pass through it.
+ */
+export const findUnreadableScenes = (plan: FilmPlan): string[] =>
+  readingBudget(plan)
+    .filter((scene) => scene.rate > READING_HARD_FLOOR)
+    .map(
+      (scene) =>
+        `${scene.kind}: ${scene.chars} characters in ${(scene.allotted / FPS).toFixed(1)}s ` +
+        `= ${scene.rate.toFixed(1)} chars/s, past ${READING_HARD_FLOOR}/s — no duration and no ` +
+        `reason makes that readable. Split the text across screens or shorten it.`,
     );
 
 /**
@@ -1097,3 +1180,25 @@ export const visibleText = (content: FilmContent): string[] => {
     )
     .filter((text) => /[\u4e00-\u9fff]/.test(text));
 };
+
+/**
+ * The prose the film is *authoring*, as it is drawn on screen.
+ *
+ * The wording rules used to read `content.translation` / `commentary` / `historicalNote`
+ * directly, which is a form the render may never show: under `reading: "copy"` the 今译 and
+ * 注释 leave the screen for the video description, so the only wording rule in the repo was
+ * guarding invisible text while the two blocks that are always drawn — the `hook` and the
+ * closing `facts` — were guarded by nothing. A film could ship 「可改善炎症」 on its last
+ * screen and the gate would report `ok`.
+ *
+ * Quotations are deliberately excluded (`classical`, the hero `panel`, citations): the 经文
+ * says 主 and sometimes 主治, and that is the source talking, not us.
+ */
+export const AUTHORED_KINDS: readonly BlockKind[] = ["hook", "translation", "commentary", "fact"];
+
+export const claimText = (content: FilmContent): string[] =>
+  planFilm(content)
+    .scenes.flatMap((scene) => scene.blocks)
+    .filter((block) => AUTHORED_KINDS.includes(block.kind))
+    .map((block) => block.text);
+

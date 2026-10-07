@@ -4,7 +4,7 @@ import { staticFile, Img } from "remotion";
 
 export const paper = "#f2ecdf";
 export const ink = "#171716";
-export const mutedInk = "#6f6a61";
+export const mutedInk = "#57514a";
 export const sealRed = "#9d3527";
 
 export const SceneShell: React.FC<{
@@ -201,7 +201,7 @@ export const Seal: React.FC<{
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "STKaiti, KaiTi, serif",
+      fontFamily: "'LXGW WenKai', STKaiti, KaiTi, serif",
       fontSize: size * glyphScale,
       writingMode: "vertical-rl",
       transform: `rotate(${rotation}deg)`,

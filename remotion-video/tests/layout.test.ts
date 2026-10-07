@@ -410,10 +410,13 @@ test("the hero carries a hook, and its name is on screen from the first frame", 
   // read as a cut rather than as more of the same screen.
   assert.ok(revealDelay("scene", 0) >= 0);
 
-  // The instant opening belongs to the hook, and only to the hook: a film without one
-  // renders exactly as it did before, so no master already on disk changes under it.
+  // The scene that carries the title is the cover, whether or not the copy has a hook.
+  // Keying this off the hook left the ten films without one opening on a blank card, which
+  // is what the platform shows in the feed.
   assert.equal(openingFor(hero.blocks.map((b) => b.kind)), "hero");
-  assert.equal(openingFor(planFilm(base).scenes[0].blocks.map((b) => b.kind)), "scene");
+  const noHook = planFilm({ ...base, hook: undefined }).scenes[0];
+  assert.equal(openingFor(noHook.blocks.map((b) => b.kind)), "hero");
+  assert.equal(openingFor(planFilm(base).scenes[1].blocks.map((b) => b.kind)), "scene");
 });
 
 test("the short shape shows the original and the framing, and nothing else", () => {
