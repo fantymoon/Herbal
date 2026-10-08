@@ -13,11 +13,16 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const workDir = path.join(repo, ".topic-work");
 const topicId = process.argv[2] ?? "tu-que";
 const mode = process.argv[3] ?? "dump";
+// 第二个系列（英文）放在 src/topics-en/，用 `--dir=topics-en` 指定。
+// 目录不同、语言不同，但"旁白 → 分句 → 时长"这条流水线完全一样。
+const dirArg = process.argv.find((a) => a.startsWith("--dir="));
+const dir = dirArg ? dirArg.slice("--dir=".length) : "topics";
+// 中间产物按系列分目录，否则中英文的 seg-NN.txt 会互相覆盖。
+const workDir = path.join(repo, dir === "topics" ? ".topic-work" : ".topic-work-en");
 
-const modulePath = path.join(repo, "src", "topics", `${topicId}.ts`);
+const modulePath = path.join(repo, "src", dir, `${topicId}.ts`);
 const { content } = (await import(pathToFileURL(modulePath).href)) as {
   content: import("../src/topics/tu-que.ts").TopicContent;
 };

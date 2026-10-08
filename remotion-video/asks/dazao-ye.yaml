@@ -1,0 +1,78 @@
+# 本草一问 · 第 01 集 · 大枣的叶
+#
+# 这个文件是这一集唯一的正文来源。`npm run ask:build` 把它编译成
+# `src/asks/dazao-ye.content.ts`——Remotion 组件必须是纯函数，不能运行时读文件，
+# 所以改完 YAML 一定要重跑 ask:build（CI 会检查两者是否同步）。
+#
+# 素材全部来自 TCM-Ancient-Books-master/，引文一律照录，出处随引文上屏。
+# 检索方式：npm run entry -- --grep=<词>（语料是 GB18030，ripgrep 搜不到中文）。
+#
+# 写这一集的规矩（也是这一系列唯一的三条门禁，见 scripts/ask-check.ts）：
+#   1. 旁白与字幕里不出现功效词。功效只留在照录的引文里，旁白从不复述。
+#      所以问的是"为什么单占一行"，不是"叶子有什么用"——问法本身决定了它合不合规。
+#   2. 每条引文都有出处。
+#   3. 每张图都在 public/images/credits.json 里登记过。
+
+id: dazao-ye
+entry: 大枣
+collection: 厨房里的本草
+deck: 厨房里的本草 · 01
+question: 古书里，大枣的叶子为什么单占一行？
+accent: "#a5613a"                 # 果部赭
+music: music/fengguo-yanjiao.mp3
+next: 橘柚——橘和柚，为什么算一味药？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  # 问：全幅实物照 + 大字问题。第 0 帧即封面，所以问题必须能独立成图。
+  - role: ask
+    narration: 《神农本草经》写完大枣，又添了一句，写的是它的叶子。
+    photos:
+      - file: jujuba-fruit-cluster.jpg
+        caption: 大枣的果实
+
+  # 物：它今天是什么、你在哪见过它。
+  - role: object
+    narration: 大枣是鼠李科的果子，秋天红透，晒干了就是厨房里那罐枣。它开很小的黄绿色花，叶子卵形，三出脉。
+    photos:
+      - file: jujuba-flower-leaf.jpg
+        caption: 叶与花
+      - file: jujuba-fruit-branch.jpg
+        caption: 枝头的果
+
+  # 书：竖排原文，读到哪个字哪个字朱红。
+  # narration 里与引文逐字对应的那一截写在 read 里——词级时间戳靠它落到原文的字上。
+  - role: book
+    narration: 《神农本草经》把这一句写在大枣条的最后：叶覆麻黄，能令出汗。
+    read: 叶覆麻黄，能令出汗。
+    quote:
+      text: 叶覆麻黄，能令出汗。
+      source: 《神农本草经》卷一 · 上经
+
+  # 考：跨书对读。这一句从唐传到明，最后一位注家给了它一个解释。
+  - role: study
+    narration: 唐代《千金翼方》给叶子单立一篇，就叫「叶」；宋代《证类本草》照收；明代《本草纲目》注明它出自《本经》。明代卢之颐说，枣叶不自己发汗，是借麻黄之势。
+    evidence:
+      - text: 覆麻黄能令出汗，生河东平泽。
+        source: 《千金翼方》· 唐
+        note: 果部单立一篇，篇名就叫「叶」
+      - text: 覆麻黄，能令出汗。
+        source: 《证类本草》· 宋
+        note: 与《本经》同文照收
+      - text: 覆麻黄，能令出汗（《本经》）。
+        source: 《本草纲目》· 明
+        note: 李时珍注明它出自《本经》
+      - text: 覆麻黄，则扬液成汗，以能宣通津液，假麻黄张大之力耳。
+        source: 《本草乘雅半偈》· 明
+        note: 卢之颐：枣叶不自己发汗，借的是麻黄之力
+
+  # 收：盖印 + 下集预告 + 小字免责。
+  - role: closing
+    narration: 《本经》只给了它一行，这一行从唐代传到明代。下一味，橘柚。
+
+sources:
+  - 《神农本草经》卷一·上经（汉）
+  - 《千金翼方》卷第四·本草下·果部（唐·孙思邈）
+  - 《证类本草》（宋·唐慎微）
+  - 《本草纲目》果部（明·李时珍）
+  - 《本草乘雅半偈》（明·卢之颐）

@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 71,
+  "doneCount": 73,
   "entries": [
     {
       "name": "丹沙",
@@ -407,12 +407,14 @@
     {
       "name": "漏芦",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "LouluFirstFilm"
     },
     {
       "name": "营实",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "YingshiFirstFilm"
     },
     {
       "name": "天名精",

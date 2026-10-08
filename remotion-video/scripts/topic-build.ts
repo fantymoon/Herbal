@@ -15,8 +15,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const workDir = path.join(repo, ".topic-work");
 const topicId = process.argv[2] ?? "tu-que";
+// 与 topic-voice.ts 同一套约定：英文系列用 `--dir=topics-en`。
+const dirArg = process.argv.find((a) => a.startsWith("--dir="));
+const dir = dirArg ? dirArg.slice("--dir=".length) : "topics";
+const workDir = path.join(repo, dir === "topics" ? ".topic-work" : ".topic-work-en");
 
 /** 每段尾部留出的呼吸帧数：旁白之间没有停顿，换屏会读成卡顿。 */
 const TAIL_FRAMES = 24;
@@ -99,8 +102,8 @@ export const voice: {
 } = ${JSON.stringify({ topic: topicId, fps: 30, totalFrames: acc, segments }, null, 2)};
 `;
 
-fs.writeFileSync(path.join(repo, "src", "topics", `${topicId}.voice.ts`), header + body, "utf8");
+fs.writeFileSync(path.join(repo, "src", dir, `${topicId}.voice.ts`), header + body, "utf8");
 console.log(
-  `wrote src/topics/${topicId}.voice.ts — ${segments.length} segments, ` +
+  `wrote src/${dir}/${topicId}.voice.ts — ${segments.length} segments, ` +
     `${acc} frames = ${(acc / 30 / 60).toFixed(2)} min`,
 );

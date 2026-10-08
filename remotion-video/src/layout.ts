@@ -444,6 +444,15 @@ export type Block = {
 export type ScenePlan = {
   kind: "hero" | "classical" | "closing";
   blocks: Block[];
+  /**
+   * Carry the film's photograph behind the scene, dimmed, as well as in the hero's frame.
+   *
+   * The photograph used to appear in one framed inset for about a fifth of the film and
+   * nowhere else, so most of a film was paper. A scene that only restates what the hero
+   * already said has nothing of its own to look at, and the herb is the one thing worth
+   * looking at twice.
+   */
+  bed?: true;
 };
 
 export type FilmPlan = {
@@ -1019,7 +1028,7 @@ export const planClassicalScenes = (content: FilmContent): ScenePlan[] => {
       );
     // `at(0)` is the column layout, which is already sized to the room it was given.
     const fitting = [0].map(at).find((plan) => plan.used <= room);
-    return [{ kind: "classical", blocks: (fitting ?? at(0)).blocks }];
+    return [{ kind: "classical", blocks: (fitting ?? at(0)).blocks, bed: true }];
   }
 
   const build = (chunks: string[]): ScenePlan[] =>

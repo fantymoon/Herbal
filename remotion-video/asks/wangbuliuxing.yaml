@@ -1,0 +1,58 @@
+# 本草一问 · 03 · 王不留行
+#
+# 这一集不问功效，只问名字：为什么一味药叫「王不留行」。
+# 答案来自《本草纲目》的【释名】——李时珍说「虽有王命不能留其行」，
+# 并指出《吴普本草》把它写成「王不流行」是错的。
+#
+# 所以「书」屏引的是纲目的释名，不是《本经》——这一集要找的答案本来就不在本经里。
+
+id: wangbuliuxing
+entry: 王不留行
+collection: 名字古怪的药
+deck: 名字古怪的药 · 01
+question: 一味药的名字，为什么像一句军令？
+accent: "#4a6b5a"                 # 草部青
+music: music/kongyin-gujian.mp3
+next: 防己——它为什么以「险健之人」为名？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  - role: ask
+    narration: 王不留行——这四个字不像药名，像一句命令。
+    photos:
+      - file: vaccaria-hispanica-flower.jpg
+        caption: 王不留行
+
+  - role: object
+    narration: 它是一年生的小草，麦地里最多。开粉红色的小花，蒴果像个灯笼，种子黑亮。
+    photos:
+      - file: vaccaria-hispanica-habit.jpg
+        caption: 生在麦地里
+      - file: vaccaria-hispanica-fruit.jpg
+        caption: 蒴果
+
+  - role: book
+    narration: 李时珍在《本草纲目》里说：此物性走而不住，虽有王命不能留其行，故名。
+    read: 此物性走而不住，虽有王命不能留其行，故名。
+    quote:
+      text: 此物性走而不住，虽有王命不能留其行，故名。
+      source: 《本草纲目》草部 · 王不留行 · 释名
+
+  - role: study
+    narration: 它还有别的名字：禁宫花、剪金花、金盏银台。而《吴普本草》里把它写成「王不流行」——李时珍说，那是错的。
+    evidence:
+      - text: 禁宫花（《日华》）、剪金花（《日华》）、金盏银台。
+        source: 《本草纲目》· 释名（引《日华子本草》）
+        note: 三个别名，都取自它的花
+      - text: 《吴普本草》作一名王不流行，盖误也。
+        source: 《本草纲目》· 释名
+        note: 李时珍：这个写法是错的
+
+  - role: closing
+    narration: 一个名字被写错过，还是留下来了。下一味，防己。
+
+sources:
+  - 《神农本草经》卷一·上经（汉）
+  - 《吴普本草》（见《本草纲目》引）
+  - 《日华子本草》（见《本草纲目》引）
+  - 《本草纲目》草部（明·李时珍）

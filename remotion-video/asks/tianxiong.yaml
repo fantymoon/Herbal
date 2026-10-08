@@ -1,0 +1,64 @@
+# 本草一问 · 05 · 天雄
+#
+# 古书写错的字第一集。底本《神农本草经》作「沥节痛」，而《证类本草》《本草纲目》
+# 都作「历节痛」，纲目还注明这一句出自《本经》——两处他本对读，底本那一读法在全库
+# 几乎无人作证（`npm run variants` 报的就是这一条）。
+#
+# 「历节」不是随便两个字：张仲景在《金匮要略》里立过「中风历节病」专篇，
+# 指的是关节疼痛遍历周身。写成「沥」，这个病名就没了。
+#
+# 「书」屏摆的是本经全文，旁白只读中间那三个字，所以 read 的偏移在引文内部（第 10 字起）。
+
+id: tianxiong
+entry: 天雄
+collection: 古书写错的字
+deck: 古书写错的字 · 01
+question: 「沥节痛」是什么痛？
+accent: "#4a6b5a"                 # 草部青
+music: music/gaoshan-liushui.mp3
+next: 藕实茎——一条药名，为什么把三个部位连在一起？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  - role: ask
+    narration: 《神农本草经》里有一个病名，只有这一本书这么写。
+    photos:
+      - file: aconitum-carmichaelii-flower.jpg
+        caption: 天雄
+
+  - role: object
+    narration: 天雄是乌头的根。同一株植物，主根叫乌头，旁生的块根叫附子，长得独一份的叫天雄。
+    photos:
+      - file: aconitum-carmichaelii-habit.jpg
+        caption: 一片乌头
+      - file: aconitum-carmichaelii-plant.jpg
+        caption: 独长的一株
+
+  - role: book
+    narration: 《神农本草经》给天雄记的病名里，有一个「沥节痛」。
+    read: 沥节痛
+    quote:
+      text: 味辛，温。主大风，寒湿痹，沥节痛，拘挛缓急，破积聚邪气，金创，强筋骨，轻身健行。一名白幕。生山谷。
+      source: 《神农本草经》卷二 · 中经
+
+  - role: study
+    narration: 宋代的《证类本草》写「历节痛」，明代的《本草纲目》也写「历节痛」。「历节」是张仲景立的病名：关节疼痛遍历周身。
+    evidence:
+      - text: 主大风，寒湿痹，历节痛，拘挛缓急。
+        source: 《证类本草》· 宋
+        note: 「沥」作「历」
+      - text: 大风，寒湿痹，历节痛，拘挛缓急（《本经》）。
+        source: 《本草纲目》· 明
+        note: 李时珍也作「历」，并注明出自《本经》
+      - text: 中风历节病脉证并治第五
+        source: 《金匮要略》· 汉
+        note: 张仲景给「历节」立过专篇
+
+  - role: closing
+    narration: 一个字写错，一个病名就消失了。下一味，藕实茎。
+
+sources:
+  - 《神农本草经》卷二·中经（汉）
+  - 《金匮要略》（汉·张仲景）
+  - 《证类本草》（宋·唐慎微）
+  - 《本草纲目》草部（明·李时珍）

@@ -6,7 +6,7 @@
 // Creates three files at once so the five hand-maintained places collapse to one:
 //   src/films/<kebab>.ts       content data (source text filled in, TODOs marked)
 //   src/finished/<kebab>.tsx   ~10-line film that renders <EntryFilm content={...} />
-//   upload/<kebab>.md          upload ledger
+//   upload/films/<kebab>.md    upload ledger
 // The progress ledger derives itself from the content files, so there is no
 // separate DONE map entry to remember.
 //
@@ -150,7 +150,7 @@ const showVolume = (v: string | null): string => (v ? v.replace(/\\/g, " · ") :
 // ---- Emit the three files ----------------------------------------------------
 const filmsDir = path.join(repo, "src", "films");
 const finishedDir = path.join(repo, "src", "finished");
-const uploadDir = path.join(repo, "upload");
+const uploadDir = path.join(repo, "upload", "films");
 for (const dir of [filmsDir, finishedDir, uploadDir]) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -278,7 +278,7 @@ if (!keptLedger) {
 console.log(`created:
   src/films/${kebab}.ts
   src/finished/${kebab}.tsx
-  upload/${kebab}.md${keptLedger ? " (already existed, kept)" : ""}
+  upload/films/${kebab}.md${keptLedger ? " (already existed, kept)" : ""}
 
 next:
   1. fill in translation, commentary and photo in src/films/${kebab}.ts

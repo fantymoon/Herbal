@@ -19,7 +19,7 @@ import {
 } from "./lib/stats-import.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const uploadDir = path.join(repo, "upload");
+const uploadDir = path.join(repo, "upload", "films");
 const progressPath = path.join(repo, "progress.json");
 const booksDir = path.join(repo, "scripts", "books");
 

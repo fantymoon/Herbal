@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDraft } from "../scripts/lib/compliance.ts";
 import { loadContent } from "../scripts/lib/film-content.ts";
+import { MAX_PHOTO_EDGE, photoOversize } from "../scripts/lib/image.ts";
 import { planFilm, type FilmContent } from "../src/layout.ts";
 
 // Sweeps over every finished film. There is deliberately no per-film test here: a film
@@ -240,10 +242,40 @@ test("every film image is registered in the credits ledger with its on-screen au
       }
     }
   }
+  // The 「本草一问」 series (src/asks/) is a third set of films with its own renderer, so
+  // its photos have to be counted as references too — otherwise every image that series
+  // downloads would be reported as an orphan in the ledger. Read off the generated
+  // content modules rather than the YAML: the build has already checked them against the
+  // ledger, and the modules are what the renderer actually reads.
+  const asksDir = new URL("../src/asks/", import.meta.url);
+  for (const f of fs.readdirSync(asksDir).filter((n) => n.endsWith(".content.ts"))) {
+    const source = fs.readFileSync(new URL(f, asksDir), "utf8");
+    for (const m of source.matchAll(/"file":\s*"([^"]+)"/g)) {
+      referenced.add(m[1]);
+    }
+  }
   for (const entry of ledger) {
     assert.equal(fs.existsSync(new URL(`../public/images/${entry.file}`, import.meta.url)), true, entry.file);
     assert.ok(referenced.has(entry.file), `${entry.file} orphaned in credits.json`);
   }
+});
+
+test("every registered photo is within the size a film can actually draw", () => {
+  // The insert is 932 px wide and the blurred bed is 1080 px, but iNaturalist serves
+  // research-grade originals: the folder reached 134 MB with 3248×4872 files in it, all of
+  // which a CI run has to check out to render one 12-second video. `fetch-photo` shrinks at
+  // the door now; this is what keeps a hand-placed image from undoing that.
+  const dir = fileURLToPath(new URL("../public/images/", import.meta.url));
+  const oversized = fs
+    .readdirSync(dir)
+    .filter((f) => /\.(jpe?g|png)$/i.test(f))
+    .map((f) => ({ f, problem: photoOversize(path.join(dir, f)) }))
+    .filter((row) => row.problem !== null);
+  assert.deepEqual(
+    oversized,
+    [],
+    `photos over ${MAX_PHOTO_EDGE}px: ${oversized.map((o) => `${o.f} (${o.problem})`).join(", ")}`,
+  );
 });
 
 test("progress.json tracks every finished film in original book order", () => {
@@ -314,13 +346,13 @@ test("no banned therapeutic wording in films or upload copy", () => {
     }
   }
   assert.deepEqual(withZhuzhi.sort(), [...legacyZhuzhiFilms].sort());
-  const uploadDir = new URL("../upload/", import.meta.url);
+  const uploadDir = new URL("../upload/films/", import.meta.url);
   if (fs.existsSync(uploadDir)) {
     for (const f of fs.readdirSync(uploadDir).filter((f) => f.endsWith(".md") && !f.startsWith("_"))) {
       const copy = fs.readFileSync(new URL(f, uploadDir), "utf8");
-      assert.equal(copy.includes("主治"), false, `upload/${f}`);
+      assert.equal(copy.includes("主治"), false, `upload/films/${f}`);
       for (const w of bannedTherapeuticWords) {
-        assert.equal(copy.includes(w), false, `upload/${f}: ${w}`);
+        assert.equal(copy.includes(w), false, `upload/films/${f}: ${w}`);
       }
     }
   }

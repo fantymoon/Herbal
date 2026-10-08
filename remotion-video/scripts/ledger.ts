@@ -17,7 +17,7 @@ import { ledgerFileName, renderLedger } from "./lib/ledger.ts";
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
-const uploadDir = path.join(repo, "upload");
+const uploadDir = path.join(repo, "upload", "films");
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -67,7 +67,7 @@ for (const file of files) {
     continue;
   }
   if (args.check) {
-    console.log(`${existed ? "would refresh" : "would create"} upload/${path.basename(ledgerPath)}`);
+    console.log(`${existed ? "would refresh" : "would create"} upload/films/${path.basename(ledgerPath)}`);
     continue;
   }
   fs.writeFileSync(ledgerPath, next, "utf8");
@@ -76,7 +76,7 @@ for (const file of files) {
   } else {
     created += 1;
   }
-  console.log(`${existed ? "refreshed" : "created"} upload/${path.basename(ledgerPath)}`);
+  console.log(`${existed ? "refreshed" : "created"} upload/films/${path.basename(ledgerPath)}`);
 }
 
 if (args.check) {

@@ -29,13 +29,21 @@ export const SceneShell: React.FC<{
       {/* A generated fibre sheet rather than a dot pattern: the three radial gradients that
           used to sit here read as halftone, which is a printing artefact, not paper. The file
           is one image (120 KB) made by scripts/make-paper-texture.py — procedural, so there is
-          no scan and no provenance question. */}
-      <div
+          no scan and no provenance question.
+
+          Drawn with <Img>, not `background-image`: Remotion loads a composition in a browser
+          whose working directory is not the project, so a CSS url() to a bundled asset can
+          resolve to nothing and the paper silently renders as flat colour. The lint rule
+          exists for exactly that class of failure — a texture that disappears without an
+          error, on the machine you are not looking at. */}
+      <Img
+        src={staticFile("textures/paper-fibre.jpg")}
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: `url(${staticFile("textures/paper-fibre.jpg")})`,
-          backgroundSize: "cover",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
           mixBlendMode: "multiply",
           opacity: 0.85,
         }}

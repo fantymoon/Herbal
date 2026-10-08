@@ -1,0 +1,58 @@
+# 本草一问 · 04 · 防己
+#
+# 名字古怪的药第二集。答案来自《本草纲目》【释名】引李杲一句话：
+# 「防己如险健之人，幸灾乐祸，能首为乱阶，若善用之，亦可御敌。」
+# 一味药被比作一个幸灾乐祸、能挑头作乱的人——但用得好，也能御敌。
+#
+# 本经给它的别名是「解离」，李时珍说那是因为根上的纹路散解（「解离，因其纹解也」）。
+
+id: fangji
+entry: 防己
+collection: 名字古怪的药
+deck: 名字古怪的药 · 02
+question: 一味药为什么以「险健之人」为名？
+accent: "#4a6b5a"                 # 草部青
+music: music/yuzhou-changwan.mp3
+next: 天雄——「沥节痛」是什么痛？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  - role: ask
+    narration: 防己——一个药名，为什么读起来像在说一个人的品行？
+    photos:
+      - file: sinomenium-acutum-leaf.jpg
+        caption: 防己
+
+  - role: object
+    narration: 防己是藤本，茎像葛一样蔓延。根外面白、里面黄，切开有黑纹，像车辐。
+    photos:
+      - file: sinomenium-acutum-vine.jpg
+        caption: 茎像葛一样蔓延
+      - file: sinomenium-acutum-habit.jpg
+        caption: 缠绕在别的树上
+
+  - role: book
+    narration: 《本草纲目》引了李杲一句话：防己如险健之人，幸灾乐祸，能首为乱阶，若善用之，亦可御敌。
+    read: 防己如险健之人，幸灾乐祸，能首为乱阶，若善用之，亦可御敌。
+    quote:
+      text: 防己如险健之人，幸灾乐祸，能首为乱阶，若善用之，亦可御敌。
+      source: 《本草纲目》草部 · 防己 · 释名（引李杲语）
+
+  - role: study
+    narration: 它的另一个名字叫「解离」，来自根上的黑纹。陶弘景写它：纹像车辐散开。
+    evidence:
+      - text: 解离，因其纹解也。
+        source: 《本草纲目》· 释名
+        note: 李时珍：《本经》的别名「解离」是照着根上的纹取的
+      - text: 其根外白内黄，如桔梗，内有黑纹如车辐解者，良。
+        source: 《本草经集注》（《本草纲目》引）
+        note: 陶弘景写它的样子，也是「解」这个字的来处
+
+  - role: closing
+    narration: 一个药名可以是一句评价，也可以是一条纹路。下一味，天雄。
+
+sources:
+  - 《神农本草经》卷二·中经（汉）
+  - 《本草经集注》（梁·陶弘景，见《本草纲目》引）
+  - 李杲语（见《本草纲目》引）
+  - 《本草纲目》草部（明·李时珍）

@@ -1,0 +1,95 @@
+name: 本草一问 · 出片
+
+# 设计目标：**改 YAML 就出片**。
+#
+# 旁白改了，CI 会重新合成（词级时间戳是画面逐字朱红的依据，拿旧的顶等于画面与声音脱节）；
+# 内容改了，CI 会重编 src/asks/*.content.ts。两者都不需要人记得先跑哪条命令。
+#
+# 只对与这一系列相关的路径触发——另外两条线（单味药短片、跨书专题）有自己的 CI，
+# 不该被这一条的改动唤醒，也不该让这一条被它们的改动唤醒。
+on:
+  push:
+    paths:
+      - "remotion-video/asks/**"
+      - "remotion-video/src/asks/**"
+      - "remotion-video/scripts/ask-*.ts"
+      - "remotion-video/scripts/ask-*.mjs"
+      - "remotion-video/scripts/tts_words.py"
+      - "remotion-video/upload/asks/**"
+      - "remotion-video/scripts/lib/ask*.ts"
+      - ".github/workflows/ask-render.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: remotion-video
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # edge-tts 走微软的在线服务，合成需要网络。装在 CI 而不是只装在开发机上，
+      # 是因为"改了旁白要记得在本地重新合成再提交"是一条没人会一直记得的约定。
+      - name: Install edge-tts
+        run: pip install --quiet edge-tts
+
+      - name: Compile the YAML into content modules
+        run: npm run ask:build
+
+      - name: Synthesise narration that is missing or stale
+        run: npm run ask:voice
+        env:
+          # ask-voice.ts 在非 Windows 上默认找 python3；这里显式给，免得依赖 PATH 的细节。
+          ASK_PYTHON: python3
+
+      # 注册表是生成的，所以「加一集」就是加一个 YAML——不需要有人记得改第二个文件。
+      - name: Regenerate the composition registry
+        run: npm run ask:compositions
+
+      - name: The three rules
+        run: npm run ask:check -- --verbose
+
+      - name: Render and verify
+        run: npm run ask:verify -- --render
+
+      # 渲染用的是 CI 当场生成的那一份，可能与仓库里提交的那一份不同。
+      # 不静默：不一致就报出来，并且把当场生成的那一份一起传成产物。
+      - name: Report products that drifted from the committed ones
+        if: always()
+        run: |
+          if ! git diff --quiet -- src/asks public/voice; then
+            echo "::warning::src/asks 或 public/voice 与仓库里的版本不同——本地重跑一遍并提交，渲染才会与仓库一致"
+            git diff --stat -- src/asks public/voice
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ask-films
+          path: remotion-video/out/asks/*.mp4
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ask-products
+          path: |
+            remotion-video/src/asks/*.content.ts
+            remotion-video/src/asks/*.voice.ts
+            remotion-video/src/asks/Compositions.tsx
+            remotion-video/public/voice/**

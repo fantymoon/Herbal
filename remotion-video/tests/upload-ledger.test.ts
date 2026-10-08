@@ -5,16 +5,17 @@ import { isFrozen } from "../scripts/lib/frozen-films.ts";
 import { readFilmId } from "../scripts/lib/film-files.ts";
 import {
   checkLedgerCopy,
-  checkTitleFrames,
+  publishedOn,
   readLedgerField,
   renderLedger,
-  titleFrame,
+  translationDrift,
 } from "../scripts/lib/ledger.ts";
 import { STATS_COLUMNS } from "../scripts/lib/stats-import.ts";
+import { content as puhuang } from "../src/films/puhuang-first-film.ts";
 import type { FilmContent } from "../src/layout.ts";
 
 const finishedDir = new URL("../src/finished/", import.meta.url);
-const uploadDir = new URL("../upload/", import.meta.url);
+const uploadDir = new URL("../upload/films/", import.meta.url);
 
 // Fields every upload ledger must declare. Values may stay empty while a film is
 // still in production (copy is written after the final visual checks), but the
@@ -46,17 +47,17 @@ test("every new film ships with an upload ledger naming that film", () => {
   for (const file of newFilms) {
     const kebab = file.replace(/\.tsx$/, "");
     const ledger = new URL(`${kebab}.md`, uploadDir);
-    assert.equal(fs.existsSync(ledger), true, `upload/${kebab}.md is missing`);
+    assert.equal(fs.existsSync(ledger), true, `upload/films/${kebab}.md is missing`);
     const copy = fs.readFileSync(ledger, "utf8");
     for (const field of [...REQUIRED_LEDGER_FIELDS, ...REQUIRED_STATS_HEADERS]) {
-      assert.equal(copy.includes(field), true, `upload/${kebab}.md is missing "${field}"`);
+      assert.equal(copy.includes(field), true, `upload/films/${kebab}.md is missing "${field}"`);
     }
     const filmId = readFilmId(fs.readFileSync(new URL(file, finishedDir), "utf8"));
     assert.ok(filmId, `${file} declares no exported film component`);
     assert.equal(
       copy.includes(filmId),
       true,
-      `upload/${kebab}.md does not name the film id ${filmId}`,
+      `upload/films/${kebab}.md does not name the film id ${filmId}`,
     );
   }
 });
@@ -65,10 +66,10 @@ test("the upload ledger skeleton is in place for the next film", () => {
   // 黄芝 is the first film under the current rules; its ledger is written ahead of
   // the film itself, so this asserts the template is usable rather than empty.
   const next = new URL("huangzhi-first-film.md", uploadDir);
-  assert.equal(fs.existsSync(next), true, "upload/huangzhi-first-film.md is missing");
+  assert.equal(fs.existsSync(next), true, "upload/films/huangzhi-first-film.md is missing");
   const copy = fs.readFileSync(next, "utf8");
   for (const field of [...REQUIRED_LEDGER_FIELDS, ...REQUIRED_STATS_HEADERS]) {
-    assert.equal(copy.includes(field), true, `upload/huangzhi-first-film.md is missing "${field}"`);
+    assert.equal(copy.includes(field), true, `upload/films/huangzhi-first-film.md is missing "${field}"`);
   }
 });
 
@@ -194,69 +195,62 @@ test("every new film's upload copy passes the ledger check", () => {
   for (const file of newFilms) {
     const kebab = file.replace(/\.tsx$/, "");
     const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
-    assert.deepEqual(checkLedgerCopy(copy), [], `upload/${kebab}.md`);
+    assert.deepEqual(checkLedgerCopy(copy), [], `upload/films/${kebab}.md`);
   }
 });
 
-// ---- Titles are read as a set, because "reused" is a property of the set ---------
+// ---- The upload copy is scanned for the *kind* of claim, not for fifteen words --------
 
-test("the entry name and the quoted term are the slots, not the frame", () => {
-  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」");
-  assert.equal(
-    titleFrame("防风：古书说的「大风」是什么"),
-    titleFrame("决明子：古书说的「青盲」是什么"),
+test("a title written as modern pharmacology is caught", () => {
+  // The channel was penalised for 夸大功效, and a hand-picked word list only catches the
+  // phrasings somebody thought of first. These are the sentences the old list let through:
+  // none of 缓解 / 消炎 / 降血压 / 增强免疫 / 抗肿瘤 appeared in it, so a title made entirely
+  // of them passed `checkLedgerCopy` with zero problems.
+  const problems = checkLedgerCopy(
+    ["- 标题：长期服用可缓解头痛，消炎止痛，降血压", "- 描述：增强免疫，抗肿瘤。", "- 话题：#读书"].join("\n"),
   );
-  assert.notEqual(titleFrame("紫芝：六芝之一，形如桑"), titleFrame("决明子：又名草决明"));
+  for (const word of ["缓解", "消炎", "降血压", "增强免疫", "抗肿瘤"]) {
+    assert.ok(
+      problems.some((p) => p.includes(word)),
+      `expected a problem naming "${word}", got: ${problems.join(" | ")}`,
+    );
+  }
 });
 
-test("two titles that are one sentence with the noun swapped are reported", () => {
-  const problems = checkTitleFrames([
-    { film: "fangfeng-first-film.tsx", title: "防风：古书说的「大风」是什么" },
-    { film: "juemingzi-first-film.tsx", title: "决明子：古书说的「青盲」是什么" },
-  ]);
-  assert.equal(problems.length, 1, problems.join("; "));
-  assert.match(problems[0], /^fangfeng-first-film\.tsx \/ juemingzi-first-film\.tsx share one title frame/);
-});
-
-test("a question word does not make two titles different templates", () => {
-  // 「古书说的「青盲」是什么」 and 「古书说的「厌食」」 are the same template with the noun
-  // swapped; the trailing 是什么 is not a second idea. Without stripping it the frame
-  // comparison passes them, and the rule SKILL.md states goes unenforced.
-  assert.equal(titleFrame("防风：古书说的「大风」是什么"), titleFrame("龙眼：古书说的「厌食」"));
-  assert.equal(titleFrame("防风：古书说的「大风」是什么"), "古书说的「」");
-});
-
-test("titles that ask different things are not reported", () => {
-  assert.deepEqual(
-    checkTitleFrames([
-      { film: "a.tsx", title: "紫芝：六芝之一，形如桑" },
-      { film: "b.tsx", title: "蓝实：古书里的染青草" },
-      { film: "c.tsx", title: "防风：古书说的「大风」是什么" },
-      { film: "d.tsx", title: "决明子：又名草决明" },
-    ]),
-    [],
-  );
-});
-
-test("no two new films reuse one title frame", () => {
-  // The rule is in SKILL.md, and it is the easiest one to break without noticing:
-  // every title looks fine on its own. This is the version of the check that runs
-  // over the copy actually about to be posted.
-  const lines = newFilms.map((file) => {
+test("every ledger's own copy still passes the wording scan", () => {
+  for (const file of newFilms) {
     const kebab = file.replace(/\.tsx$/, "");
     const copy = fs.readFileSync(new URL(`${kebab}.md`, uploadDir), "utf8");
-    return { film: file, title: readLedgerField(copy, "标题") };
-  });
-  assert.deepEqual(checkTitleFrames(lines), []);
+    assert.deepEqual(checkLedgerCopy(copy), [], `upload/films/${kebab}.md`);
+  }
+});
+
+// ---- A publication is a date in the ledger, not a file on this machine ---------------
+
+test("publishedOn reads the date the platform export filled in", () => {
+  const withRow = ["## 数据回填", "", "| 日期 | 平台 |", "| --- | --- |", "| 2026-09-30 | 抖音 | 1863 |"].join(
+    "\n",
+  );
+  assert.equal(publishedOn(withRow), "2026-09-30");
+  // The earliest row, because that is the day the film became untouchable.
+  assert.equal(publishedOn(`${withRow}\n| 2026-10-04 | 视频号 | 12 |`), "2026-09-30");
+});
+
+test("an untouched ledger is not a publication", () => {
+  // A blank platform field used to be readable as "not published" while a rendered master
+  // said the opposite. Both signals now come from one place, and an empty table is not a date.
+  assert.equal(publishedOn("- 标题：\n\n## 数据回填\n\n| 日期 | 平台 |\n| --- | --- |\n"), null);
+  assert.equal(publishedOn(""), null);
 });
 
 // ---- A film that is live is not re-judged ---------------------------------------
 
 test("the ledger does not ask anyone to report a publication", () => {
   // The creator publishes several films a week and will not come back to say so, so a
-  // status field is a field that rots: it starts as 未发布, stays 未发布, and the gate
-  // then trusts a record nobody maintains. What makes a film untouchable is the master
-  // on disk — `check` looks at `out/`, not at what someone remembered to type here.
+  // hand-typed status field is a field that rots: it starts as 未发布, stays 未发布, and the
+  // gate then trusts a record nobody maintains. Publication is read out of the 数据回填 table
+  // instead, which `npm run stats` fills from the platform's own export — the same evidence,
+  // without anyone remembering to type it.
   const text = renderLedger(sample, null);
   assert.equal(text.includes("- 抖音："), false);
   assert.equal(text.includes("- 视频号："), false);
@@ -264,6 +258,29 @@ test("the ledger does not ask anyone to report a publication", () => {
   for (const field of ["film:", "标题：", "描述：", "话题：", "BGM："]) {
     assert.equal(text.includes(field), true, `${field} should still be rendered`);
   }
+});
+
+test("a hand-written status line is not a publication", () => {
+  // `publishedOn` must key on the imported table alone. If a typed 已发布 countered it, the
+  // exemption would be granted by whoever wrote the line — which is the record that used to
+  // rot, back as the thing the gate trusts.
+  const typed = renderLedger(sample, null) + "- 抖音：已发布 2026-09-25\n";
+  assert.equal(publishedOn(typed), null);
+});
+
+test("a ledger's 今译 that drifts from the film is caught", () => {
+  // Under `reading: "copy"` the description *is* the 今译, and the ledger only ever fills
+  // blanks — so the gate was validating `content.translation` for the mandated framing while
+  // the platform published whatever line was pasted in first. Same class as the BGM row.
+  const ledger = fs.readFileSync(new URL("puhuang-first-film.md", uploadDir), "utf8");
+  assert.equal(translationDrift(puhuang, ledger), null);
+  const edited = ledger.replace("古籍称其主", "本品善治");
+  assert.notEqual(translationDrift(puhuang, edited), null);
+  // A copy-mode film whose description carries no 今译 at all is the other way to break it.
+  assert.notEqual(
+    translationDrift(puhuang, ledger.replace(/\s*今译：[^\n]*/, "")),
+    null,
+  );
 });
 
 test("a ledger that still carries the old status fields is read, not rejected", () => {

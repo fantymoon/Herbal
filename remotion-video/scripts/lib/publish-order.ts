@@ -50,17 +50,23 @@ export const readPublishPlan = (planPath: string): PlannedEntry[] => {
  * films. Two rows separated by a row that has not been shot yet are not yet consecutive
  * for anyone, and once that row is shot they will not be — so flagging them would be a
  * false alarm, and a gate that cries wolf is a gate people stop reading.
+ *
+ * `fixed` names the entries already on a platform. Their sound is whatever the master says
+ * it is, and changing it means re-rendering something people have watched, so a repeat that
+ * ends on a fixed film is reported by `npm run check` as a fact rather than failed as a
+ * decision nobody can act on. A repeat a *new* film walks into is the case this must stop.
  */
 export const adjacentTrackRepeats = (
   planned: readonly PlannedEntry[],
   trackByEntry: ReadonlyMap<string, string>,
+  fixed: ReadonlySet<string> = new Set(),
 ): string[] => {
   const problems: string[] = [];
   let previous: PlannedEntry | null = null;
   for (const row of planned) {
     const track = trackByEntry.get(row.entry);
     const before = previous ? trackByEntry.get(previous.entry) : undefined;
-    if (track && before && track === before) {
+    if (track && before && track === before && !fixed.has(row.entry)) {
       problems.push(
         `publish order ${previous?.entry} -> ${row.entry} (row ${row.order}) both use ${track}; ` +
           `two videos a viewer may see back to back should not sound the same`,

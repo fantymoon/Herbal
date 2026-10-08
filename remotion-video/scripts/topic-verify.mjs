@@ -14,12 +14,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkAudioBed, runCapture } from "./lib/audio.ts";
+import {
+  BED_GAIN,
+  BED_HEADROOM_MAX_DB,
+  BED_HEADROOM_MIN_DB,
+} from "../src/topic-audio.ts";
+import {
+  checkAudioBed,
+  checkBedBalance,
+  checkMixBalance,
+  runCapture,
+} from "./lib/audio.ts";
 import { checkProbe, parseProbe } from "./lib/ffprobe.ts";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const topicsDir = path.join(repo, "src", "topics");
-const outDir = path.join(repo, "out");
+const outDir = path.join(repo, "out", "topics");
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -55,22 +65,56 @@ for (const topic of topics) {
     continue;
   }
   const { voice } = await import(new URL(`../src/topics/${topic}.voice.ts`, import.meta.url).href);
+  const { content } = await import(new URL(`../src/topics/${topic}.ts`, import.meta.url).href);
   const file = path.join(outDir, `${topic}-h.mp4`);
   if (!fs.existsSync(file)) {
-    console.log(`skip ${topic}: no out/${topic}-h.mp4 yet`);
+    console.log(`skip ${topic}: no out/topics/${topic}-h.mp4 yet`);
     continue;
   }
 
   console.log(`${topic}  ${(voice.totalFrames / voice.fps).toFixed(1)}s expected`);
   const checks = remotionCommand
-    ? checkProbe(parseProbe(await remotionCommand("ffprobe", `out/${topic}-h.mp4`)), {
+    ? checkProbe(parseProbe(await remotionCommand("ffprobe", `out/topics/${topic}-h.mp4`)), {
         width: 1920,
         height: 1080,
         fps: voice.fps,
         durationSeconds: voice.totalFrames / voice.fps,
       })
     : [];
+
+  // Both audio checks run on the stems, not on the film: the mix cannot be un-mixed, so
+  // "is the bed quieter than the voice" is only answerable before they are combined.
   checks.push(await checkAudioBed(file, repo));
+
+  const voiceDir = path.join(repo, "public", "voice", voice.topic);
+  const voiceFiles = fs
+    .readdirSync(voiceDir)
+    .filter((f) => f.endsWith(".mp3"))
+    .sort()
+    .map((f) => path.join(voiceDir, f));
+  checks.push(
+    await checkBedBalance(
+      {
+        music: path.join(repo, "public", content.music),
+        bedGain: BED_GAIN,
+        voiceFiles,
+      },
+      repo,
+      { minHeadroom: BED_HEADROOM_MIN_DB, maxHeadroom: BED_HEADROOM_MAX_DB },
+    ),
+  );
+  checks.push(
+    await checkMixBalance(
+      {
+        file,
+        voiceDir,
+        voiceFiles: voiceFiles.map((f) => path.basename(f)),
+        segmentAt: voice.segments.map((seg) => seg.startFrame / voice.fps),
+      },
+      repo,
+      { minHeadroom: BED_HEADROOM_MIN_DB, maxHeadroom: BED_HEADROOM_MAX_DB },
+    ),
+  );
 
   let ok = true;
   for (const check of checks) {

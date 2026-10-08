@@ -48,7 +48,7 @@ const fail = (msg) => {
 };
 
 const film = args.film;
-/** Replacing a master is deliberate: without this the render goes to out/_verify/. */
+/** Replacing a master is deliberate: without this the render goes to out/films/_verify/. */
 const force = args.force === true;
 if (!film || typeof film !== "string" || !/^[A-Za-z0-9]+$/.test(film)) {
   fail("pass --film=CompositionId (e.g. npm run verify -- --film=DanshaFirstFilm)");
@@ -90,7 +90,7 @@ if (!duration) {
 // would block a re-render of a film whose live copy cannot be recalled. The date comes from
 // the ledger rather than from a master sitting in `out/`: a local render is not a publication,
 // and `out/` does not exist in CI.
-const ledgerPath = path.join(repo, "upload", `${kebab}.md`);
+const ledgerPath = path.join(repo, "upload", "films", `${kebab}.md`);
 const ledgerCopy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : "";
 const live = publishedOn(ledgerCopy) !== null;
 if (isFrozen(`${kebab}.tsx`) || live) {
@@ -110,7 +110,7 @@ if (isFrozen(`${kebab}.tsx`) || live) {
     ...(filmId === null
       ? ["declares no exported film component"]
       : ledgerCopy === ""
-        ? [`upload/${kebab}.md is missing`]
+        ? [`upload/films/${kebab}.md is missing`]
         : ledgerProblems(kebab, filmId, content, ledgerCopy)),
   ];
   for (const w of waivers) {
@@ -194,7 +194,7 @@ const remotionCommand = (() => {
   return (...args) => run("npx", ["remotion", ...args], { shell: process.platform === "win32" });
 })();
 
-const stillsDir = path.join(repo, "out", "stills");
+const stillsDir = path.join(repo, "out", "films", "stills");
 fs.mkdirSync(stillsDir, { recursive: true });
 
 console.log(
@@ -208,7 +208,7 @@ const stills = [
 for (const [name, frame] of stills) {
   const dest = path.join(stillsDir, `${kebab}-${name}.png`);
   await remotionCommand("still", film, dest, `--frame=${frame}`, "--overwrite");
-  console.log(`  still ${name} frame=${frame} -> out/stills/${kebab}-${name}.png`);
+  console.log(`  still ${name} frame=${frame} -> out/films/stills/${kebab}-${name}.png`);
 }
 console.log("Inspect the three stills for overlap, readability, seal, and credits before shipping.");
 
@@ -224,7 +224,7 @@ if (args.sheet) {
   for (let f = 0; f < duration; f += every) {
     frames.push(f);
   }
-  console.log(`contact sheet: ${frames.length} frames every ${every} -> out/stills/${kebab}-sheet/`);
+  console.log(`contact sheet: ${frames.length} frames every ${every} -> out/films/stills/${kebab}-sheet/`);
   for (const frame of frames) {
     const dest = path.join(sheetDir, `f${String(frame).padStart(4, "0")}.png`);
     await remotionCommand("still", film, dest, `--frame=${frame}`, "--overwrite");
@@ -243,13 +243,13 @@ if (args["skip-render"]) {
 // film, so the one command for checking your work was also the command that invalidated it.
 // Render to a scratch path instead and say where it went; `--force` is the deliberate way to
 // replace a master.
-const master = path.join(repo, "out", `${kebab}.mp4`);
+const master = path.join(repo, "out", "films", `${kebab}.mp4`);
 const replacing = force || !fs.existsSync(master);
-const target = replacing ? `out/${kebab}.mp4` : `out/_verify/${kebab}.mp4`;
+const target = replacing ? `out/films/${kebab}.mp4` : `out/films/_verify/${kebab}.mp4`;
 if (!replacing) {
-  fs.mkdirSync(path.join(repo, "out", "_verify"), { recursive: true });
+  fs.mkdirSync(path.join(repo, "out", "films", "_verify"), { recursive: true });
   console.log(
-    `  a master already exists at out/${kebab}.mp4 — rendering to ${target} instead, pass --force to replace it`,
+    `  a master already exists at out/films/${kebab}.mp4 — rendering to ${target} instead, pass --force to replace it`,
   );
 }
 await remotionCommand("render", film, target, "--codec=h264", "--concurrency=1", "--timeout=180000", "--overwrite");
@@ -264,7 +264,7 @@ const checks = checkProbe(info, {
   durationSeconds: duration / 30,
 });
 // ffprobe reports the stream, not the samples. A film whose music stops halfway has a
-// perfectly healthy AAC stream — that is how `out/tu-que-h.mp4` passed every check while
+// perfectly healthy AAC stream — that is how `out/topics/tu-que-h.mp4` passed every check while
 // playing its last 1:46 against digital silence. So the samples get read too.
 checks.push(await checkAudioBed(mp4, repo));
 let ok = true;

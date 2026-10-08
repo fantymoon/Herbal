@@ -22,6 +22,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { shrinkPhoto } from "./lib/image.ts";
 
 // Node's fetch ignores http_proxy unless it is told to read it, and spawning curl is
 // blocked in this sandbox (EBUSY), so the proxy has to be opted into in-process.
@@ -169,9 +170,15 @@ if (args.check) {
     process.exit(2);
   }
   for (const c of usable.slice(0, limit)) {
+    // The observation's own taxon, not the one we searched for. They differ often enough to
+    // matter: a search for "Citrus reticulata" returns observations the observer identified
+    // as Citrus × aurantium, and the ledger records *that* name. Picking a photo without
+    // seeing this line is how a film about 橘 ends up showing 酸橙 — the same class of
+    // mistake as hardcoding the file extension, and just as invisible from the listing.
+    const offTaxon = c.taxon && c.taxon !== args.taxon ? `  ⚠ ${c.taxon}` : "";
     console.log(
       `  [${usable.indexOf(c)}] ${c.id}  ${c.width}x${c.height} ${c.landscape ? "landscape" : "portrait "} ` +
-        `${c.size.padEnd(8)} ${c.license.label.padEnd(9)} ${c.author ?? c.observer ?? "(no author)"}`,
+        `${c.size.padEnd(8)} ${c.license.label.padEnd(9)} ${c.author ?? c.observer ?? "(no author)"}${offTaxon}`,
     );
   }
   process.exit(usable.length > 0 ? 0 : 1);
@@ -241,6 +248,12 @@ const stem = String(args.file ?? `${args.taxon.toLowerCase().replace(/[^a-z0-9]+
 const file = `${stem}.jpg`;
 fs.mkdirSync(imagesDir, { recursive: true });
 fs.writeFileSync(path.join(imagesDir, file), bytes);
+
+// The bucket serves research-grade originals — 3248×4872, 15.5 MB — for a frame that is
+// drawn 932 px wide. Shrinking at the door is the only place this can be fixed without
+// leaving a 130 MB image folder in the repository every CI run has to check out.
+const shrunk = await shrinkPhoto(repo, path.join(imagesDir, file));
+if (shrunk) console.log(`  缩放：${shrunk}`);
 
 // The subject line on screen is the scientific name, upper-cased — same shape as the
 // 55 published films. Overridable because the corpus name and the sequenced species do

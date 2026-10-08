@@ -1,0 +1,62 @@
+# 本草一问 · 02 · 橘柚
+#
+# 《神农本草经》把橘和柚写成一条，而这一条的别名写的是「橘皮」。
+# 宋人寇宗奭说那是「后人误加柚字」，到《本草纲目》李时珍干脆拆成两条。
+#
+# 「书」屏上摆的是整段原文，旁白只读末尾那四个字——所以 read 必须同时是
+# 旁白与引文的连续子串（ask-build 两头都核），朱红才会从对的位置开始亮。
+#
+# 配图说明：这一集只取到**柚的叶**。开放数据通道里 iNaturalist 的 Citrus maxima
+# 观察全是营养器官（叶、干），而搜「Citrus reticulata」返回的果实照经核对
+# 观察者鉴定为 Citrus × aurantium（酸橙），不是橘——那两张已经删掉。
+# 所以「物」段改成讲叶：芸香科的翼叶（箭叶）本来就是一个正经的名物特征。
+
+id: juyou
+entry: 橘柚
+collection: 厨房里的本草
+deck: 厨房里的本草 · 02
+question: 《神农本草经》为什么把橘和柚写成一味药？
+accent: "#a5613a"                 # 果部赭
+music: music/guzhen-lvxing.mp3
+next: 王不留行——一个药名，为什么像一句军令？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  - role: ask
+    narration: 《神农本草经》把橘和柚写成了一条，可这一条最后的别名，写的是「橘皮」。
+    photos:
+      - file: citrus-maxima-leaf.jpg
+        caption: 柚
+
+  - role: object
+    narration: 柚是常绿的乔木。芸香科的叶子有个记号：叶柄上带一小片翼，叫箭叶。
+    photos:
+      - file: citrus-maxima-leaf.jpg
+        caption: 叶柄上那一小片翼，叫箭叶
+      - file: citrus-maxima-leaves.jpg
+        caption: 柚叶
+
+  - role: book
+    narration: 《神农本草经》在这一条的末尾写了一个别名：一名橘皮。
+    read: 一名橘皮
+    quote:
+      text: 味辛，温。主胸中瘕热逆气，利水谷。久服，去臭、下气、通神。一名橘皮。生川谷。
+      source: 《神农本草经》卷一 · 上经
+
+  - role: study
+    narration: 宋代寇宗奭说过：橘和柚本来就是两种，《本草》只写「一名橘皮」，是后人误加了柚字。到明代，李时珍干脆把柚单独立了一条。
+    evidence:
+      - text: 橘、柚自是两种。《本草》云∶一名橘皮。后人误加柚字，妄生分别。
+        source: 《本草衍义》（《本草纲目》引）
+        note: 宋人：这一对分别，是后人加出来的
+      - text: 柚，色油然，其状如卣，故名。
+        source: 《本草纲目》果部 · 柚
+        note: 李时珍给柚单独立目，并解释「柚」这个字
+
+  - role: closing
+    narration: 从汉代到明代，一条药才分成两条。下一味，王不留行。
+
+sources:
+  - 《神农本草经》卷一·上经（汉）
+  - 《本草衍义》（宋·寇宗奭，见《本草纲目》引）
+  - 《本草纲目》果部（明·李时珍）

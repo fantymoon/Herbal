@@ -18,6 +18,7 @@ import {
 } from "../scripts/lib/compliance.ts";
 import { readFilmId, readKnownPhotos } from "../scripts/lib/film-files.ts";
 import { loadContent } from "../scripts/lib/film-content.ts";
+import { checkLedgerCopy } from "../scripts/lib/ledger.ts";
 import { DECLARED_TYPE_SIZES, findPacingProblems, planFilm, type FilmContent } from "../src/layout.ts";
 
 const repo = new URL("../", import.meta.url);
@@ -407,4 +408,123 @@ test("no draft is registered as a renderable composition", async () => {
       `${filmId} is a draft but is registered in src/Composition.tsx (run npm run gen)`,
     );
   }
+});
+
+// ---- The wording rules read what is on screen, not what a field happens to hold --------
+
+test("banned wording on a screen the content module never names is caught", () => {
+  // `checkContent` used to scan translation / commentary / historicalNote. The `hook` and the
+  // closing `facts` are drawn on every film and were scanned by nothing, so a film could put
+  // 改善 and 有效 on its last screen and the gate would report ok.
+  const broken: FilmContent = {
+    ...compliantContent,
+    hook: "古书说它能改善炎症",
+    facts: [{ label: "用途", value: "古人用它止痛" }],
+  };
+  const findings = checkContent(broken, knownPhotos);
+  const details = findings.filter((v) => v.rule === "banned-wording").map((v) => v.detail).join(" | ");
+  assert.match(details, /改善/);
+  assert.match(details, /止痛/);
+});
+
+test("a 今译 that leaves the screen is still checked, where it now lives", () => {
+  // Under `reading: "copy"` the translation is not drawn, so it is not part of the on-screen
+  // prose — and the description that carries it is scanned by `checkLedgerCopy`. This asserts
+  // the two halves cover the text between them rather than one of them covering nothing.
+  const copy: FilmContent = { ...compliantContent, reading: "copy", translation: "古籍称其主…，可根治。" };
+  const onScreen = rulesOf(checkContent(copy, knownPhotos));
+  assert.equal(onScreen.includes("banned-wording"), false, "根治 is not on a screen in this shape");
+  assert.ok(
+    checkLedgerCopy(`- 描述：\n  今译：${copy.translation}`).some((p) => p.includes("根治")),
+    "the description that carries it has to fail instead",
+  );
+});
+
+test("a note that affirms modern confirmation fails, however it is phrased", () => {
+  // The frame used to be three independent regexes over the whole note, so anything carrying
+  // 汉代 + 未 + 证实 + 科学 passed — including sentences whose actual claim was the opposite.
+  for (const note of [
+    "古籍所载，未来或可确认其科学价值",
+    "汉代旧说，未经证实。现代临床已证实其效",
+  ]) {
+    const broken = { ...compliantContent, historicalNote: note };
+    assert.ok(
+      rulesOf(checkContent(broken, knownPhotos)).includes("commentary"),
+      `"${note}" was accepted as a historical frame`,
+    );
+  }
+  assert.ok(rulesOf(checkContent(compliantContent, knownPhotos)).includes("commentary") === false);
+});
+
+test("the historical framing may be worded by the film, and any of several ways", () => {
+  const alternatives = [
+    "汉代本草之说，未经现代科学验证",
+    "此系古籍旧载，尚无现代药理学证据可以证实",
+  ];
+  for (const note of alternatives) {
+    const content = { ...compliantContent, historicalNote: note };
+    assert.deepEqual(
+      checkContent(content, knownPhotos).filter((v) => v.rule === "commentary"),
+      [],
+      `"${note}" does the three things the rule asks and must pass`,
+    );
+  }
+});
+
+test("the 今译 may attribute a 主 clause to the book in more than one wording", () => {
+  // One fixed five-character opener was enforced, so all 19 films begin their 今译 identically.
+  // What the rule needs is attribution, not a shared sentence.
+  const content = {
+    ...compliantContent,
+    translation: compliantContent.translation.replace("古籍称其主", "古书说其主"),
+  };
+  assert.equal(
+    checkContent(content, knownPhotos).some((v) => v.rule === "efficacy-frame"),
+    false,
+  );
+  const unattributed = { ...compliantContent, translation: "本品主心腹五邪，能安神。" };
+  assert.ok(rulesOf(checkContent(unattributed, knownPhotos)).includes("efficacy-frame"));
+});
+
+test("a placeholder photo credit is a draft, because it is drawn on screen", () => {
+  // The rendered line is `subject / author / license`; author was missing from the placeholder
+  // list, so "TODO AUTHOR" passed as finished and reached a platform.
+  const broken: FilmContent = {
+    ...compliantContent,
+    photo: { ...compliantContent.photo, author: "TODO AUTHOR" },
+  };
+  assert.ok(unfinishedFields(broken).includes("photo.author"));
+  assert.equal(isDraft(broken), true);
+});
+
+test("a screen past the density floor cannot be waived", () => {
+  // Naming all three negotiable rules used to switch the density guard off entirely, which is
+  // how a film reached 27 chars/s with `hardViolations` empty. duration buys time; it does not
+  // buy unreadability.
+  const broken: FilmContent = {
+    ...compliantContent,
+    translation: `${compliantContent.translation}。`.repeat(14),
+    deviations: [
+      { rule: "duration", why: "经文长，需 30 秒" },
+      { rule: "reading-budget", why: "今译是本条的忠实逐句翻译，删句即改字" },
+      { rule: "pacing", why: "四屏各需读毕" },
+    ],
+  };
+  const findings = checkNewFilm(compliantFilmFile, broken, knownPhotos);
+  assert.ok(
+    hardViolations(findings).some((v) => v.rule === "unreadable"),
+    `expected an unwaivable unreadable finding, got ${rulesOf(findings).join(", ")}`,
+  );
+  // The waivable finding is still waivable — the floor is a ceiling on the waiver, not a
+  // second name for the same rule.
+  const mild: FilmContent = {
+    ...compliantContent,
+    translation: `${compliantContent.translation}。`.repeat(6),
+    deviations: [{ rule: "reading-budget", why: "忠实逐句翻译不可删" }],
+  };
+  const mildFindings = checkNewFilm(compliantFilmFile, mild, knownPhotos);
+  assert.equal(
+    hardViolations(mildFindings).some((v) => v.rule === "reading-budget"),
+    false,
+  );
 });

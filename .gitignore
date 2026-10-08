@@ -11,3 +11,15 @@ out
 # Per-segment TTS transcripts for the long-form series. Regenerable from the voice
 # modules via `npm run topic:build`, and rewritten on every run.
 remotion-video/.topic-work
+
+# Same for the 「本草一问」 series: per-segment text, word-level boundary JSON and the
+# synthesis job file. Regenerable via `npm run ask:voice`, rewritten on every run.
+# The audio itself (public/voice/<id>/) IS committed — it is the film's time base.
+remotion-video/.ask-work
+
+# Agent scratch: extracted frames, TTS probes, one-off scripts. Neither product nor
+# evidence, and small enough that nobody will remember to delete them.
+.workbuddy-ai/tmp/
+# Regenerable synthesis transcripts, same class as .topic-work / .ask-work.
+remotion-video/.voice-work
+remotion-video/.topic-work-en

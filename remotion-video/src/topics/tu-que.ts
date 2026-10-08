@@ -55,6 +55,15 @@ export type TopicContent = {
   question: string;
   /** 副题，一句话说明这期在做什么。 */
   deck: string;
+  /**
+   * 收尾屏那句话。**曾经硬编码在渲染器里**，于是英文版照搬了中文。
+   * 凡是会被观众读到的文字都归内容模块管——渲染器不该替作者说话。
+   */
+  closingLine: string;
+  /** 封面底部那句。同一个理由。 */
+  tagline: string;
+  /** 时间线的朝代数据。不给则用内置的中文默认值。 */
+  eras?: { dynasty: string; years: string; books: string[] }[];
   segments: Segment[];
   /** 这一期真正引用到的书，片尾列出。 */
   sources: string[];
@@ -206,6 +215,8 @@ export const content: TopicContent = {
     "《外科大成》（清·祁坤）",
     "《丹台玉案》（明·孙文胤）",
   ],
+  closingLine: "古籍是人的记录，不是自然的记录。",
+  tagline: "古籍里的一条说法，追到源头看看",
   music: "music/yuzhou-changwan.mp3",
   accent: "#9d3527",
 };

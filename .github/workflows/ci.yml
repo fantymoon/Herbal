@@ -39,6 +39,23 @@ jobs:
       - name: Rule check over every film
         run: npm run check
 
+      # 「本草一问」系列（B 站竖屏）有自己的一套规则：三条内容规则加一节 sync。
+      # 跑在这里而不是只跑在 ask-render.yml 里，是因为它不需要网络也不需要渲染——
+      # 一个被改坏的 YAML 应该在 CI 的第一道关就被拦下，而不是等到出片那一步。
+      - name: Rule check over every 「本草一问」 episode
+        run: npm run ask:check
+
+      # 注册表是生成的（scripts/ask-compositions.mjs），所以要检查它与 src/asks/ 同步——
+      # 否则新加的集会有内容模块却没有 Composition，而那要到渲染时才报错。
+      - name: Composition registry is in sync with src/asks
+        run: |
+          npm run ask:compositions
+          if ! git diff --quiet -- src/asks/Compositions.tsx; then
+            echo "src/asks/Compositions.tsx is stale — run 'npm run ask:compositions' and commit the result."
+            git diff -- src/asks/Compositions.tsx
+            exit 1
+          fi
+
       - name: Composition registry is in sync with src/finished
         run: |
           npm run gen

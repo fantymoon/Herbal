@@ -43,8 +43,8 @@ import { unrecordedLicences } from "../src/music.ts";
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
-const uploadDir = path.join(repo, "upload");
-const outDir = path.join(repo, "out");
+const uploadDir = path.join(repo, "upload", "films");
+const outDir = path.join(repo, "out", "films");
 const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
 
 /**
@@ -213,7 +213,7 @@ for (const file of all) {
     ...(filmId === null
       ? [`${file}: declares no exported film component`]
       : copy === null
-        ? [`upload/${kebab}.md is missing`]
+        ? [`upload/films/${kebab}.md is missing`]
         : ledgerProblems(kebab, filmId, content, copy)),
   ];
   for (const w of waived) {

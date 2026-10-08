@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   GAP_MARK,
@@ -8,9 +8,11 @@ import {
   findEntries,
   originOf,
   originProblems,
+  quoteProblems,
   readCorpus,
   sutraOf,
 } from "../scripts/lib/corpus.ts";
+import { loadContent } from "../scripts/lib/film-content.ts";
 
 // The corpus is read-only source material, so these tests assert against the real file
 // rather than a fixture. A fixture would have let the multi-line bug through: the bug
@@ -173,4 +175,76 @@ test("no film on screen names a 产地 its 经文 does not", () => {
     "lanshi-first-film.ts: 蓝实 产地=河内, 经文 says 生平泽",
     "zizhi-first-film.ts: 紫芝 产地=高夏, 经文 says 生山谷",
   ]);
+});
+
+// ---- 引文保真：屏幕上的经文必须是底本里的那一段 ------------------------------------------
+
+const sutra = (text: string) => ({
+  text,
+  gaps: [],
+  gapCount: 0,
+  dangling: false,
+});
+
+test("a quotation lifted straight from the 经文 passes", () => {
+  const source = sutra("味甘，平。主伤中虚羸，补五内，益气力。久服，轻身、不老。");
+  assert.deepEqual(quoteProblems("主伤中虚羸，补五内，益气力。久服，轻身、不老。", source), []);
+});
+
+test("a character changed against the 底本 fails, and says which two", () => {
+  // 络石 prints 「水浆不下」 where this recension reads 「水浆不干」. On screen and to the
+  // old gate both looked like the 经文; only reading them side by side says otherwise.
+  const source = sutra("味甘，平。主风湿，水浆不干，下乳汁。");
+  const problems = quoteProblems("主风湿，水浆不下，下乳汁。", source);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /底本作「干」/);
+  assert.match(problems[0], /屏幕上作「下」/);
+});
+
+test("a changed character documented as a witness reading passes", () => {
+  // 大枣: 底本「肋十二经」, 《证类本草》「助十二经」, 形近而讹, 今从证类. The divergence is
+  // the scholarship; an unmarked one would read as a typo.
+  const source = sutra("味甘，平。主心腹邪气，肋十二经，平胃气。");
+  const commentary = "底本作「肋十二经」，《证类本草》作「助十二经」，形近而讹，今从证类。";
+  assert.deepEqual(quoteProblems("主心腹邪气，助十二经，平胃气。", source, commentary), []);
+});
+
+test("silently deleting a character the recension marked as lost fails", () => {
+  // The corpus marks a dropped character with an inline space, and 蓝实 let it vanish:
+  // 「杀蛊□、注鬼」 printed as 「杀蛊、注鬼」. A gap that disappears makes the damage
+  // invisible, which is worse than a visible hole — so the rule separates *filling* a gap
+  // (scholarship, when the witness is named) from *removing* one (never).
+  const source = sutra("味苦，寒。主解诸毒，杀蛊" + GAP_MARK + "、注鬼、螫毒。");
+  const problems = quoteProblems("主解诸毒，杀蛊、注鬼、螫毒。", source);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /把底本标记的缺字删掉/);
+});
+
+test("a gap filled from another witness and recorded passes", () => {
+  const source = sutra("味甘，平。一名巨胜。叶，名青" + GAP_MARK + "。生川泽。");
+  const commentary = "底本此处缺一字，据《吴普本草》篇名补「襄」。";
+  assert.deepEqual(quoteProblems("一名巨胜。叶，名青襄。生川泽。", source, commentary), []);
+});
+
+test("every new film either 照录 its 经文 or names the witness in its 注释", async () => {
+  // Live films cannot be re-rendered, so a divergence they carry is named here rather than
+  // rewritten — the same treatment 蓝实 and 紫芝 get from the 产地 rule above. This list may
+  // only shrink, and it shrinks by retiring the film, never by editing the expectation.
+  const alreadyLive = ["lanshi-first-film.ts"];
+  const filmsDir = new URL("src/films/", repo);
+  const finishedDir = new URL("src/finished/", repo);
+  const found: string[] = [];
+  for (const file of readdirSync(filmsDir).filter((f) => f.endsWith(".ts")).sort()) {
+    const wrapper = new URL(file.replace(/\.ts$/, ".tsx"), finishedDir);
+    if (!existsSync(wrapper)) continue;
+    const { content } = await loadContent(readFileSync(fileURLToPath(wrapper), "utf8"), fileURLToPath(filmsDir));
+    if (!content) continue;
+    const hit = entries.find((e) => e.name === content.entry)?.sutra;
+    if (!hit) continue;
+    const problems = quoteProblems(content.original, hit, content.commentary);
+    if (problems.length > 0 && !alreadyLive.includes(file)) {
+      found.push(`${file}: ${problems[0]}`);
+    }
+  }
+  assert.deepEqual(found, [], "the 经文 on screen is not the 经文 in the book, and nothing records why");
 });

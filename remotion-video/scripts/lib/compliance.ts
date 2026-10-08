@@ -11,14 +11,17 @@
 import {
   DISCLAIMER_TEXT,
   FPS,
+  FRAME_MARKERS,
   NEGOTIABLE_RULES,
   REQUIRED_FRAME,
   REQUIRED_NOTE,
   STANDARD_DURATION_CAP,
+  claimText,
   findOverflow,
   findOverlaps,
   findPacingProblems,
   findReadingProblems,
+  findUnreadableScenes,
   isNegotiableRule,
   missingFrameParts,
   planFilm,
@@ -62,6 +65,55 @@ export const BANNED_THERAPEUTIC_WORDS = [
   "药到病除",
 ] as const;
 
+/**
+ * The class of claim the platform actually objected to, which the list above does not cover.
+ *
+ * 15 手挑 words are a blocklist: it catches the phrasings somebody thought of, and the
+ * penalty was for a *kind* of sentence — "尚未被现代科学证实或夸大功效". Measured against
+ * the current wording rules, a title reading 「长期服用可缓解头痛，消炎止痛，降血压」 with a
+ * description of 「增强免疫，抗肿瘤」 passed with zero problems, because none of those five
+ * words is on any list and nothing else looks at a title. These are the modern-pharmacology
+ * verbs the old list was missing; the fix is not a longer list, it is that they now fail the
+ * same one function as everything else.
+ */
+export const MODERN_CLAIM_WORDS = [
+  "缓解",
+  "止痛",
+  "消炎",
+  "抗菌",
+  "抑菌",
+  "抗癌",
+  "抗肿瘤",
+  "降血压",
+  "降血糖",
+  "降血脂",
+  "增强免疫",
+  "提高免疫",
+  "提升免疫",
+  "预防",
+  "康复",
+  "见效",
+  "靶向",
+] as const;
+
+/**
+ * Banned wording in a piece of prose, once, for whoever asks.
+ *
+ * The on-screen check and the upload-copy check used to be two loops over two lists in two
+ * files, which is how a film ended up with a compliant screen and a non-compliant title —
+ * the platform acts on the title. Both now call this.
+ */
+export const claimWordingProblems = (text: string): string[] => {
+  const problems: string[] = [];
+  for (const word of [...BANNED_THERAPEUTIC_WORDS, ...MODERN_CLAIM_WORDS]) {
+    if (text.includes(word)) problems.push(word);
+  }
+  // 主治 is in the array's place but kept out of it: the published-film audit scans the
+  // 经文 too, and there 主治 is the source talking rather than a claim we made.
+  if (text.includes("主治")) problems.push("主治");
+  return [...new Set(problems)];
+};
+
 export const formatViolations = (file: string, violations: Violation[]): string =>
   violations
     .map(
@@ -92,6 +144,12 @@ export const unfinishedFields = (content: FilmContent): string[] => {
     if (TODO.test(content.photo[field])) {
       fields.push(`photo.${field}`);
     }
+  }
+  // The credit line the renderer draws is `subject / author / license`, so a placeholder
+  // author is a placeholder on screen. It was missing from this list, which meant the film
+  // was not a draft, passed `checkNewFilm`, and printed "TODO AUTHOR" to a platform.
+  if (typeof content.photo.author === "string" && TODO.test(content.photo.author)) {
+    fields.push("photo.author");
   }
   return fields;
 };
@@ -193,20 +251,27 @@ export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Vi
     }
   }
 
-  // A 主…… efficacy statement must be translated behind the historical frame.
-  if (/主/.test(content.original) && !content.translation.includes(REQUIRED_FRAME)) {
-    add("efficacy-frame", `quotes 主…… but the 今译 never opens with "${REQUIRED_FRAME}"`);
+  // A 主…… efficacy statement has to be attributed to the book rather than asserted. Which
+  // attribution wording to use is writing; that one is used is the rule. See `FRAME_MARKERS`.
+  if (/主/.test(content.original) && !FRAME_MARKERS.some((marker) => content.translation.includes(marker))) {
+    add(
+      "efficacy-frame",
+      `quotes 主…… but the 今译 never attributes it to the book — any of ` +
+        `${FRAME_MARKERS.join(" / ")} + 主… would do, and the wording is yours to choose`,
+    );
   }
 
-  // Banned wording. 主治 is included: it is only grandfathered in the frozen films.
-  const prose = [content.translation, content.commentary, content.historicalNote].join("\n");
-  for (const word of BANNED_THERAPEUTIC_WORDS) {
-    if (prose.includes(word)) {
-      add("banned-wording", `contains "${word}"`);
+  // Banned wording, read off the prose this film actually authors.
+  //
+  // This used to scan `translation` / `commentary` / `historicalNote` as fields, which is a
+  // form rather than a behaviour: under `reading: "copy"` two of the three never reach a
+  // screen, while the `hook` and the closing `facts` — which always do — were scanned by
+  // nobody. `claimText` is the blocks the renderer draws and did not copy out of the book.
+  for (const line of claimText(content)) {
+    const shown = line.length > 24 ? `${line.slice(0, 24)}…` : line;
+    for (const word of claimWordingProblems(line)) {
+      add("banned-wording", `the screen shows 「${shown}」 containing "${word}"`);
     }
-  }
-  if (prose.includes("主治")) {
-    add("banned-wording", 'contains "主治" (only frozen films may keep it)');
   }
 
   // A real, credited photo — never a code-drawn herb.
@@ -285,6 +350,12 @@ export const checkPlan = (content: FilmContent): Violation[] => {
   // time to read it. The two budgets are checked separately.
   for (const problem of findReadingProblems(plan)) {
     add("reading-budget", problem);
+  }
+  // Past the hard floor the finding is not a budget complaint, so `deviations` cannot
+  // speak it: naming duration / reading-budget / pacing used to switch off the density
+  // guard entirely and a screen at 27 chars/s reported `ok`.
+  for (const problem of findUnreadableScenes(plan)) {
+    add("unreadable", problem);
   }
   // A film past the house cap says so out loud. `requiredDuration` will not reach an
   // extended rung without a declaration, so in practice this finding always arrives

@@ -79,6 +79,8 @@ import { RousongrongFirstFilm } from "./finished/rousongrong-first-film";
 import { PuhuangFirstFilm } from "./finished/puhuang-first-film";
 import { XiangpuFirstFilm } from "./finished/xiangpu-first-film";
 import { XuduanFirstFilm } from "./finished/xuduan-first-film";
+import { LouluFirstFilm } from "./finished/loulu-first-film";
+import { YingshiFirstFilm } from "./finished/yingshi-first-film";
 
 export const HerbalCompositions: React.FC = () => {
   return (
@@ -681,6 +683,22 @@ export const HerbalCompositions: React.FC = () => {
       <Composition
         id="XuduanFirstFilm"
         component={XuduanFirstFilm}
+        durationInFrames={360}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="LouluFirstFilm"
+        component={LouluFirstFilm}
+        durationInFrames={360}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="YingshiFirstFilm"
+        component={YingshiFirstFilm}
         durationInFrames={360}
         fps={30}
         width={1080}

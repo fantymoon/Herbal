@@ -1,7 +1,8 @@
-import { Img, interpolate, staticFile } from "remotion";
+import type { ReactNode } from "react";
+import { Img, interpolate, spring, staticFile } from "remotion";
 import { FinishedFilm } from "./finished-shell";
 import { fade, rise } from "./herbal-cards";
-import { ink, mutedInk, sealRed, SectionLabel, Seal } from "./herbal-stage";
+import { ink, mutedInk, paper, sealRed, SectionLabel, Seal } from "./herbal-stage";
 import {
   COVER_BLOCKS,
   openingFor,
@@ -412,13 +413,54 @@ const SceneView: React.FC<{
   accent: string;
   photoFile: string;
   mode: FilmContent["mode"];
-}> = ({ blocks, frame, accent, photoFile, mode }) => {
+  bed?: boolean;
+}> = ({ blocks, frame, accent, photoFile, mode, bed }) => {
   // A film with a hook opens on its title card; one without keeps the schedule the
   // published films use, so an existing master is unchanged by re-rendering. See
   // `openingFor`.
   const opening = openingFor(blocks.map((block) => block.kind));
   return (
   <>
+    {/* The herb, dimmed, behind a scene that has nothing of its own to show. It is a bed,
+        not a subject: the paper has to stay the surface the type sits on, so the image is
+        desaturated and washed towards the paper colour rather than laid over it.
+
+        Blurred, and drifting. A sharp photograph behind 68px type fights the type even at
+        a quarter opacity — the eye reads its edges as text — and a still one reads as a
+        slide left up. The same slow push the framed photo uses keeps the picture alive
+        across the whole film without competing with the columns. */}
+    {bed !== true ? null : (
+      <>
+        <Img
+          src={staticFile(`images/${photoFile}`)}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "blur(16px) saturate(.62) contrast(.95) brightness(1.02)",
+            opacity: 0.42,
+            // Overscanned so the blur never pulls a transparent edge into frame.
+            transform: `scale(${interpolate(
+              frame,
+              [0, 300],
+              [1.1, 1.16],
+              { extrapolateRight: "clamp" },
+            ).toFixed(4)})`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: paper,
+            opacity: 0.46,
+          }}
+        />
+      </>
+    )}
     {blocks.map((block, index) => (
       <BlockView
         key={`${block.kind}-${index}`}
@@ -434,19 +476,53 @@ const SceneView: React.FC<{
       />
     ))}
     {blocks.some((b) => b.kind === "heroTitle") ? (
-      <div style={{ position: "absolute", right: 74, top: 72, opacity: fade(frame, 16, 44) }}>
+      <SealStamp frame={frame}>
         {/* SKILL.md § Input And Mode: the seal is 药 for a single herb and 方 for a
             formula, so it is read from `mode` rather than hardcoded. */}
         <Seal text={sealGlyph(mode)} size={104} glyphScale={0.55} rotation={-5} />
-      </div>
+      </SealStamp>
     ) : null}
   </>
+  );
+};
+
+/**
+ * A seal is stamped, not faded in.
+ *
+ * Everything else on this screen arrives by opacity, which is why the mark used to read as
+ * a watermark laid over the paper. A stamp comes down from above with a little overshoot
+ * and settles — the spring carries the weight, and the tilt easing from -11° to the seal's
+ * own -5° is what makes the landing read as an impact rather than a pop.
+ */
+const SealStamp: React.FC<{ frame: number; children: ReactNode }> = ({ frame, children }) => {
+  const landed = spring({
+    frame: frame - 16,
+    fps: 30,
+    config: { damping: 11, mass: 0.7, stiffness: 240 },
+  });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 74,
+        top: 72,
+        opacity: Math.min(1, landed * 2.4),
+        transform: `scale(${(1.55 - 0.55 * landed).toFixed(4)}) rotate(${(-11 + 6 * landed).toFixed(2)}deg)`,
+      }}
+    >
+      {children}
+    </div>
   );
 };
 
 export const EntryFilm: React.FC<{ content: FilmContent }> = ({ content }) => {
   const plan = planFilm(content);
   const scenes = plan.scenes.map((scene) => {
+    // A scene that carries the photograph itself does not also need it as a bed; every
+    // other screen — the 原文 columns, the closing facts — has nothing of its own to show,
+    // and for a film about a physical object an empty paper half is the one thing it should
+    // never run out of.
+    const bed = !scene.blocks.some((block) => block.kind === "photo");
     const Scene: React.FC<{ frame: number }> = ({ frame }) => (
       <SceneView
         blocks={scene.blocks}
@@ -454,6 +530,7 @@ export const EntryFilm: React.FC<{ content: FilmContent }> = ({ content }) => {
         accent={content.accent}
         photoFile={content.photo.file}
         mode={content.mode}
+        bed={bed}
       />
     );
     return Scene;

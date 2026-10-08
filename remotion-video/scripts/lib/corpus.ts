@@ -114,6 +114,106 @@ export type Entry = { name: string; volume: string | null; sutra: Sutra };
 export const originOf = (sutra: Sutra): string | null =>
   /生([\u4e00-\u9fff]{2,3})。?$/.exec(sutra.text)?.[1] ?? null;
 
+/** Punctuation and layout characters that carry no text, for comparing a quotation to its source. */
+const quotePlain = (text: string): string =>
+  text
+    .replace(new RegExp(GAP_MARK, "g"), "□")
+    .replace(/[\s，。、；：！？「」『』（）()《》·…—－-]/g, "");
+
+/**
+ * The 经文 on screen has to be the 经文 in the book.
+ *
+ * `original` is the one block every film quotes verbatim, and nothing re-derived it after
+ * scaffolding: the gate compared 产地 against the text and left the quotation itself
+ * unchecked. Measured against the corpus, four of six sampled films diverge — 络石 prints
+ * 「水浆不下」 where the recension reads 「水浆不干」, 蓝实 silently deletes a character the
+ * recension marked as lost, 大枣 and 胡麻 restore a character from another witness. The last
+ * two are scholarship, the first two are errors, and on screen and to the checker all four
+ * look the same.
+ *
+ * So the rule is not "never diverge" — it is *diverge on the record*. 原文照录 leaves no room
+ * to change a character, and SKILL.md already requires a film following another witness to
+ * say so in its 注释. A quotation that matches nothing in the book and names no witness is
+ * what this catches.
+ */
+/** How a 注释 records a reading that is not the one printed in this recension. */
+const WITNESS_MARKERS = /底本|别本|证类|吴普|名医|太平御览|今从|据|一作|当作|讹|阙|脱|异文|缺/;
+
+/**
+ * The 经文 on screen has to be the 经文 in the book.
+ *
+ * `original` is the one block every film quotes verbatim, and nothing re-derived it after
+ * scaffolding: the gate compared 产地 against the text and left the quotation itself
+ * unchecked. Measured against the corpus, four of six sampled films diverge — 络石 prints
+ * 「水浆不下」 where the recension reads 「水浆不干」, 蓝实 silently deletes a character the
+ * recension marked as lost, 大枣 and 胡麻 restore a character from another witness. The last
+ * two are scholarship, the first two are errors, and on screen and to the checker all four
+ * look the same.
+ *
+ * So the rule is not "never diverge" — it is *diverge on the record*. 原文照录 leaves no room
+ * to change a character, and SKILL.md already requires a film following another witness to
+ * name it in its 注释. The check therefore compares character by character and asks one
+ * question of the 注释 at the exact place they part: does the film say which book it is
+ * following, and does it carry the character it chose? A phrase list would have been guesswork
+ * — 胡麻 writes 「底本此处缺一字，据《吴普本草》篇名补「襄」」 and matches nothing that a fixed
+ * wording rule would look for.
+ */
+export const quoteProblems = (original: string, sutra: Sutra, commentary = ""): string[] => {
+  const quote = quotePlain(original);
+  const text = quotePlain(sutra.text);
+  if (quote === "" || text.includes(quote)) return [];
+
+  // Align the quotation with wherever it starts in the 经文 (films open on 主…, dropping the
+  // 味 clause), then walk to the first character where the two disagree.
+  let best = { at: 0, matched: -1 };
+  for (let start = 0; start <= text.length - 1; start += 1) {
+    let i = 0;
+    while (i < quote.length && start + i < text.length && quote[i] === text[start + i]) i += 1;
+    if (i > best.matched) best = { at: start, matched: i };
+  }
+  const ours = quote[best.matched] ?? "";
+  const source = text[best.at + best.matched] ?? "";
+  const context = quote.slice(Math.max(0, best.matched - 5), best.matched + 5);
+  const tailMatches = (fromOurs: number, fromSource: number): boolean => {
+    let i = 0;
+    while (
+      fromOurs + i < quote.length &&
+      fromSource + i < text.length &&
+      quote[fromOurs + i] === text[fromSource + i]
+    ) {
+      i += 1;
+    }
+    return fromOurs + i >= quote.length;
+  };
+  // The two ways a character disappears from a damaged text are different acts. Filling a
+  // marked gap from another witness is scholarship; letting the gap vanish makes the sentence
+  // read whole and leaves the loss invisible — which is why the recension's space is treated as
+  // evidence in the first place.
+  const restoration = source === "□" && tailMatches(best.matched + 1, best.at + best.matched + 1);
+  const droppedGap =
+    source === "□" && !restoration && tailMatches(best.matched, best.at + best.matched + 1);
+  const namesWitness = commentary.includes(ours) && WITNESS_MARKERS.test(commentary);
+  if (droppedGap) {
+    if (/缺|阙|脱|残/.test(commentary)) return [];
+    return [
+      `引文在「${context}」处把底本标记的缺字删掉了 —— 空格掉字要么补、要么照录成「□」，` +
+        `抹掉它等于把残缺藏成通顺`,
+    ];
+  }
+  if (namesWitness) return [];
+
+  if (source === "□") {
+    return [
+      `引文在「${context}」处补了一个底本掉落的字（作「${ours}」），而注释没有交代据本 —— ` +
+        `补字必须留痕：底本此行缺字，据何本作「${ours}」`,
+    ];
+  }
+  return [
+    `引文与底本在「${context}」处分叉：底本作「${source || "（此处无字）"}」，屏幕上作「${ours}」，` +
+      `而注释没有记录这处异文 —— 照录底本，或写明据本与改字理由`,
+  ];
+};
+
 /**
  * The 产地 shown on screen has to be a place the cited 经文 names.
  *

@@ -43,6 +43,7 @@
 
 ## 生产约定
 
+- **三条线各有自己的文件夹，名字与源码那边一致**：`src/films|topics|asks` → `upload/films|topics|asks` 与 `out/films|topics|asks`（各自再带 `stills/`、`covers/`、`_verify/`）。跨线的记录（`upload/_incidents.md`、`upload/_frozen-disposition.md`）留在 `upload/` 根下。想找某一集的东西，三处路径照同一个名字敲就能出来。
 - 新片是**数据不是 JSX**：`npm run new-film -- --id=<CompId> [--latin=] [--entry=]` 一次生成内容模块、影片包装、台账。默认取 `progress.json` 首个 todo，`--entry=` 可跳选。**生产顺序 ≠ 发布顺序**（后者见 `publish-plan.md`）。
 - 内容模块留 TODO 即为 draft：`gen` 不注册、`verify` 拒绝渲染，所以 draft 无法上线。
 - 不要手写 `position: absolute` 或自选字号，全走 `src/layout.ts` 的 `TYPE`。

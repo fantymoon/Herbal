@@ -9,7 +9,7 @@
 // left blank on purpose — the ones only a human knows (备注) and the ones that come
 // back from the platform (发布状态, 数据回填).
 import type { FilmContent } from "../../src/layout.ts";
-import { BANNED_THERAPEUTIC_WORDS } from "./compliance.ts";
+import { claimWordingProblems } from "./compliance.ts";
 import { toKebab } from "./film-files.ts";
 import { mergeStatsSection, statsHeader, STATS_PREAMBLE } from "./stats-import.ts";
 
@@ -139,10 +139,12 @@ export const OFF_POSITION_WORDS = ["养生", "调理", "健康科普", "疗效",
 /**
  * The one place a banned claim can still reach a platform.
  *
- * `checkContent` scans what the film *says* on screen. Nothing scanned the upload copy,
- * and the copy is the part the platforms act on — the channel's penalty was applied
- * against a title and a description, not against a frame. So 标题 / 描述 / 话题 get the
- * same treatment as the film's prose, plus the positioning words above.
+ * `checkContent` scans the prose a film authors on screen. Nothing scanned the upload copy,
+ * and the copy is the part the platforms act on — the channel's penalty was applied against a
+ * title and a description, not against a frame. So 标题 / 描述 / 话题 run through the same
+ * wording function the screens do, plus the positioning words above. Under
+ * `reading: "copy"` this is not a secondary check: the 今译 and 注释 *are* copy here, so the
+ * description is where the mandated framing and the banned wording actually live.
  *
  * A field that is absent or empty is not reported here: `ledgerProblems` already fails
  * a ledger with a missing field, and saying so twice helps nobody.
@@ -152,10 +154,9 @@ export const checkLedgerCopy = (text: string): string[] => {
   for (const field of ["标题", "描述", "话题"] as const) {
     const value = readLedgerField(text, field);
     if (value === "") continue;
-    for (const word of BANNED_THERAPEUTIC_WORDS) {
-      if (value.includes(word)) problems.push(`${field} contains "${word}"`);
+    for (const word of claimWordingProblems(value)) {
+      problems.push(`${field} contains "${word}"`);
     }
-    if (value.includes("主治")) problems.push(`${field} contains "主治"`);
     for (const word of OFF_POSITION_WORDS) {
       if (value.includes(word)) {
         problems.push(`${field} contains "${word}" — the account is positioned as 文化/读书`);
@@ -166,38 +167,46 @@ export const checkLedgerCopy = (text: string): string[] => {
 };
 
 /**
- * The title frame, with the parts that are supposed to vary taken out.
+ * The earliest date the platform export filled into this film's 数据回填 table, or null when
+ * no row has landed yet.
  *
- * SKILL.md forbids reusing one fixed question template across videos: "古书说的「X」
- * 是什么" asked four times is one template, not four titles. The entry name and any
- * quoted term are the slots — what survives is the frame, and two films sharing a
- * frame is the thing the rule is about.
- *
- * The interrogative tail is stripped too. Without that, 「古书说的「青盲」是什么」 and
- * 「古书说的「厌食」」 compare as different frames because one carries a trailing 是什么
- * — and they are plainly the same template. Whatever the template is, adding or
- * dropping a question word does not make it a different one.
+ * This is what makes a film untouchable, and it used to be decided by `fs.existsSync` on a
+ * gitignored `out/<kebab>.mp4`: rendering a draft locally granted immunity, CI — which has no
+ * `out/` — reached a different verdict for the same film, and nothing anywhere recorded what
+ * is actually live. A published film cannot be un-published by a gate's opinion, but that is
+ * a fact about the platform, so it belongs in the ledger the importer fills from the
+ * platform, not on my disk.
  */
-export const titleFrame = (title: string): string =>
-  title
-    .replace(/^[^：:]*[：:]/, "")
-    .replace(/「[^」]*」/g, "「」")
-    .replace(/[，,。.？?！!、\s]/g, "")
-    .replace(/(是什么|指什么|为什么|有哪些|是谁|吗|呢)$/, "");
+export const publishedOn = (text: string): string | null => {
+  const dates = [...text.matchAll(/^\|\s*(20\d\d-\d\d-\d\d)\s*\|\s*(?:抖音|视频号)\s*\|/gm)].map(
+    (match) => match[1],
+  );
+  return dates.length > 0 ? dates.sort()[0] : null;
+};
 
-export type TitleLine = { film: string; title: string };
-
-/** Films whose titles are the same sentence with the noun swapped. */
-export const checkTitleFrames = (titles: readonly TitleLine[]): string[] => {
-  const byFrame = new Map<string, string[]>();
-  for (const { film, title } of titles) {
-    const frame = titleFrame(title);
-    if (frame === "") continue;
-    byFrame.set(frame, [...(byFrame.get(frame) ?? []), film]);
+/**
+ * Under `reading: "copy"` the description is the 今译, so the ledger's copy of it has to be
+ * the one the content module states.
+ *
+ * The ledger fills blanks and never overwrites, which is right for 标题 and wrong here: the
+ * gate validated `content.translation` for the mandated framing while the platform published
+ * whatever 今译 line was pasted in first. Same class of mistake the `BGM：` line already gets
+ * checked for — a derived field frozen at scaffold time.
+ */
+export const translationDrift = (content: FilmContent, ledgerText: string): string | null => {
+  if (content.reading !== "copy") return null;
+  const description = readLedgerField(ledgerText, "描述");
+  const line = description
+    .split(/\r?\n/)
+    .map((each) => each.trim())
+    .find((each) => each.startsWith("今译："));
+  if (line === undefined) {
+    return `描述 carries no 今译 line, but the film puts its 今译 in the description`;
   }
-  return [...byFrame.entries()]
-    .filter(([, films]) => films.length > 1)
-    .map(([frame, films]) => `${films.join(" / ")} share one title frame: "${frame}"`);
+  const posted = line.slice("今译：".length).trim();
+  return posted === content.translation.trim()
+    ? null
+    : `描述's 今译 differs from the content module (${posted.length} vs ${content.translation.trim().length} characters)`;
 };
 
 const renderField = (label: LedgerField, value: string | string[]): string => {
