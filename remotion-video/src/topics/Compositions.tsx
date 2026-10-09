@@ -1,8 +1,12 @@
+import React from "react";
 import { Composition } from "remotion";
 import { TopicFilm } from "../topic-film";
 import { content as tuQue } from "./tu-que";
 import { voice as tuQueVoice } from "./tu-que.voice";
 import { TopicCoverLandscape, TopicCoverPortrait } from "./covers";
+import { LongformFilm } from "../longform/LongformFilm";
+import { ContactSheet, sheetSize } from "../longform/ContactSheet";
+import { longformCompId, longformFilms } from "./longform-films";
 
 // 跨书整合系列的 Composition 注册表。
 //
@@ -12,6 +16,7 @@ import { TopicCoverLandscape, TopicCoverPortrait } from "./covers";
 //
 // 加一期新片：在 src/topics/ 放内容模块，跑 npm run topic:build 生成 voice 模块，
 // 然后在这里加一个 <Composition>。
+// 《一句话的旅行》（镜头清单那套新结构）的片子不在这里手写，登记在 ./longform-films.ts。
 
 export const TopicCompositions: React.FC = () => (
   <>
@@ -57,5 +62,26 @@ export const TopicCompositions: React.FC = () => (
       height={1920}
       defaultProps={{ content: tuQue }}
     />
+    {longformFilms.map((film) => (
+      <React.Fragment key={film.id}>
+        <Composition
+          id={longformCompId(film.id)}
+          component={LongformFilm}
+          durationInFrames={film.totalFrames}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={{ film }}
+        />
+        <Composition
+          id={`${longformCompId(film.id)}Sheet`}
+          component={ContactSheet}
+          durationInFrames={1}
+          fps={30}
+          {...sheetSize(film)}
+          defaultProps={{ film }}
+        />
+      </React.Fragment>
+    ))}
   </>
 );

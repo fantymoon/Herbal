@@ -254,6 +254,27 @@ test("every film image is registered in the credits ledger with its on-screen au
       referenced.add(m[1]);
     }
   }
+  // 长视频（src/topics/<id>/film.yaml → film.json）的图片同样要进 credits.json，
+  // 且片中署名要和账本一致。读 film.json 而不是 yaml：渲染器读的是前者。
+  const topicsDir = new URL("../src/topics/", import.meta.url);
+  for (const d of fs.readdirSync(topicsDir, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const filmUrl = new URL(`${d.name}/film.json`, topicsDir);
+    if (!fs.existsSync(filmUrl)) continue;
+    const film = JSON.parse(fs.readFileSync(filmUrl, "utf8")) as {
+      images: Record<string, { file: string; credit: string }>;
+    };
+    for (const img of Object.values(film.images)) {
+      const file = img.file.replace(/^images\//, "");
+      referenced.add(file);
+      const entry = byFile.get(file);
+      assert.ok(entry, `${d.name}: ${file} missing from credits.json`);
+      assert.ok(img.credit.includes(entry.license), `${d.name}: ${file} credit missing license ${entry.license}`);
+      if (entry.author) {
+        assert.ok(img.credit.includes(entry.author), `${d.name}: ${file} credit missing author ${entry.author}`);
+      }
+    }
+  }
   for (const entry of ledger) {
     assert.equal(fs.existsSync(new URL(`../public/images/${entry.file}`, import.meta.url)), true, entry.file);
     assert.ok(referenced.has(entry.file), `${entry.file} orphaned in credits.json`);

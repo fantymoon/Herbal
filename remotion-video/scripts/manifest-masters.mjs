@@ -70,14 +70,38 @@ for (const file of films) {
 const single = collect(path.join(outRoot, "films"), filmIds, (id) => `${toKebab(id)}.mp4`, "film");
 
 // ── 跨书专题线 ────────────────────────────────────────────────────────────
-const topicIds = fs.existsSync(topicsDir)
+// 这一条线现在有两种形态共存：手写 `.ts` 内容模块的旧一期（tu-que），和
+// `src/topics/<id>/film.yaml → film.json` 的长视频一期。两者都是这一条线，
+// 所以记在同一份清单里；但 `longform-films.ts` 是**片单**不是一部片子，
+// 按 `.ts` 扫的时候必须跳过它，否则清单里会多出一条永远缺失的假母版。
+const legacyIds = fs.existsSync(topicsDir)
   ? fs
       .readdirSync(topicsDir)
-      .filter((f) => f.endsWith(".ts") && !f.endsWith(".voice.ts"))
+      .filter(
+        (f) =>
+          f.endsWith(".ts") &&
+          !f.endsWith(".voice.ts") &&
+          f !== "longform-films.ts" &&
+          f !== "Compositions.tsx",
+      )
       .map((f) => f.replace(/\.ts$/, ""))
       .sort()
   : [];
-const topics = collect(path.join(outRoot, "topics"), topicIds, (id) => `${id}-h.mp4`, "topic");
+// 长视频一期：目录里有编译出的 film.json 才算一部片子（film.yaml 还没 build 的不算）。
+const longformIds = fs.existsSync(topicsDir)
+  ? fs
+      .readdirSync(topicsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && fs.existsSync(path.join(topicsDir, d.name, "film.json")))
+      .map((d) => d.name)
+      .sort()
+  : [];
+const legacy = collect(path.join(outRoot, "topics"), legacyIds, (id) => `${id}-h.mp4`, "topic");
+const longform = collect(path.join(outRoot, "topics"), longformIds, (id) => `${id}.mp4`, "topic");
+const topics = {
+  found: [...legacy.found, ...longform.found],
+  missing: [...legacy.missing, ...longform.missing],
+};
+const topicIds = [...legacyIds, ...longformIds];
 
 // ── 本草一问线 ────────────────────────────────────────────────────────────
 const askIds = fs.existsSync(asksDir)

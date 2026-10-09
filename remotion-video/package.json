@@ -15,7 +15,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.506",
-    "tailwindcss": "4.0.0"
+    "tailwindcss": "4.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.506",
@@ -36,7 +37,7 @@
     "sync-music": "node --experimental-strip-types scripts/sync-music.mjs",
     "verify": "node --experimental-strip-types scripts/verify-film.mjs",
     "manifest": "node --experimental-strip-types scripts/manifest-masters.mjs",
-    "test": "node --test --experimental-strip-types tests/suite.test.ts tests/herbal-data.test.ts tests/finished-video.test.ts tests/compliance.test.ts tests/corpus.test.ts tests/layout.test.ts tests/repeat-scan.test.ts tests/upload-ledger.test.ts tests/ffprobe.test.ts tests/published-audit.test.ts tests/stats-import.test.ts tests/music.test.ts tests/ask.test.ts",
+    "test": "node --test --experimental-strip-types tests/suite.test.ts tests/herbal-data.test.ts tests/finished-video.test.ts tests/compliance.test.ts tests/corpus.test.ts tests/layout.test.ts tests/repeat-scan.test.ts tests/upload-ledger.test.ts tests/ffprobe.test.ts tests/published-audit.test.ts tests/stats-import.test.ts tests/music.test.ts tests/ask.test.ts tests/longform.test.ts",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
     "check": "node --experimental-strip-types scripts/check-films.ts",
@@ -53,7 +54,10 @@
     "ask:compositions": "node --experimental-strip-types scripts/ask-compositions.mjs",
     "ask:check": "node --experimental-strip-types scripts/ask-check.ts",
     "ask:verify": "node --experimental-strip-types scripts/ask-verify.mjs",
-    "film:voice": "node --experimental-strip-types scripts/film-voice.ts"
+    "film:voice": "node --experimental-strip-types scripts/film-voice.ts",
+    "longform:voice": "python3 scripts/longform/voice.py",
+    "longform:build": "node --experimental-strip-types scripts/longform/build.ts",
+    "longform:sheet": "node scripts/longform/sheet.mjs"
   },
   "sideEffects": [
     "*.css"

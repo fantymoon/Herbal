@@ -17,6 +17,9 @@ remotion-video/.topic-work
 # The audio itself (public/voice/<id>/) IS committed — it is the film's time base.
 remotion-video/.ask-work
 
+# 长视频联络表等中间产物（npm run longform:sheet）——一张 PNG，重跑就有。
+remotion-video/.longform-work
+
 # Agent scratch: extracted frames, TTS probes, one-off scripts. Neither product nor
 # evidence, and small enough that nobody will remember to delete them.
 .workbuddy-ai/tmp/

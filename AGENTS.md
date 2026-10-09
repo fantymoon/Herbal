@@ -12,11 +12,13 @@ Chinese herbal medicine short-video production: mobile-first 9:16 Remotion video
 - `sign-1.png` — brand seal asset, duplicated into `remotion-video/public/`.
 - `v2-858c5bf7e3c2516f6993f74a5140169d_b.jpg` — scanned 神农本草经 title page, used as a visual reference for paper texture and typography rhythm. Its provenance is unrecorded, so never place it in a film.
 - `remotion-video/progress.json` — original-order coverage ledger for the current book (rebuild via `npm run progress`); next film = first `todo` entry.
+- `remotion-video/docs/longform.md` — **长视频《一句话的旅行》制作手册**（16:9，镜头清单驱动），跨书专题线的现形态：内容仍是 `src/topics/<id>/`，只是从手写 `.ts` 换成了 `film.yaml` + 编译出的 `film.json`（旧一期 `tu-que` 是它的上一版）。做长视频先读它：`longform:voice` → `longform:build` → `longform:sheet` → render；金样例是 `src/topics/pangxie/`。镜头组件在 `src/longform/`，不要在 film.yaml 之外为单期片子写 JSX。
 - `.github/workflows/ci.yml` — runs from the repo root with `working-directory: remotion-video`.
 
 ## Commands (run inside `remotion-video/`)
 
 - `npm run dev` — Remotion Studio preview.
+- `npm run longform:voice|longform:build|longform:sheet -- <id>` — 长视频三步：配音（Python edge-tts，产出词级时间戳，只重做改过的段）、校验并编译 `film.json`（引文逐字核对语料、`at` 词换算秒、检索命中数、谱系图自动分道、字数上限、画面静止 ≤ 6.5 秒；FAIL 不出 `film.json`）、渲染联络表（在浏览器里实测出画/压字幕/标签重叠，表头写「版面检查通过」才算过）。规则见 `docs/longform.md`。
 - `npm test` — `node --test --experimental-strip-types` over the files listed in `package.json`. `node --test tests/` silently skips the TypeScript files, so the list is explicit and `tests/suite.test.ts` fails if it drifts.
 - `npm run lint` — `eslint src && tsc`; run after tests, before rendering.
 - `npm run check` — the pre-render gate. It splits into two kinds of finding, because a verdict is only useful when something can still act on it. **Judgements** (compliance rules, repeated-text scan, the ledger check) decide `ok` / `draft` / `FAIL`, and only `FAIL` exits non-zero. **Facts** (does the 产地 name a place the 经文 names, does the 经文 on screen match the corpus, is the track registered) are computed for *every* film and printed for the ones already live — a published film cannot be un-published, but a wrong fact on it is still a fact about the channel. Hiding those behind an exemption is how 蓝实 and 紫芝 shipped a 产地 their own cited 经文 contradicts while the gate printed `0 gap(s)`.
