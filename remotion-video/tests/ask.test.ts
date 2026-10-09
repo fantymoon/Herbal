@@ -5,19 +5,26 @@ import { compileEpisode, episodeIds, loadCredits, readOffset } from "../scripts/
 import {
   photoLicenceProblems,
   quoteSourceProblems,
+  seriesCoverProblems,
   wordingProblems,
 } from "../scripts/lib/ask-rules.ts";
+import { COVER_PHOTO, coverRows, type CoverRow } from "../src/asks/series-cover.ts";
 import type { AskContent, AskSegment } from "../src/asks/types.ts";
 
 // 「本草一问」的门禁测试。
 //
 // 判据和这个仓库里其它测试一样：**它能不能在一个真实缺陷上变红？**
 // 所以下面喂的全是坏输入——一个只会对好输入点头的检查器等于没有检查器。
-// 这里不测版式、不测措辞品味（"这句话我是不是已经说过"是判断，不是规则），
-// 只测那三条规则各自在什么情况下必须响。
+// 这里不测单集的版式与措辞品味（"这句话我是不是已经说过"是判断，不是规则），
+// 只测那三条规则各自在什么情况下必须响。唯一的例外是系列封面：它不是一集，
+// 三条规则管不到它，而它的两处毛病（字压进平台 UI 区、一行顶出内容列）
+// 恰好是缩到 200px 才看得出来、看静帧最容易放过的那一类。
 
 const repo = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const credits = loadCredits(repo);
+
+/** 封面门禁的调用形态：行数据 + 那张照片 + 图片台账。 */
+const coverProblems = (rows: CoverRow[]) => seriesCoverProblems(rows, COVER_PHOTO, credits);
 
 /** 一集最小可用的骨架；各用例只改它关心的那一处。 */
 const makeContent = (overrides: Partial<AskContent> = {}): AskContent => {
@@ -173,4 +180,100 @@ test("每一张被这一系列引用的图都在图片台账里", () => {
       `${file} 登记了但文件不在 public/images 下`,
     );
   }
+});
+
+test("系列封面：文案不越线、字不压进平台 UI 区", () => {
+  assert.deepEqual(coverProblems(coverRows), [], "现在这张封面上有问题");
+});
+
+test("系列封面：一句功效措辞就会让它变红", () => {
+  // 封面曾经不需要被扫——它是"系列宣传图"，不是某一集。但平台读的是文字，
+  // 而这张图比任何一集的第 0 帧都更常出现在别人眼前。
+  const bad = coverProblems(
+    coverRows.map((row) =>
+      row.kind === "tagline" ? { ...row, lines: ["每集四十秒，讲一味本草药效"] } : row,
+    ),
+  );
+  assert.ok(
+    bad.some((f) => f.rule === "cover-positioning" && f.detail.includes("药效")),
+    "「药效」是账号定位词，封面必须报",
+  );
+
+  const claim = coverProblems(
+    coverRows.map((row) =>
+      row.kind === "label" ? { ...row, lines: ["古书里缓解头痛的说法"] } : row,
+    ),
+  );
+  assert.ok(
+    claim.some((f) => f.rule === "cover-wording" && f.detail.includes("缓解")),
+    "「缓解」是功效措辞，封面必须报",
+  );
+});
+
+test("系列封面：少了系列名或免责声明，就不是一张可发的封面", () => {
+  const noTitle = coverProblems(coverRows.filter((row) => row.kind !== "title"));
+  assert.ok(noTitle.some((f) => f.rule === "cover-title"), "没有系列名的封面必须报");
+
+  const noDisclaimer = coverProblems(coverRows.filter((row) => row.kind !== "disclaimer"));
+  assert.ok(noDisclaimer.some((f) => f.rule === "cover-disclaimer"), "缺免责声明必须报");
+});
+
+test("系列封面：任何一行压进底部平台区、或顶出内容列，都会变红", () => {
+  // 这两条都是"缩到 200px 才看得出来"的毛病，静帧里看着正好不等于发出去能看。
+  const low = coverProblems(
+    coverRows.map((row) => (row.kind === "disclaimer" ? { ...row, y: 1420 } : row)),
+  );
+  assert.ok(
+    low.some((f) => f.rule === "cover-geometry" && f.detail.includes("平台 UI 线")),
+    "底边越过 y=1440 必须报",
+  );
+
+  const wide = coverProblems(
+    coverRows.map((row) =>
+      row.kind === "books"
+        ? { ...row, lines: ["《神农本草经》《证类本草》《本草纲目》《千金翼方》"] }
+        : row,
+    ),
+  );
+  assert.ok(
+    wide.some((f) => f.rule === "cover-geometry" && f.detail.includes("内容列")),
+    "一行超出内容列必须报",
+  );
+});
+
+test("封面上那句「七百部」数得出证据", () => {
+  // 这是封面上唯一一句关于账号自己的事实。语料库哪天缩到 700 以下，这句话就从"资产"
+  // 变成"吹的"——而封面是最不该吹的地方，这个账号已经因为一句夸张的描述被平台判过一次。
+  const corpus = new URL("../../TCM-Ancient-Books-master", import.meta.url);
+  const books = fs.readdirSync(corpus).filter((f) => f.endsWith(".txt"));
+  assert.ok(
+    books.length >= 700,
+    `语料库只剩 ${books.length} 部，封面上那行「七百部古籍做底」要改`,
+  );
+
+  const label = coverRows.find((row) => row.kind === "label");
+  assert.ok(
+    label && label.lines.join("").includes("七百部"),
+    "封面那行要说出这个规模，不能只列三部主干书",
+  );
+});
+
+test("系列封面：那张照片也要有授权，署名要与台账逐字一致", () => {
+  // 规则三对单集做的事，对封面同样成立：图上写一位作者、台账写另一位，
+  // 平台上撤下来的是我们。
+  const missing = seriesCoverProblems(coverRows, { ...COVER_PHOTO, file: "nobody.jpg" }, credits);
+  assert.ok(
+    missing.some((f) => f.rule === "cover-photo" && f.detail.includes("credits.json")),
+    "没登记的图必须报",
+  );
+
+  const drifted = seriesCoverProblems(
+    coverRows,
+    { ...COVER_PHOTO, credit: "某位拍摄者 / CC0" },
+    credits,
+  );
+  assert.ok(
+    drifted.some((f) => f.rule === "cover-photo" && f.detail.includes("台账写的是")),
+    "署名与台账不一致必须报",
+  );
 });

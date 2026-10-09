@@ -27,6 +27,17 @@ export const loadCredits = (repo: string): Map<string, Credit> => {
 const isStr = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
 /**
+ * 一张图的署名行：`作者 / 许可`。
+ *
+ * 拼法只留一处：单集由 `ask-build` 把它烘进内容模块，系列封面拿它核对署名。
+ * 两处各拼一遍，就会出现片内写「CC BY」、封面写「CC-BY 4.0」这种没人能判谁对的分叉。
+ */
+export const creditLine = (credit: Credit): string =>
+  [credit.author, credit.license]
+    .filter((part): part is string => typeof part === "string" && part.length > 0)
+    .join(" / ");
+
+/**
  * `read` 必须能在 `narration` 去标点后逐字找到，否则词级对齐无从谈起。
  * 返回它在朗读字序列里的下标，找不到返回 -1。
  */
@@ -105,11 +116,7 @@ export const compileEpisode = (
           file,
           caption: String(p.caption ?? ""),
           // 署名烘进内容模块：渲染器不该知道台账的存在，而台账已经是唯一登记处。
-          credit: credit
-            ? [credit.author, credit.license]
-                .filter((part): part is string => typeof part === "string" && part.length > 0)
-                .join(" / ")
-            : "",
+          credit: credit ? creditLine(credit) : "",
         } as AskPhoto;
       });
     }

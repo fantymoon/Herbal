@@ -2,6 +2,10 @@ import { AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrent
 import type { ReactNode } from "react";
 import { FinishedMusic } from "./finished-shell";
 import {
+  ASK_H as H,
+  ASK_SAFE as SAFE,
+  ASK_TEXT_FLOOR as TEXT_FLOOR,
+  ASK_W as W,
   SEAL_GLYPH,
   spokenChars,
   spokenIndexOf,
@@ -23,17 +27,16 @@ import {
 // 两者不重复劳动——竖排负责"这真是书上写的"，字幕负责"我在说什么"。
 // **底部 25% 留给平台 UI：放画面，不放字。**
 
-const W = 1080;
-const H = 1920;
-/** 左右安全边。 */
-const SAFE = 72;
-/** 底部 25%（480px）留给平台 UI，任何文字都不得越过这条线。 */
-const TEXT_FLOOR = 1440;
+// 画布与安全边（`W` / `H` / `SAFE` / `TEXT_FLOOR`）来自 src/asks/types.ts，
+// 系列封面与渲染器共用同一套数。
 
-const PAPER = "#efe6d3";
-const INK = "#17140f";
-const CINNABAR = "#b93a2b";
-const DIM = "#8d8272";
+// 这几个常量与下面的 `brush` / `heavy` / `AskSeal` 导出给 src/asks/series-cover-film.tsx 用。
+// 系列总封面与单集共用一套三色、一款字、一枚印章——写在封面里另起一份常量，
+// 封面就会在某次改色后悄悄变成"看起来不太像这个系列"的那一张。
+export const PAPER = "#efe6d3";
+export const INK = "#17140f";
+export const CINNABAR = "#b93a2b";
+export const DIM = "#8d8272";
 const PAPER_DIM = "#7c7161";
 
 /**
@@ -45,10 +48,10 @@ const PAPER_DIM = "#7c7161";
  * "粗一点"的观感：描边是渲染器算的，不依赖任何字体文件，换机器结果一样。
  * 代价是楷体不如黑体易读——这是一个已知取舍，见 asks/README.md 的「还没做的」。
  */
-const brush = "'LXGW WenKai', STKaiti, KaiTi, serif";
+export const brush = "'LXGW WenKai', STKaiti, KaiTi, serif";
 
 /** 描边增重：颜色与字色相同，于是字看起来更粗，而不是多了一圈轮廓。 */
-const heavy = (color: string, width = 1.6) => ({
+export const heavy = (color: string, width = 1.6) => ({
   WebkitTextStrokeWidth: `${width}px`,
   WebkitTextStrokeColor: color,
 });
@@ -92,7 +95,7 @@ const Paper: React.FC<{ tint?: string }> = ({ tint }) => (
 );
 
 /** 墨底：给实物屏、对读屏与收尾屏用。 */
-const Ink: React.FC = () => (
+export const Ink: React.FC = () => (
   <>
     <AbsoluteFill style={{ backgroundColor: INK }} />
     <AbsoluteFill
@@ -110,7 +113,7 @@ const Ink: React.FC = () => (
 );
 
 /** 印章标记章节：一段一个字。盖印动画只用在收尾屏。 */
-const AskSeal: React.FC<{ glyph: string; frame: number; size?: number; stamp?: boolean }> = ({
+export const AskSeal: React.FC<{ glyph: string; frame: number; size?: number; stamp?: boolean }> = ({
   glyph,
   frame,
   size = 104,

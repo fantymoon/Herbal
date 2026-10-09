@@ -11,8 +11,18 @@
 //   3. 每张图都有授权。
 // 合规靠版式本身保证（问法决定它不会变成功效主张），不靠事后审词。
 import { claimWordingProblems } from "./compliance.ts";
+import { OFF_POSITION_WORDS } from "./ledger.ts";
+import {
+  COVER_COLUMN,
+  COVER_DISCLAIMER,
+  COVER_TEXT_FLOOR,
+  rowBottom,
+  rowWidth,
+  type CoverPhoto,
+  type CoverRow,
+} from "../../src/asks/series-cover.ts";
 import type { AskContent } from "../../src/asks/types.ts";
-import type { Credit } from "./ask.ts";
+import { creditLine, type Credit } from "./ask.ts";
 
 export type Finding = { rule: string; detail: string };
 
@@ -127,6 +137,90 @@ export const photoLicenceProblems = (
   });
   if (total === 0) {
     findings.push({ rule: "photo-licence", detail: "这一集一张图都没有——实物照是必需的" });
+  }
+  return findings;
+};
+
+/**
+ * 系列总封面的五件事：说得出自己是什么、措辞不越线、免责声明在场、
+ * 文字不出平台 UI 区、那张照片在台账里对得上。
+ *
+ * 封面不归那三条内容规则管——它不是一集，没有旁白也没有引文。但它比任何一集的第 0 帧
+ * 都更常被看到（合集入口、账号主页、别人的推荐位），而平台的处罚落在文字上，不落在
+ * "这是系列图还是单集图"上。所以同一套措辞函数照扫，外加账号定位词
+ * （`OFF_POSITION_WORDS`——单集台账不扫它，封面扫，因为封面上的「养生」比描述里的更难撤）。
+ *
+ * 几何那两条是这一系列最硬的版式线：底部 25% 是平台 UI 区，字压上去会被标题条切掉；
+ * 行宽顶出内容列在 1080 宽的静帧上看不出来，缩到信息流的 200px 才看得出来。
+ *
+ * 照片那一条与规则三同源：封面用的也是一张开放授权实物照，署名一旦与台账各说一套，
+ * 在平台上撤下来的是我们。
+ */
+export const seriesCoverProblems = (
+  rows: CoverRow[],
+  photo: CoverPhoto,
+  credits: Map<string, Credit>,
+): Finding[] => {
+  const findings: Finding[] = [];
+
+  const title = rows.find((row) => row.kind === "title");
+  if (!title || title.lines.join("").trim().length === 0) {
+    findings.push({ rule: "cover-title", detail: "封面上没有系列名——那它就不是系列封面" });
+  }
+
+  const credit = credits.get(photo.file);
+  if (!credit) {
+    findings.push({
+      rule: "cover-photo",
+      detail: `${photo.file} 没有登记在 public/images/credits.json`,
+    });
+  } else if (credit.license.trim().length === 0) {
+    findings.push({ rule: "cover-photo", detail: `${photo.file} 在台账里的许可为空` });
+  } else {
+    const expected = creditLine(credit);
+    if (photo.credit !== expected) {
+      findings.push({
+        rule: "cover-photo",
+        detail: `封面署名是「${photo.credit}」，台账写的是「${expected}」`,
+      });
+    }
+  }
+
+  for (const row of rows) {
+    const text = row.lines.join("");
+    for (const word of claimWordingProblems(text)) {
+      findings.push({ rule: "cover-wording", detail: `${row.kind} 里有功效措辞 "${word}"` });
+    }
+    for (const word of OFF_POSITION_WORDS) {
+      if (text.includes(word)) {
+        findings.push({
+          rule: "cover-positioning",
+          detail: `${row.kind} 里有 "${word}" —— 账号定位是文化/读书`,
+        });
+      }
+    }
+    if (rowBottom(row) > COVER_TEXT_FLOOR) {
+      findings.push({
+        rule: "cover-geometry",
+        detail: `${row.kind} 的底边在 y=${Math.round(rowBottom(row))}，越过平台 UI 线 ${COVER_TEXT_FLOOR}`,
+      });
+    }
+    for (const line of row.lines) {
+      const w = rowWidth(line, row.size, row.letterSpacing);
+      if (w > COVER_COLUMN) {
+        findings.push({
+          rule: "cover-geometry",
+          detail: `${row.kind} 的「${line}」约 ${Math.round(w)}px，超出内容列 ${COVER_COLUMN}px`,
+        });
+      }
+    }
+  }
+
+  if (!rows.some((row) => row.lines.some((line) => line.includes(COVER_DISCLAIMER)))) {
+    findings.push({
+      rule: "cover-disclaimer",
+      detail: `封面上没有「${COVER_DISCLAIMER}」`,
+    });
   }
   return findings;
 };
