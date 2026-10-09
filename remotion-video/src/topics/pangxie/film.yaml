@@ -15,6 +15,11 @@ music: music/kongyin-gujian.mp3
 musicVolume: 0.1
 voice: { name: zh-CN-YunjianNeural, rate: "-8%" }
 
+# 封面与标题必须是同一句话——观众先看到哪个，收到的都是同一个承诺。
+cover:
+  question: 孕妇吃螃蟹，孩子会横着生吗
+  deck: 一句话追了一千年 · 十九部书抄过它
+
 images:
   crab:
     file: images/crab-eriocheir-koln.jpg

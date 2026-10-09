@@ -118,6 +118,13 @@ export const FilmSchema = z.object({
   musicVolume: z.number().default(0.1),
   voice: z.object({ name: z.string(), rate: z.string() }),
   images: z.record(z.string(), z.object({ file: z.string(), credit: z.string() })),
+  /**
+   * What the cover says. It is written out rather than derived from `title` because the
+   * cover and the title have to be the same sentence — the viewer meets one of them first,
+   * and both have to promise the same thing — and the film's internal title (螃蟹与横生)
+   * is not that sentence. The question the episode answers is.
+   */
+  cover: z.object({ question: z.string(), deck: z.string().optional() }),
   segments: z
     .array(z.object({ chapter: z.string().optional(), narration: z.string().min(1), shots: z.array(ShotSchema).min(1) }))
     .min(1),
@@ -243,6 +250,7 @@ export type CompiledFilm = {
   music: string;
   musicVolume: number;
   images: Record<string, { file: string; credit: string }>;
+  cover: { question: string; deck?: string };
   totalFrames: number;
   segments: { start: number; dur: number; chapter: string | null; chapterNum: string | null; cues: { text: string; s: number }[] }[];
   shots: CompiledShot[];

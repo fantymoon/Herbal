@@ -43,25 +43,10 @@ export const TopicCompositions: React.FC = () => (
     />
     {/* 封面单独构图，不从成片截帧：缩略图只有 200px 宽，成片的字号到那里就糊了。
         横屏给 B 站 / YouTube，竖屏给抖音 / 视频号——竖屏是重排，不是裁切。
-        用 `npx remotion still` 渲染，只需要第 0 帧。 */}
-    <Composition
-      id="TuQueCoverH"
-      component={TopicCoverLandscape}
-      durationInFrames={1}
-      fps={30}
-      width={1920}
-      height={1080}
-      defaultProps={{ content: tuQue }}
-    />
-    <Composition
-      id="TuQueCoverV"
-      component={TopicCoverPortrait}
-      durationInFrames={1}
-      fps={30}
-      width={1080}
-      height={1920}
-      defaultProps={{ content: tuQue }}
-    />
+        用 `npx remotion still` 渲染，只需要第 0 帧。
+        tu-que 那一对封面（TuQueCoverH/V）撤了：封面组件现在吃 `CompiledFilm`，
+        而 tu-que 还在旧的内容模型上。它的成图已经产出了；等它按手册移植成
+        film.yaml，封面会跟着 longformFilms 一起自动出现。 */}
     {longformFilms.map((film) => (
       <React.Fragment key={film.id}>
         <Composition
@@ -79,6 +64,24 @@ export const TopicCompositions: React.FC = () => (
           durationInFrames={1}
           fps={30}
           {...sheetSize(film)}
+          defaultProps={{ film }}
+        />
+        <Composition
+          id={`${longformCompId(film.id)}CoverH`}
+          component={TopicCoverLandscape}
+          durationInFrames={1}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={{ film }}
+        />
+        <Composition
+          id={`${longformCompId(film.id)}CoverV`}
+          component={TopicCoverPortrait}
+          durationInFrames={1}
+          fps={30}
+          width={1080}
+          height={1920}
           defaultProps={{ film }}
         />
       </React.Fragment>

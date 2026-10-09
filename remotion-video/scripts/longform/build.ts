@@ -248,6 +248,7 @@ const compiled: CompiledFilm = {
   music: film.music,
   musicVolume: film.musicVolume,
   images: film.images,
+  cover: film.cover,
   totalFrames: Math.round(totalSeconds * FPS),
   segments: voice.map((v, i) => {
     const chapter = film.segments[i].chapter ?? null;

@@ -4,7 +4,7 @@
 - **系列**: 一句话的旅行（一句古书里的话，追它走过的一千年）
 - **时长**: 1:11 ｜ **画幅**: 1920x1080 横屏
 - **成片**: `out/topics/pangxie-sample-1080p.mp4`
-- **封面**: 待出（见文末「封面」一节）
+- **封面**: `out/topics/covers/pangxie-cover-h.png`（1920x1080）· `out/topics/covers/pangxie-cover-v.png`（1080x1920）
 
 ---
 
@@ -97,15 +97,13 @@
 
 ### 封面
 
-**还没做。** 现有的封面组件（`src/topics/covers.tsx`）绑在旧的内容模型 `TopicContent` 上
-（那是 `tu-que.ts` 那一版的），而这一期用的是新的 `CompiledFilm`——所以 `TuQueCoverH/V`
-能出封面，`LongformPangxie` 出不了。要么把封面组件改成吃 `CompiledFilm`，要么把
-`tu-que` 一起重构到新模型（见下）。
-
-预期产物：
+两张都出好了，`npx remotion still LongformPangxieCoverH|V` 渲染第 0 帧即可（**不用渲整片**）。
 
 - `out/topics/covers/pangxie-cover-h.png`（1920x1080，B 站 / YouTube）
 - `out/topics/covers/pangxie-cover-v.png`（1080x1920，抖音 / 视频号）
+
+左边那条竖排的引文，就是这一期在《证类本草》上点出的那句
+「妊娠人不得食螃蟹令儿横生也」——**它是排出来的字，不是书影**，和片子里书页的处理一致。
 
 ---
 
