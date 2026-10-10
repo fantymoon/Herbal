@@ -5,8 +5,10 @@
 # 规则见 `docs/longform.md`，结构照 `src/topics/pangxie/film.yaml`。
 #
 # **引文一律从语料复制**（`TCM-Ancient-Books-master/`，GB18030）。下面每一条 `before`/`target`/`after`
-# 都是从 `npm run entry -- --grep=` 读出来的原文，去掉标点后是那本书里连续的一段。
-# 旧线那句「缺唇两个字出现在五十一部书里」的数字，由 `dots` 的 `search`/`expect` 现场跑全语料核对。
+# 和每一个 `columns` 的每一行，都是从 `npm run entry -- --grep=` 读出来的原文。
+#
+# 节奏：**每 6.5 秒画面必须变一次**（镜头开始、高亮开始、谱系节点出现、落字都算）。
+# 所以每段 2–3 个镜头，`at` 落在旁白里靠后的词上——一个镜头配一整段旁白必然超时。
 
 id: tu-que
 series: 一句话的旅行
@@ -38,48 +40,66 @@ segments:
         zoom: { from: 元朝-0.3, to: 一条+0.5, scale: 1.12 }
         marks:
           - { text: 食兔肉令子无声缺唇, at: 食兔肉, to: 缺唇 }
+      - type: columns
+        at: 书名-0.2
+        source: 《饮膳正要》· 妊娠食忌
+        file: 009-饮膳正要.txt
+        lines: [食兔肉，令子无声缺唇。, 食山羊肉，令子多疾。, 食鸡子、干鱼，令子多疮。]
+        emphasize: 0
+        emphasizeAt: 书里记着
 
   - narration: 这句话不是忽思慧写的。在他之前，它已经传了一千五百年；在他之后，至少五十部医书又把它抄了一遍。而它最早的样子，说的不是吃，是看见。
     shots:
       - type: dots
-        at: 一千五百年-0.3
+        at: 这句话-0.2
         search: "缺唇"
         expect: 51
         countLabel: 部古籍，逐字检索
         hitLabel: 部书传过这条说法
         note: 检索式：缺唇　同书异本合并计
         hitAt: 五十部
+      - type: page
+        at: 说的不是吃-0.4
+        book: 本草蒙筌（引《淮南子》）
+        meta: 汉 · 淮南王书 · 明刊引
+        file: 012-本草蒙筌.txt
+        before: 又按∶《淮南子》曰∶
+        target: 孕妇见兔而子缺唇，见麋而子四目。
+        after: 物有自然，而似不然者。
+        zoom: { from: 说的不是吃-0.2, to: 是看见+0.6, scale: 1.12 }
+        marks:
+          - { text: 孕妇见兔而子缺唇见麋而子四目, at: 说的不是吃, to: 是看见 }
 
   # ── 追踪：这句话按年代走过哪些书 ──────────────────────────────────
   - chapter: 追踪
-    narration: 再往前追，最早的出处是《淮南子》：孕妇见兔而子缺唇，见麋而子四目。孕妇看见兔子，孩子唇裂；看见麋鹿，孩子有四只眼睛。后半句今天没有人信了，可前半句一路传到了明清。
+    narration: 再往前追，最早的出处是《淮南子》。它进了医书之后，还悄悄变严了一次：看见都不行，吃当然更不行。一条禁忌在传抄里被放大，这是很常见的事。
     shots:
       - type: lineage
         at: -0.4
         title: 同一句话，按成书先后排开（连线示意流传顺序，非考定的抄录关系）
-        burstAt: 明清
+        burstAt: 医书
         nodes:
-          - { name: 礼记·内则, dyn: 先秦, year: -200 }
+          - { name: 礼记·内则, dyn: 先秦, year: -200, key: true, at: 往前追 }
           - { name: 淮南子, dyn: 汉, year: -139, key: true, at: 淮南子 }
-          - { name: 诸病源候论, dyn: 隋, year: 610, key: true, at: 往前追 }
+          - { name: 诸病源候论, dyn: 隋, year: 610 }
           - { name: 外台秘要, dyn: 唐, year: 752 }
           - { name: 本草拾遗, dyn: 唐, year: 739 }
           - { name: 太平圣惠方, dyn: 北宋, year: 992 }
           - { name: 妇人大全良方, dyn: 南宋, year: 1237 }
-          - { name: 饮膳正要, dyn: 元, year: 1330, key: true }
+          - { name: 饮膳正要, dyn: 元, year: 1330, key: true, at: 吃当然更不行-0.4 }
           - { name: 饮食须知, dyn: 元, year: 1350 }
           - { name: 本草蒙筌, dyn: 明, year: 1565 }
-          - { name: 本草纲目, dyn: 明, year: 1578, key: true }
+          - { name: 本草纲目, dyn: 明, year: 1578, key: true, at: 被放大-0.3 }
           - { name: 普济方, dyn: 明, year: 1406 }
           - { name: 外科大成, dyn: 清, year: 1665 }
           - { name: 疡医大全, dyn: 清, year: 1760 }
       - type: columns
-        at: 前半句-0.2
+        at: 一条禁忌-0.2
         source: 《本草蒙筌》· 明 · 陈嘉谟
         file: 012-本草蒙筌.txt
-        lines: [孕妇见兔而子缺唇，见麋而子四目。, 物有自然，而似不然者。, 麋有四目，其二夜目也。]
-        emphasize: 1
-        emphasizeAt: 一路传到
+        lines: [孕妇见兔而子缺唇，见麋而子四目。, 物有自然，而似不然者。]
+        emphasize: 0
+        emphasizeAt: 传抄里被放大
 
   # ── 对质：古人不是只传不解释，而后人也不是没有反驳 ──────────────────
   - chapter: 对质
@@ -93,12 +113,26 @@ segments:
         before: 藏器曰∶
         target: 兔尻有孔，子从口出，故妊妇忌之，非独为缺唇也。
         # `after` 留空：语料里这一句在「损元」处换行，再接「阳，令人痿黄。」——
-        # 跨行的引文不算连续原文，`longform:build` 会 FAIL。要接就得把换行后的字也照录，
-        # 而那一段与这一期无关，所以到 target 为止。
+        # 跨行的引文不算连续原文，`longform:build` 会 FAIL。到 target 为止，不猜。
         after: ""
         zoom: { from: 陈藏器-0.2, to: 理由+0.6, scale: 1.12 }
         marks:
           - { text: 兔尻有孔子从口出故妊妇忌之, at: 兔尻, to: 忌之 }
+      - type: silent
+        at: 所以孕妇要忌-0.3
+        count: 0
+        text: 兔子的生殖现象确实反常　但从嘴里生出来　是看错了
+      - type: page
+        at: 李时珍-0.3
+        book: 本草纲目
+        meta: 明 · 李时珍 · 引《内则》
+        file: 013-本草纲目.txt
+        before: 时珍曰∶甘，寒。按∶《内则》云∶
+        target: 食兔去尻，不利人也。
+        after: 《风俗通》云∶食兔髌多
+        zoom: { from: 李时珍-0.2, to: 本草纲目+0.6, scale: 1.12 }
+        marks:
+          - { text: 食兔去尻不利人也, at: 收进了 }
 
   - narration: 也不是没有人反驳。明代的《本草蒙筌》引完《淮南子》，加了一句评论：物有自然，而似不然者。道理有它自然的样子，只是看起来不像。他说的其实是：看着像，不代表真的。
     shots:
@@ -106,23 +140,45 @@ segments:
         at: -0.3
         source: 《本草蒙筌》· 卷九
         file: 012-本草蒙筌.txt
-        lines: [孕妇见兔而子缺唇，见麋而子四目。, 物有自然，而似不然者。, 麋有四目，其二夜目也。]
-        emphasize: 2
+        lines: [孕妇见兔而子缺唇，见麋而子四目。, 物有自然，而似不然者。]
+        emphasize: 1
         emphasizeAt: 一句评论
+      - type: page
+        at: 看起来不像-0.3
+        book: 本草蒙筌
+        meta: 明 · 陈嘉谟 · 卷九
+        file: 012-本草蒙筌.txt
+        before: 孕妇见兔而子缺唇，见麋而子四目。
+        target: 物有自然，而似不然者。
+        after: ""
+        zoom: { from: 看起来不像-0.2, to: 不代表真的+0.6, scale: 1.12 }
+        marks:
+          - { text: 物有自然而似不然者, at: 看着像, to: 真的 }
 
   - narration: 而同一批医书里还有另一条线：唇裂在外科书里是实打实的病，而且有手术。《外科大成》里有二龙散，补缺唇，也救自刎血流如注的人。写这些方子的大夫，一边传抄吃兔肉会生唇裂，一边在给唇裂的孩子做缝合。
     shots:
       - type: page
-        at: -0.3
+        at: 而且有手术-0.3
         book: 外科大成
         meta: 清 · 祁坤
         file: 226-外科大成.txt
         before: ""
         target: 补缺唇。救自刎血流如注者。敷三时则口合。
         after: ""
-        zoom: { from: 二龙散-0.2, to: 缝合+0.6, scale: 1.12 }
+        zoom: { from: 二龙散-0.2, to: 补缺唇+0.6, scale: 1.12 }
         marks:
           - { text: 补缺唇, at: 二龙散 }
+      - type: silent
+        at: 写这些方子-0.3
+        count: 0
+        text: 传抄禁忌的大夫　正在给唇裂的孩子做缝合
+      - type: columns
+        at: 一边在给-0.3
+        source: 《外科大成》· 清 · 祁坤
+        file: 226-外科大成.txt
+        lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
+        emphasize: 0
+        emphasizeAt: 做缝合
 
   # ── 结案：一个字落下，盖印 ────────────────────────────────────────
   - chapter: 结案
@@ -139,8 +195,15 @@ segments:
         zoom: { from: 一个可能的原因-0.2, to: 所以叫兔缺+0.6, scale: 1.12 }
         marks:
           - { text: 似兔唇，故谓之兔缺, at: 长得像, to: 兔缺 }
+      - type: columns
+        at: 一个可能的原因-0.3
+        source: 《诸病源候论》· 隋 · 巢元方
+        file: 571-诸病源候论.txt
+        lines: [人有生而唇缺，, 似兔唇，故谓之兔缺。, 世云，由妇人妊娠时, 见兔及食兔肉使然。]
+        emphasize: 1
+        emphasizeAt: 留在唇裂的旁边
       - type: verdict
-        at: 这个名字-0.3
+        at: 旁边-0.3
         char: 兔
         seal: 结案
         slamAt: 一直留在-0.1
@@ -151,6 +214,11 @@ segments:
         at: -0.3
         count: 0
         text: 像兔唇　所以叫兔缺　至于为什么像　没有人问过
+      - type: verdict
+        at: 一个名字-0.3
+        char: 缺
+        seal: 一句话的旅行
+        slamAt: 名字
 
 end:
   next: 下一期 · 当归，为什么叫「当归」
