@@ -266,7 +266,7 @@ const checks = checkProbe(info, {
 // ffprobe reports the stream, not the samples. A film whose music stops halfway has a
 // perfectly healthy AAC stream — that is how `out/topics/tu-que-h.mp4` passed every check while
 // playing its last 1:46 against digital silence. So the samples get read too.
-checks.push(await checkAudioBed(mp4, repo));
+checks.push(await checkAudioBed(target, repo));
 let ok = true;
 for (const check of checks) {
   console.log(`  ${check.passed ? "PASS" : "FAIL"} ${check.label} (${check.detail})`);
@@ -279,7 +279,7 @@ if (!ok) {
 
 let size = 0;
 try {
-  size = fs.statSync(mp4).size;
+  size = fs.statSync(target).size;
   console.log(`  size ${(size / 1024 / 1024).toFixed(1)} MB`);
 } catch {
   fail(`expected output missing: ${target}`);
