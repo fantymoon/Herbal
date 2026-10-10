@@ -1,5 +1,9 @@
 import { AbsoluteFill } from "remotion";
 import type { CompiledFilm } from "../longform/plan";
+// 配色从片子那里 import，不另抄一套。第一版照着旧封面写死了深底
+// （#161310），而长视频是纸白底（PAPER #EEE5D0）——封面和成片摆在一起就是两个账号。
+// **一份调色板只有一个出处**，抄第二份就会漂移。
+import { DIM, INK, PAPER, RED } from "../longform/shots";
 
 // 封面。**不能从成片截帧**——缩略图尺寸下要重新构图：
 // 信息流里封面只有 200px 宽，成片那一帧的字号到那里就成了一片灰。
@@ -12,10 +16,7 @@ import type { CompiledFilm } from "../longform/plan";
 // 长视频线的书页一律是**照语料录文排出来的字**（手册 § 写作约定：标「据语料录文 · 非原书影」），
 // 所以封面也用同一套字：把这一期那句关键的话竖排出来，它既是图，也是这一期的证据。
 
-const INK = "#161310";
-const PAPER = "#f2ead9";
-const DIM = "#8d8272";
-const ACCENT = "#c0503c";
+const ACCENT = RED;
 
 const bodyFont = "'LXGW WenKai', STKaiti, KaiTi, serif";
 const latinFont = "Arial, sans-serif";
@@ -53,7 +54,7 @@ const Strip: React.FC<{ film: CompiledFilm; height: number }> = ({ film, height 
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        color: PAPER,
+        color: INK,
         fontFamily: bodyFont,
         fontSize: size,
         lineHeight: 1.5,
@@ -72,7 +73,7 @@ const Rule: React.FC = () => <div style={{ width: 84, height: 4, backgroundColor
 
 /** 横屏封面 1920x1080：左引文、右问题。 */
 export const TopicCoverLandscape: React.FC<{ film: CompiledFilm }> = ({ film }) => (
-  <AbsoluteFill style={{ backgroundColor: INK }}>
+  <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <div style={{ position: "absolute", left: 120, top: 150 }}>
       <Strip film={film} height={780} />
     </div>
@@ -82,7 +83,7 @@ export const TopicCoverLandscape: React.FC<{ film: CompiledFilm }> = ({ film }) 
       </div>
       <div
         style={{
-          color: PAPER,
+          color: INK,
           fontFamily: bodyFont,
           fontSize: 108,
           lineHeight: 1.3,
@@ -123,14 +124,14 @@ export const TopicCoverLandscape: React.FC<{ film: CompiledFilm }> = ({ film }) 
 
 /** 竖屏封面 1080x1920：问题在上、引文在下，整体重排而不是裁切。 */
 export const TopicCoverPortrait: React.FC<{ film: CompiledFilm }> = ({ film }) => (
-  <AbsoluteFill style={{ backgroundColor: INK }}>
+  <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <div style={{ position: "absolute", left: 88, top: 240, width: 904 }}>
       <div style={{ marginBottom: 40 }}>
         <Rule />
       </div>
       <div
         style={{
-          color: PAPER,
+          color: INK,
           fontFamily: bodyFont,
           fontSize: 108,
           lineHeight: 1.3,
@@ -153,8 +154,10 @@ export const TopicCoverPortrait: React.FC<{ film: CompiledFilm }> = ({ film }) =
         </div>
       )}
     </div>
-    <div style={{ position: "absolute", left: 88, top: 960 }}>
-      <Strip film={film} height={820} />
+    <div style={{ position: "absolute", left: 88, top: 940 }}>
+      {/* 940 + 760 = 1700，系列名在 1762——中间留 60px。
+          第一版给了 960 + 820，正好压到系列名上：**框高要给到，位置也要算到**。 */}
+      <Strip film={film} height={760} />
     </div>
     <div
       style={{
