@@ -22,48 +22,83 @@ const bodyFont = "'LXGW WenKai', STKaiti, KaiTi, serif";
 const latinFont = "Arial, sans-serif";
 
 /**
- * 这一期在书页上点出来的那一句。
+ * 这一期在书页上点出来的那一页。
  *
  * 编译产物里的 `marks` 不是文本而是**下标**（`{a, b, from, to}` 指向 `text` 里的一段），
- * 因为渲染时要按时间逐字点亮，存下标比存字符串省事。封面只要那段字，所以按第一个 mark 切。
+ * 因为渲染时要按时间逐字点亮，存下标比存字符串省事。封面要的是整页 + 那一段的范围。
+ *
+ * **要整页，不要只取那一句。** 第一版只把点出的 13 个字竖排出来，结果下半幅空着、
+ * 引文缩在角上——它成了装饰。片子里的书页是整页照录文排成多列的，封面照做才对得上，
+ * 而"点出哪一句"靠朱红，不靠只剩一句。
  */
-const keyLine = (film: CompiledFilm): string => {
+const pageOf = (film: CompiledFilm): { text: string; a: number; b: number } | null => {
   const page = film.shots.find((s) => s.type === "page");
+  const text = page?.text;
+  if (typeof text !== "string" || text === "") return null;
   const marks = page?.marks;
   const first = Array.isArray(marks) ? (marks[0] as { a?: unknown; b?: unknown } | undefined) : undefined;
-  const text = page?.text;
-  if (typeof text === "string" && typeof first?.a === "number" && typeof first?.b === "number") {
-    return text.slice(first.a, first.b);
-  }
-  return film.title;
+  return {
+    text,
+    a: typeof first?.a === "number" ? first.a : 0,
+    b: typeof first?.b === "number" ? first.b : 0,
+  };
 };
 
-/** 竖排的引文条。竖排不是装饰：书页本来就是竖的，缩略图里它一眼就是"古书"。 */
-const Strip: React.FC<{ film: CompiledFilm; height: number }> = ({ film, height }) => {
-  const text = keyLine(film);
-  // 字号要按**行高**算，不是按字数：15 个字 × 字号 × 1.5 才是这一列真正占的高度。
-  // 少除那个 1.5，字列会比声明的框高出三分之一，压到底部的系列名上。
-  const size = Math.max(22, Math.min(Math.round(height / (text.length * 1.5)), 46));
+/**
+ * 照录文排成的竖排书页：多列，从右往左读，被点出的那段是朱红。
+ *
+ * 字号按**列**算：一列装得下 `高 / (字号 × 1.5)` 个字，列数 = 字数 / 每列，
+ * 而 `列数 × 字号 × 1.6`（列距）要装进给定的宽。取装得下的最大字号，
+ * 所以框给多大就排多满——**这正是封面和成片对得上、而不像贴了张图的原因。**
+ *
+ * 一个字一个 div。**不要用 `writing-mode: vertical-rl` + `text-orientation: upright`**：
+ * 在本机的 Chromium 里那两行没有生效，字被横倒了 90°，而封面是 200px 缩略图，
+ * 横倒的字比排错更难发现。一列 div 没有那个自由度，也就没有这个失败方式。
+ */
+const PageBlock: React.FC<{ film: CompiledFilm; width: number; height: number }> = ({
+  film,
+  width,
+  height,
+}) => {
+  const page = pageOf(film);
+  const text = page?.text ?? film.title;
+  const size =
+    [72, 66, 60, 54, 48, 44, 40, 36, 32, 28, 24].find((s) => {
+      const perColumn = Math.floor(height / (s * 1.5));
+      if (perColumn < 1) return false;
+      return Math.ceil(text.length / perColumn) * s * 1.6 <= width;
+    }) ?? 24;
+  const perColumn = Math.max(1, Math.floor(height / (size * 1.5)));
+  const columns: string[] = [];
+  for (let i = 0; i < text.length; i += perColumn) columns.push(text.slice(i, i + perColumn));
+
   return (
     <div
       style={{
+        width,
         height,
-        // 一字一格排成一列。**不要用 `writing-mode` + `text-orientation: upright`**：
-        // 在本机的 Chromium 里那两行没有生效，字被横倒了 90°，而封面是 200px 缩略图，
-        // 横倒的字比排错更难发现。一列 div 没有这个自由度，也就没有这个失败方式。
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        color: INK,
+        flexDirection: "row-reverse",
+        justifyContent: "flex-start",
+        gap: size * 0.6,
         fontFamily: bodyFont,
         fontSize: size,
         lineHeight: 1.5,
-        borderRight: `2px solid ${ACCENT}`,
-        paddingRight: size * 0.5,
+        color: INK,
       }}
     >
-      {[...text].map((ch, i) => (
-        <span key={i}>{ch}</span>
+      {columns.map((column, ci) => (
+        <div key={ci} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {[...column].map((ch, i) => {
+            const index = ci * perColumn + i;
+            const marked = page !== null && index >= page.a && index < page.b;
+            return (
+              <span key={i} style={marked ? { color: ACCENT } : undefined}>
+                {ch}
+              </span>
+            );
+          })}
+        </div>
       ))}
     </div>
   );
@@ -75,9 +110,9 @@ const Rule: React.FC = () => <div style={{ width: 84, height: 4, backgroundColor
 export const TopicCoverLandscape: React.FC<{ film: CompiledFilm }> = ({ film }) => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <div style={{ position: "absolute", left: 120, top: 150 }}>
-      <Strip film={film} height={780} />
+      <PageBlock film={film} width={680} height={780} />
     </div>
-    <div style={{ position: "absolute", left: 560, top: 330, width: 1240 }}>
+    <div style={{ position: "absolute", left: 900, top: 330, width: 900 }}>
       <div style={{ marginBottom: 40 }}>
         <Rule />
       </div>
@@ -154,10 +189,10 @@ export const TopicCoverPortrait: React.FC<{ film: CompiledFilm }> = ({ film }) =
         </div>
       )}
     </div>
-    <div style={{ position: "absolute", left: 88, top: 940 }}>
-      {/* 940 + 760 = 1700，系列名在 1762——中间留 60px。
-          第一版给了 960 + 820，正好压到系列名上：**框高要给到，位置也要算到**。 */}
-      <Strip film={film} height={760} />
+    <div style={{ position: "absolute", left: 88, top: 820 }}>
+      {/* 820 + 860 = 1680，系列名在 1762——中间留 80px。
+          第一版给了 960 + 820 = 1780，正好压到系列名上：**框高要给到，位置也要算到**。 */}
+      <PageBlock film={film} width={904} height={860} />
     </div>
     <div
       style={{
