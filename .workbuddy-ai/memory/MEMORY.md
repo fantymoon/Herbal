@@ -45,6 +45,7 @@
 
 - **三条线各有自己的文件夹，名字与源码那边一致**：`src/films|topics|asks` → `upload/films|topics|asks` 与 `out/films|topics|asks`（各自再带 `stills/`、`covers/`、`_verify/`）。跨线的记录（`upload/_incidents.md`、`upload/_frozen-disposition.md`）留在 `upload/` 根下。想找某一集的东西，三处路径照同一个名字敲就能出来。
 - 新片是**数据不是 JSX**：`npm run new-film -- --id=<CompId> [--latin=] [--entry=]` 一次生成内容模块、影片包装、台账。默认取 `progress.json` 首个 todo，`--entry=` 可跳选。**生产顺序 ≠ 发布顺序**（后者见 `publish-plan.md`）。
+- **`--id=` 会撞车，而且撞的是同音字**：ID 就是拼音，所以 `BaizhiFirstFilm` 早被**白芝**（上经芝类，已发布冻结）占用，**白芷**只能用 `BaizhiAngelicaFirstFilm`。`new-film` 撞车时只说一句 `film already exists` 就退出，不报错也不建——**开新片前先 `grep` 一下 `frozen-films.ts` / `progress.json` 里有没有同音条目**，否则会拿到一部指向别的药的 ID。同音的图名也要带属名（`angelica-dahurica-baizhi.jpg`）。
 - 内容模块留 TODO 即为 draft：`gen` 不注册、`verify` 拒绝渲染，所以 draft 无法上线。
 - 不要手写 `position: absolute` 或自选字号，全走 `src/layout.ts` 的 `TYPE`。
 - **已发布的片子：不改，也不改回去。** 往前改是错，改回去也是错——两个方向都浪费 token。
@@ -67,7 +68,9 @@
 
 - **可用通道是 iNaturalist**（`api.inaturalist.org` + `inaturalist-open-data.s3.amazonaws.com`），只取 CC0/CC BY/CC BY-SA，`npm run fetch-photo` 一条命令完成查询+下载+登记。维基媒体/Openverse/archive.org/pixabay/gitee 在这台机器上全超时或 403（走代理）；SKILL.md 备用通道：`plants.sc.egov.usda.gov`（公有领域）、`calphotos.berkeley.edu`（CC 带署名）。
 - **三个坑**：① **扩展名因图而异**（同桶同许可都可能 `.jpg`/`.jpeg`），硬编码任一种会静默砍掉一半图库；② 不是每张 CC 图都在开放数据桶里，有些 id 404，要逐个试；③ 代理偶发 `ECONNRESET`，脚本已加重试。
-- **自动排序看不见内容**：`--check` 列候选、肉眼看、`--id=` 取是正常流程；**`--id=` 查的是未过滤列表**，要 `--fruiting --id=` 一起给。插框约 1.9:1 横向裁切，**竖构图会切掉主体**。
+- **自动排序看不见内容**：`--check` 列候选、肉眼看、`--id=` 取是正常流程；**`--id=` 查的是未过滤列表**，要 `--fruiting --id=` 一起给。
+- **插框现在是 1.53:1（932×610）中心裁切**（旧记录写的 1.9:1 已过期）。**判据是「主体在不在中线附近」，不是横竖**：竖构图只要能保住中部就行（丹参 1126×2000 过得去），而**横构图但主体在上三分之一照样被切**（白芷那张伞形花序在顶部，中心裁切只剩茎叶——识别特征没了）。取图前先按裁切比例算一遍带的位置。
+- **换图用 `--id=` + 同一个 `--file=`**：覆盖同一张 jpg 并**更新** credits.json 里那条（不追加重复行）。所以「先取一张看、不满意再换」不必先清 credits。
 - **`credits.json` 必须与 `public/images/` 完全一致，且每张图都要被某部成片引用**——下载与建片必须成对，不能先囤图。
 - **Node 走代理**：`process.env.NODE_USE_ENV_PROXY="1"`。**子进程：异步 `spawn` 可用，同步形式（`execFileSync`/`spawnSync`）返回 EBUSY**——用同步形式会让 ffmpeg 解码静默失败，假象成「这个文件没有音频」。
 
@@ -94,6 +97,7 @@
 - 过拟合审计 `overfit-audit.html`（A 项已定并实施）、优化计划 `optimization-plan.html`、发布排期 `publish-plan.md`。
 - **长视频线（跨书专题）**：`src/topics/`（中文 `tu-que`）+ `src/topics-en/`（英文，非翻译、题材复用）。**共享**语料、`topic-film.tsx`、`topic-graphics.tsx`、`topic-voice.ts`、`topic-build.ts`、Remotion 配置、书影；**独立**内容模块、配音、封面、台账。`--dir=` 区分系列，中间产物分目录 `.topic-work/` 与 `.topic-work-en/`。英文语音 `en-US-ChristopherNeural`。
 - **第三条线「本草一问」**（2026-10-07 新建）：B 站竖屏，每集 40 秒答一个本草名物/文字/历史问题，**不讲功效**。单集正文是 YAML（`remotion-video/asks/<id>.yaml`，五段固定 问/物/书/考/收）→ `ask:build` 编译成 `src/asks/<id>.content.ts` → `ask:voice` 合成旁白与词级时间戳 → `ask:compositions` **生成**注册表（加一集＝加一个 YAML）→ `ask:check`（**只有三条规则**：旁白/字幕无功效词（**引文豁免**）· 每条引文有出处 · 每张图有授权，另加一节 sync 查产物是否与源同一版）→ `ask:verify --render`。渲染器 `src/ask-film.tsx`，CI `.github/workflows/ask-render.yml`（push YAML 即出片）。规则纯函数在 `scripts/lib/ask-rules.ts`，`tests/ask.test.ts` 喂坏输入验它。**渲染必须 `--concurrency=1 --timeout=180000`**：`src/index.ts` 的 24MB 霞鹜文楷在默认参数下 `loadFont` 的 delayRender 会超时（静帧却过得去）。
+  **考据先读整条，别只读经文那一行**：一条药的答案常常就在**它自己的案语**里——藕实茎的名字为什么是三个部位，答案在孙星衍辑本引《说文》那句，不在经文里。已出 6 集，发布链 大枣→橘柚→王不留行→防己→天雄→藕实茎→徐长卿（未做）。
 - **「书」屏逐字朱红靠两条逐字不变式**：`read` 必须**同时**是旁白与引文的连续子串（`ask-build` 两头都核；少核一半，朱红会从引文第一个字开始亮、整体错位）。屏幕上摆整段原文、旁白只读其中一句是常态。
 - **配图要先核实到种**：`fetch-photo --check` 现在会打**观察者自己的鉴定名**（与搜索属名不同时标 ⚠）。搜 `Citrus reticulata` 返回的果实照其实是 `Citrus × aurantium`（酸橙）——不看这一行就会给讲橘柚的片子配上酸橙。**矿物类在这个通道做不了**（mindat/Smithsonian/Commons/BHL 全 403 或超时，iNaturalist 只有生物）。
 - **`edge-tts` 7.2.8 的边界类型默认是 `"SentenceBoundary"`**——句级对齐做不了「读到哪个字哪个字朱红」。词级要显式 `Communicate(text, voice, proxy=…, boundary="WordBoundary")`，且 `proxy` 也要显式传（它不读环境变量）。`scripts/tts_words.py` 走这条路；对齐靠一条不变式：边界 `text` 首尾相接 == 旁白去标点后的字序列。
