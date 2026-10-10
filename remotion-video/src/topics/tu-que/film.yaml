@@ -41,7 +41,7 @@ segments:
         marks:
           - { text: 食兔肉令子无声缺唇, at: 食兔肉, to: 缺唇 }
       - type: columns
-        at: 书名-0.2
+        at: 写成书-0.3
         source: 《饮膳正要》· 妊娠食忌
         file: 009-饮膳正要.txt
         lines: [食兔肉，令子无声缺唇。, 食山羊肉，令子多疾。, 食鸡子、干鱼，令子多疮。]
@@ -118,10 +118,20 @@ segments:
         zoom: { from: 陈藏器-0.2, to: 理由+0.6, scale: 1.12 }
         marks:
           - { text: 兔尻有孔子从口出故妊妇忌之, at: 兔尻, to: 忌之 }
-      - type: silent
+      - type: columns
+        at: 兔子屁股上有个孔-0.3
+        source: 《本草纲目》· 明 · 李时珍
+        file: 013-本草纲目.txt
+        lines: [兔尻有孔，子从口出，故妊妇忌之。, 食兔去尻，不利人也。]
+        emphasize: 1
+        emphasizeAt: 收进了
+      - type: columns
         at: 所以孕妇要忌-0.3
-        count: 0
-        text: 兔子的生殖现象确实反常　但从嘴里生出来　是看错了
+        source: 《本草纲目》· 明 · 李时珍 · 引陈藏器
+        file: 013-本草纲目.txt
+        lines: [兔尻有孔，子从口出，故妊妇忌之。, 食兔去尻，不利人也。]
+        emphasize: 0
+        emphasizeAt: 所以孕妇要忌
       - type: page
         at: 李时珍-0.3
         book: 本草纲目
@@ -167,11 +177,36 @@ segments:
         after: ""
         zoom: { from: 二龙散-0.2, to: 补缺唇+0.6, scale: 1.12 }
         marks:
-          - { text: 补缺唇, at: 二龙散 }
-      - type: silent
+          - { text: 补缺唇, at: 外科大成 }
+          - { text: 救自刎血流如注者, at: 补缺唇 }
+      - type: columns
+        at: 外科大成-0.3
+        source: 《外科大成》· 清 · 祁坤
+        file: 226-外科大成.txt
+        lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
+        emphasize: 0
+        emphasizeAt: 补缺唇
+      - type: columns
+        at: 二龙散-0.3
+        source: 《外科大成》· 清 · 祁坤
+        file: 226-外科大成.txt
+        lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
+        emphasize: 0
+        emphasizeAt: 补缺唇
+      - type: columns
         at: 写这些方子-0.3
-        count: 0
-        text: 传抄禁忌的大夫　正在给唇裂的孩子做缝合
+        source: 《外科大成》· 清 · 祁坤
+        file: 226-外科大成.txt
+        lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
+        emphasize: 0
+        emphasizeAt: 做缝合
+      - type: columns
+        at: 一边传抄-0.3
+        source: 同一批医书里的另一条线 · 外科
+        file: 226-外科大成.txt
+        lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
+        emphasize: 2
+        emphasizeAt: 而且有手术
       - type: columns
         at: 一边在给-0.3
         source: 《外科大成》· 清 · 祁坤
@@ -196,7 +231,21 @@ segments:
         marks:
           - { text: 似兔唇，故谓之兔缺, at: 长得像, to: 兔缺 }
       - type: columns
+        at: 见兔而子缺唇-0.3
+        source: 《本草蒙筌》· 明 · 引《淮南子》
+        file: 012-本草蒙筌.txt
+        lines: [孕妇见兔而子缺唇，见麋而子四目。, 物有自然，而似不然者。]
+        emphasize: 0
+        emphasizeAt: 没有人再提
+      - type: columns
         at: 一个可能的原因-0.3
+        source: 《诸病源候论》· 隋 · 巢元方
+        file: 571-诸病源候论.txt
+        lines: [人有生而唇缺，, 似兔唇，故谓之兔缺。, 世云，由妇人妊娠时, 见兔及食兔肉使然。]
+        emphasize: 1
+        emphasizeAt: 留在唇裂的旁边
+      - type: columns
+        at: 所以叫兔缺-0.3
         source: 《诸病源候论》· 隋 · 巢元方
         file: 571-诸病源候论.txt
         lines: [人有生而唇缺，, 似兔唇，故谓之兔缺。, 世云，由妇人妊娠时, 见兔及食兔肉使然。]
@@ -210,10 +259,24 @@ segments:
 
   - narration: 但有一件事，古人的方向没有错。孕期的营养和药物，确实会影响唇裂的风险。他们担心的事是真的，只是归因归错了地方。一条传了一千五百年的禁忌，起点可能只是一个名字。
     shots:
-      - type: silent
-        at: -0.3
-        count: 0
-        text: 像兔唇　所以叫兔缺　至于为什么像　没有人问过
+      - type: columns
+        at: 孕期的营养-0.3
+        source: 《诸病源候论》· 隋 · 巢元方
+        file: 571-诸病源候论.txt
+        lines: [人有生而唇缺，, 似兔唇，故谓之兔缺。, 世云，由妇人妊娠时, 见兔及食兔肉使然。]
+        emphasize: 1
+        emphasizeAt: 归因归错了地方
+      - type: page
+        at: 归因归错了地方-0.6
+        book: 诸病源候论
+        meta: 隋 · 巢元方 · 兔缺候
+        file: 571-诸病源候论.txt
+        before: 人有生而唇缺，似兔唇，故谓之兔缺。
+        target: 世云，由妇人妊娠时见兔及食兔肉使然。
+        after: ""
+        zoom: { from: 归因归错了地方-0.2, to: 是真的+0.6, scale: 1.12 }
+        marks:
+          - { text: 世云由妇人妊娠时见兔及食兔肉使然, at: 归因归错了地方, to: 是真的 }
       - type: verdict
         at: 一个名字-0.3
         char: 缺
