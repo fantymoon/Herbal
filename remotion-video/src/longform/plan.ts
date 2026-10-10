@@ -23,13 +23,27 @@ export const COLUMNS_MAX_CHARS = 16; // 竖排清单一行最多字数
 export const LINEAGE_LANES = 7;
 export const LINEAGE_LANE_Y0 = 320;
 export const LINEAGE_LANE_DY = 72;
+/**
+ * 年代轴的默认跨度。**默认值只是默认值**——轴要覆盖这一期的数据，不能写死。
+ *
+ * 螃蟹那一期从唐代说起，780–1950 正好；兔缺那一期从汉代说起，同一组常量把
+ * 《淮南子》（-139）算到 x = -1148，节点直接落在画外，而联络表只会报一句
+ * 「出画：《淮南子》」，看不出是轴的问题。所以 `lineageX` 收下由节点算出的跨度。
+ */
 export const LINEAGE_YEAR0 = 780;
 export const LINEAGE_YEAR1 = 1950;
 export const MAX_STILL = 6.5; // 两次视觉变化之间最长秒数（超过即报错）
 export const WARN_STILL = 5.0;
 
-export const lineageX = (year: number) =>
-  140 + ((year - LINEAGE_YEAR0) / (LINEAGE_YEAR1 - LINEAGE_YEAR0)) * 1640;
+/** 一期的轴跨度：最早与最晚的节点，各留 60 年边距。 */
+export const lineageRange = (years: number[]): [number, number] => {
+  const lo = Math.min(...years);
+  const hi = Math.max(...years);
+  return [lo - 60, hi + 60];
+};
+
+export const lineageX = (year: number, year0 = LINEAGE_YEAR0, year1 = LINEAGE_YEAR1) =>
+  140 + ((year - year0) / (year1 - year0)) * 1640;
 
 // ---------- schema ----------
 /** 时间锚：段内秒数，或旁白里的词，可带偏移与第几次出现，如 "横行"、"横行+0.4"、"螃蟹#2"。 */

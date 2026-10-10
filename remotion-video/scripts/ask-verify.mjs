@@ -86,6 +86,11 @@ for (const id of episodes) {
       "--codec=h264",
       "--concurrency=1",
       "--timeout=180000",
+      // Remotion 会复用缓存的 webpack bundle，而缓存失效的判断在这里不够可靠：
+      // 长视频线上出现过「`still` 用的是新代码、`render` 用的是旧 bundle」，
+      // 两边都"成功"、没有报错，只有从成片里抽帧对比才看得出来。
+      // 加一个 Composition 就是改注册表，属于最容易撞上的情形。
+      "--bundle-cache=false",
       "--overwrite",
       "--log=error",
     );

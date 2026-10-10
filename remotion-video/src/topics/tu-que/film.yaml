@@ -79,20 +79,14 @@ segments:
         title: 同一句话，按成书先后排开（连线示意流传顺序，非考定的抄录关系）
         burstAt: 医书
         nodes:
-          - { name: 礼记·内则, dyn: 先秦, year: -200, key: true, at: 往前追 }
           - { name: 淮南子, dyn: 汉, year: -139, key: true, at: 淮南子 }
           - { name: 诸病源候论, dyn: 隋, year: 610 }
           - { name: 外台秘要, dyn: 唐, year: 752 }
-          - { name: 本草拾遗, dyn: 唐, year: 739 }
           - { name: 太平圣惠方, dyn: 北宋, year: 992 }
           - { name: 妇人大全良方, dyn: 南宋, year: 1237 }
           - { name: 饮膳正要, dyn: 元, year: 1330, key: true, at: 吃当然更不行-0.4 }
-          - { name: 饮食须知, dyn: 元, year: 1350 }
-          - { name: 本草蒙筌, dyn: 明, year: 1565 }
           - { name: 本草纲目, dyn: 明, year: 1578, key: true, at: 被放大-0.3 }
-          - { name: 普济方, dyn: 明, year: 1406 }
           - { name: 外科大成, dyn: 清, year: 1665 }
-          - { name: 疡医大全, dyn: 清, year: 1760 }
       - type: columns
         at: 一条禁忌-0.2
         source: 《本草蒙筌》· 明 · 陈嘉谟
@@ -168,7 +162,7 @@ segments:
   - narration: 而同一批医书里还有另一条线：唇裂在外科书里是实打实的病，而且有手术。《外科大成》里有二龙散，补缺唇，也救自刎血流如注的人。写这些方子的大夫，一边传抄吃兔肉会生唇裂，一边在给唇裂的孩子做缝合。
     shots:
       - type: page
-        at: 而且有手术-0.3
+        at: 一条线-0.3
         book: 外科大成
         meta: 清 · 祁坤
         file: 226-外科大成.txt
@@ -180,39 +174,39 @@ segments:
           - { text: 补缺唇, at: 外科大成 }
           - { text: 救自刎血流如注者, at: 补缺唇 }
       - type: columns
-        at: 外科大成-0.3
+        at: 手术-0.3
         source: 《外科大成》· 清 · 祁坤
         file: 226-外科大成.txt
         lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
         emphasize: 0
         emphasizeAt: 补缺唇
       - type: columns
-        at: 二龙散-0.3
+        at: 大成-0.3
         source: 《外科大成》· 清 · 祁坤
         file: 226-外科大成.txt
         lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
-        emphasize: 0
+        emphasize: 1
         emphasizeAt: 补缺唇
       - type: columns
-        at: 写这些方子-0.3
+        at: 写-0.3
         source: 《外科大成》· 清 · 祁坤
         file: 226-外科大成.txt
         lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
-        emphasize: 0
+        emphasize: 2
         emphasizeAt: 做缝合
       - type: columns
-        at: 一边传抄-0.3
+        at: 传抄-0.3
         source: 同一批医书里的另一条线 · 外科
         file: 226-外科大成.txt
         lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
         emphasize: 2
         emphasizeAt: 而且有手术
       - type: columns
-        at: 一边在给-0.3
+        at: 给-0.3
         source: 《外科大成》· 清 · 祁坤
         file: 226-外科大成.txt
         lines: [补缺唇。, 救自刎血流如注者。, 敷三时则口合。]
-        emphasize: 0
+        emphasize: 2
         emphasizeAt: 做缝合
 
   # ── 结案：一个字落下，盖印 ────────────────────────────────────────
@@ -274,9 +268,9 @@ segments:
         before: 人有生而唇缺，似兔唇，故谓之兔缺。
         target: 世云，由妇人妊娠时见兔及食兔肉使然。
         after: ""
-        zoom: { from: 归因归错了地方-0.2, to: 是真的+0.6, scale: 1.12 }
+        zoom: { from: 是真的-0.2, to: 归因归错了地方+0.6, scale: 1.12 }
         marks:
-          - { text: 世云由妇人妊娠时见兔及食兔肉使然, at: 归因归错了地方, to: 是真的 }
+          - { text: 世云由妇人妊娠时见兔及食兔肉使然, at: 是真的, to: 归因归错了地方 }
       - type: verdict
         at: 一个名字-0.3
         char: 缺

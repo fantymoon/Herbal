@@ -222,8 +222,13 @@ for (const candidate of order) {
     const url = `https://inaturalist-open-data.s3.amazonaws.com/photos/${candidate.id}/${candidate.size}.${ext}`;
     try {
       const { body } = await get(url);
-      // A 404 from the bucket is XML and an error page is HTML; only a JPEG is a photo.
-      if (body.length > 100_000 && body[0] === 0xff && body[1] === 0xd8) {
+      // A 404 from the bucket is XML and an error page is HTML; only a JPEG is a photo, and
+      // the magic bytes are what say so. The size floor is only a guard against a truncated
+      // fragment — it used to be 100 000, which is not a property of a photo but of a *large*
+      // photo: 669468250 is a valid 97 966-byte JPEG that the tool reported as "none
+      // downloaded", and 669468205 got through at 100 384. A floor that rejects real input
+      // reads exactly like a missing photo, which is the worst way for a guard to fail.
+      if (body.length > 1024 && body[0] === 0xff && body[1] === 0xd8) {
         chosen = candidate;
         bytes = body;
         break;
@@ -276,7 +281,16 @@ const next = [...ledger.filter((e) => e.file !== file), entry].sort((a, b) =>
 const line = (e) =>
   `  { "file": ${JSON.stringify(e.file)}, "subject": ${JSON.stringify(e.subject)}, ` +
   `"author": ${e.author === null ? "null" : JSON.stringify(e.author)}, "license": ${JSON.stringify(e.license)} }`;
-fs.writeFileSync(creditsPath, `[\n${next.map(line).join(",\n")}\n]\n`);
+
+// Written to a temporary file and renamed into place, not written in place.
+//
+// `fs.writeFileSync` truncates first, so anything reading credits.json while this runs sees
+// a half-written file — and `ask:check` reads it. Two sessions share this workspace, and
+// `fetch-photo` is exactly the command both of them run; the symptom of getting this wrong
+// is a gate that fails with "photo is not registered" for photos that are plainly there.
+const tmpPath = `${creditsPath}.${process.pid}.tmp`;
+fs.writeFileSync(tmpPath, `[\n${next.map(line).join(",\n")}\n]\n`);
+fs.renameSync(tmpPath, creditsPath);
 
 console.log(`wrote public/images/${file}  ${chosen.size}  ${chosen.width}x${chosen.height}  ${(bytes.length / 1024).toFixed(0)}KB`);
 console.log(`credits.json: ${JSON.stringify(entry)}`);

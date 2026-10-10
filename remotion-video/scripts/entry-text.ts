@@ -4,6 +4,7 @@
 //   npm run entry -- --list                 # every entry, with its length
 //   npm run entry -- --list --fits          # only the ones the current budget carries
 //   npm run entry -- --grep=轻身            # search the whole corpus for a phrase
+//   npm run entry -- --grep=恐即是根 --around=4   # …with four lines of context
 //
 // Four jobs, all of which used to be manual `rg` work:
 //
@@ -60,6 +61,14 @@ if (typeof args.grep === "string") {
   const fileFilter = typeof args.file === "string" ? args.file : null;
   const only = fileFilter === null ? files : files.filter((f) => f.includes(fileFilter));
   const limit = Number(args.limit ?? 60);
+  // `--around=<n>` prints n lines of context on each side of a hit.
+  //
+  // A line number on its own is not enough to research with. The corpus wraps mid-sentence,
+  // so a hit is routinely one fragment of a passage whose subject is two lines up — and a
+  // 引文 has to be read inside the sentence it came from before it can go on screen.
+  // Without this flag every lookup needs a second throwaway script to print the range,
+  // which is what 藕实茎's research needed six times over.
+  const around = args.around === undefined ? 0 : Number(args.around);
   let hits = 0;
   let scanned = 0;
   for (const file of only) {
@@ -69,7 +78,17 @@ if (typeof args.grep === "string") {
       const line = body[i].trim();
       if (!line.includes(args.grep)) continue;
       hits += 1;
-      if (hits <= limit) console.log(`${file}:${i + 1}  ${line}`);
+      if (hits > limit) continue;
+      if (around === 0) {
+        console.log(`${file}:${i + 1}  ${line}`);
+        continue;
+      }
+      console.log(`--- ${file}:${i + 1} ---`);
+      const from = Math.max(0, i - around);
+      const to = Math.min(body.length, i + around + 1);
+      for (let j = from; j < to; j += 1) {
+        console.log(`${String(j + 1).padStart(6)}  ${body[j].trim()}`);
+      }
     }
   }
   console.log(
@@ -140,7 +159,7 @@ if (args.list) {
 
 if (typeof args.name !== "string") {
   console.error(
-    "usage: npm run entry -- --name=<条目名> | --list [--fits] | --grep=<词> [--file=<文件名子串>]",
+    "usage: npm run entry -- --name=<条目名> | --list [--fits] | --grep=<词> [--file=<文件名子串>] [--around=<行数>]",
   );
   process.exit(2);
 }

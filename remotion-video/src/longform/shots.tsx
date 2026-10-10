@@ -8,6 +8,7 @@ import {
   LINEAGE_LANE_Y0,
   PAGE_CELL,
   lineageX,
+  lineageRange,
 } from "./plan";
 
 export const PAPER = "#EEE5D0";
@@ -210,6 +211,9 @@ export const LineageShot: React.FC<{ t: number; title: string; nodes: LNode[] }>
   const laneY = (l: number) => LINEAGE_LANE_Y0 + l * LINEAGE_LANE_DY;
   const axisY = 860;
   const sorted = [...nodes].sort((a, b) => a.year - b.year);
+  // 轴由这一期的节点决定：最早的那一部到最晚的那一部。写死的跨度只对得上某一期。
+  const [year0, year1] = lineageRange(sorted.map((n) => n.year));
+  const x = (year: number) => lineageX(year, year0, year1);
   const eras: [string, number][] = [
     ["唐", 820],
     ["宋", 1100],
@@ -225,7 +229,7 @@ export const LineageShot: React.FC<{ t: number; title: string; nodes: LNode[] }>
         {sorted.slice(1).map((n, i) => {
           const p = sorted[i];
           const prog = ramp(t, n.at - 0.5, n.at);
-          const [x1, y1, x2, y2] = [lineageX(p.year), laneY(p.lane), lineageX(n.year), laneY(n.lane)];
+          const [x1, y1, x2, y2] = [x(p.year), laneY(p.lane), x(n.year), laneY(n.lane)];
           const mx = (x1 + x2) / 2;
           const len = Math.hypot(x2 - x1, y2 - y1) * 1.3 + 40;
           return (
@@ -243,7 +247,7 @@ export const LineageShot: React.FC<{ t: number; title: string; nodes: LNode[] }>
         })}
       </svg>
       {eras.map(([e, y]) => (
-        <div key={e} style={{ position: "absolute", left: lineageX(y) - 40, width: 80, top: axisY + 18, textAlign: "center", fontFamily: FONT, fontSize: 34, color: INK }}>
+        <div key={e} style={{ position: "absolute", left: x(y) - 40, width: 80, top: axisY + 18, textAlign: "center", fontFamily: FONT, fontSize: 34, color: INK }}>
           {e}
         </div>
       ))}
@@ -254,7 +258,7 @@ export const LineageShot: React.FC<{ t: number; title: string; nodes: LNode[] }>
             key={n.name}
             style={{
               position: "absolute",
-              left: lineageX(n.year),
+              left: x(n.year),
               top: laneY(n.lane),
               transform: `translate(-50%, -12px) scale(${interpolate(o, [0, 1], [0.6, 1])})`,
               opacity: o,

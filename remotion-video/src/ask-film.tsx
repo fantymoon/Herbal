@@ -244,6 +244,12 @@ const AskScene: React.FC<{ content: AskContent; segment: AskSegment; seg: AskVoi
             lineHeight: 1.32,
             letterSpacing: 2,
             marginTop: 40,
+            // 中文在任意两字之间都能折行，所以 92px 大字按容器宽度自动折的时候，
+            // 断点会落在第 9–10 个字上——不管那里是不是词中间。
+            // 徐长卿那一集折出了「为什／么」，藕实茎折出了「连／在一起」。
+            // `pre-line` 让 `question` 里的换行生效，断行由写这一集的人决定，
+            // 而不是由容器宽度决定。不写换行时行为与从前一样。
+            whiteSpace: "pre-line",
             ...heavy(PAPER, 2),
           }}
         >
@@ -372,6 +378,22 @@ const BookScene: React.FC<{ segment: AskSegment; seg: AskVoiceSegment; frame: nu
   // 这里只负责把它接到时间轴上。
   const quoteOffset = segment.read ? Math.max(0, spokenIndexOf(quote.text, segment.read)) : 0;
 
+  // 朱红的**起点**，和 `quoteOffset` 是同一件事的两种坐标。
+  //
+  // `quoteOffset` 是"说出来的字的序号"，`litUpTo` 是"字符数组的下标"，染色按后者做，
+  // 所以起点也要换成下标。原先只写了 `i <= litUpTo`，等于从引文的第一个字开始染——
+  // 旁白没读前面的字，把它们染红就是说"读过了"。败酱那一集，朱红从「味苦」一路亮到
+  // 旁白真正读的「疸痔」，整段看着像读完了。
+  //
+  // 标点的 `indexMap` 是 -1，所以边界要取"第一个 indexMap >= quoteOffset 的字"，
+  // 不能直接用 quoteOffset 当下标：那样 read 中间的标点会留在黑里，朱红断成两截。
+  const redFrom = (() => {
+    for (let i = 0; i < indexMap.length; i += 1) {
+      if (indexMap[i] >= quoteOffset) return i;
+    }
+    return 0;
+  })();
+
   const seconds = frame / 30;
   const litUpTo = (() => {
     let last = -1;
@@ -429,7 +451,7 @@ const BookScene: React.FC<{ segment: AskSegment; seg: AskVoiceSegment; frame: nu
             <span
               key={`${ch}-${i}`}
               style={{
-                color: i <= litUpTo ? CINNABAR : INK,
+                color: i >= redFrom && i <= litUpTo ? CINNABAR : INK,
                 // 正在读的那一个字再重一点，朱红才有"点在动"的感觉。
                 ...(i === litUpTo ? heavy(CINNABAR, 2.4) : {}),
               }}
@@ -571,6 +593,8 @@ const ClosingScene: React.FC<{ content: AskContent; seg: AskVoiceSegment; frame:
             fontSize: 48,
             lineHeight: 1.45,
             marginTop: 26,
+            // 同「问」屏：预告也是一句中文，断行由内容决定，别让容器把词切开。
+            whiteSpace: "pre-line",
             ...heavy(PAPER, 1.4),
           }}
         >

@@ -4,21 +4,47 @@
 import { Composition } from "remotion";
 import { AskFilm } from "../ask-film";
 import { AskSeriesCover } from "./series-cover-film";
+import { content as baihe } from "./baihe.content";
+import { voice as baiheVoice } from "./baihe.voice";
+import { content as baijiang } from "./baijiang.content";
+import { voice as baijiangVoice } from "./baijiang.voice";
 import { content as dazaoYe } from "./dazao-ye.content";
 import { voice as dazaoYeVoice } from "./dazao-ye.voice";
 import { content as fangji } from "./fangji.content";
 import { voice as fangjiVoice } from "./fangji.voice";
 import { content as juyou } from "./juyou.content";
 import { voice as juyouVoice } from "./juyou.voice";
+import { content as oushijing } from "./oushijing.content";
+import { voice as oushijingVoice } from "./oushijing.voice";
 import { content as tianxiong } from "./tianxiong.content";
 import { voice as tianxiongVoice } from "./tianxiong.voice";
 import { content as wangbuliuxing } from "./wangbuliuxing.content";
 import { voice as wangbuliuxingVoice } from "./wangbuliuxing.voice";
+import { content as xuchangqing } from "./xuchangqing.content";
+import { voice as xuchangqingVoice } from "./xuchangqing.voice";
 
 // 「本草一问」系列的 Composition 注册表。竖屏 1080x1920，时长来自 voice 模块
 // （= 各段旁白实际秒数之和 + 每段尾部呼吸），不写在组件里。
 export const AskCompositions: React.FC = () => (
   <>
+    <Composition
+      id="AskBaihe"
+      component={AskFilm}
+      durationInFrames={baiheVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: baihe, voice: baiheVoice }}
+    />
+    <Composition
+      id="AskBaijiang"
+      component={AskFilm}
+      durationInFrames={baijiangVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: baijiang, voice: baijiangVoice }}
+    />
     <Composition
       id="AskDazaoYe"
       component={AskFilm}
@@ -47,6 +73,15 @@ export const AskCompositions: React.FC = () => (
       defaultProps={{ content: juyou, voice: juyouVoice }}
     />
     <Composition
+      id="AskOushijing"
+      component={AskFilm}
+      durationInFrames={oushijingVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: oushijing, voice: oushijingVoice }}
+    />
+    <Composition
       id="AskTianxiong"
       component={AskFilm}
       durationInFrames={tianxiongVoice.totalFrames}
@@ -63,6 +98,15 @@ export const AskCompositions: React.FC = () => (
       width={1080}
       height={1920}
       defaultProps={{ content: wangbuliuxing, voice: wangbuliuxingVoice }}
+    />
+    <Composition
+      id="AskXuchangqing"
+      component={AskFilm}
+      durationInFrames={xuchangqingVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: xuchangqing, voice: xuchangqingVoice }}
     />
     {/* 系列总封面：单帧图，`npx remotion still AskSeriesCover out/asks/covers/…` 出它。
         它没有旁白也没有时长，注册成 Composition 只是为了让 Studio 和 CI 都看得见它。 */}
