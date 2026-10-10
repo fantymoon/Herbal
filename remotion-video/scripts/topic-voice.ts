@@ -23,8 +23,12 @@ const dir = dirArg ? dirArg.slice("--dir=".length) : "topics";
 const workDir = path.join(repo, dir === "topics" ? ".topic-work" : ".topic-work-en");
 
 const modulePath = path.join(repo, "src", dir, `${topicId}.ts`);
+// 这个脚本服务的是**旧线**（英文线 src/topics-en/ 还在用）。类型原先从
+// `src/topics/tu-que.ts` 里 import——那是中文那一期的内容模块，它已经搬到
+// `src/topics/tu-que/film.yaml` 了。旧线的类型不该挂在某一期片上，所以写在这里。
+import type { TopicContent } from "../src/topic-types.ts";
 const { content } = (await import(pathToFileURL(modulePath).href)) as {
-  content: import("../src/topics/tu-que.ts").TopicContent;
+  content: TopicContent;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");

@@ -2,8 +2,7 @@ import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame
 import { createContext, useContext } from "react";
 import { FinishedMusic } from "./finished-shell";
 import { BED_GAIN } from "./topic-audio";
-import type { Segment, TopicContent } from "./topics/tu-que";
-import type { VoiceSegment } from "./topics/tu-que.voice";
+import type { Segment, TopicContent, VoiceSegment } from "./topic-types";
 import { BookPlate, EraTimeline } from "./topic-graphics";
 
 // 跨书整合系列的渲染器。
