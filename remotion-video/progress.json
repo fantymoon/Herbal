@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 73,
+  "doneCount": 77,
   "entries": [
     {
       "name": "丹沙",
@@ -430,7 +430,8 @@
     {
       "name": "丹参",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "DanshenFirstFilm"
     },
     {
       "name": "茜根",
@@ -875,7 +876,8 @@
     {
       "name": "葛根",
       "volume": "卷二 · 中经",
-      "status": "todo"
+      "status": "done",
+      "film": "GegenFirstFilm"
     },
     {
       "name": "栝蒌根",
@@ -932,7 +934,8 @@
     {
       "name": "百合",
       "volume": "卷二 · 中经",
-      "status": "todo"
+      "status": "done",
+      "film": "BaiheFirstFilm"
     },
     {
       "name": "知母",
@@ -947,7 +950,8 @@
     {
       "name": "白芷",
       "volume": "卷二 · 中经",
-      "status": "todo"
+      "status": "done",
+      "film": "BaizhiAngelicaFirstFilm"
     },
     {
       "name": "淫羊藿",
