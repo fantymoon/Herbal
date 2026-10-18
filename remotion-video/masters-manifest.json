@@ -1,9 +1,10 @@
 {
   "note": "out/ is gitignored. This ledger records the masters that existed so a lost or stale render is detectable. It is not a backup.",
-  "filmCount": 74,
-  "masterCount": 73,
+  "filmCount": 80,
+  "masterCount": 78,
   "missingMasters": [
-    "AngelicaFourthFilm"
+    "AngelicaFourthFilm",
+    "BaijiFirstFilm"
   ],
   "masters": [
     {
@@ -17,6 +18,12 @@
       "file": "out/films/baihao-first-film.mp4",
       "bytes": 2127444,
       "modified": "2026-08-26T06:30:48.073Z"
+    },
+    {
+      "film": "BaiheFirstFilm",
+      "file": "out/films/baihe-first-film.mp4",
+      "bytes": 3632338,
+      "modified": "2026-10-09T17:31:12.970Z"
     },
     {
       "film": "BaiqingFirstFilm",
@@ -35,6 +42,12 @@
       "file": "out/films/baiying-first-film.mp4",
       "bytes": 1769158,
       "modified": "2026-08-26T06:29:27.255Z"
+    },
+    {
+      "film": "BaizhiAngelicaFirstFilm",
+      "file": "out/films/baizhi-angelica-first-film.mp4",
+      "bytes": 4901341,
+      "modified": "2026-10-10T03:33:58.459Z"
     },
     {
       "film": "BaizhiFirstFilm",
@@ -97,6 +110,12 @@
       "modified": "2026-10-05T10:34:08.039Z"
     },
     {
+      "film": "DanshenFirstFilm",
+      "file": "out/films/danshen-first-film.mp4",
+      "bytes": 4645502,
+      "modified": "2026-10-09T17:39:48.911Z"
+    },
+    {
       "film": "DazaoFirstFilm",
       "file": "out/films/dazao-first-film.mp4",
       "bytes": 5892366,
@@ -131,6 +150,12 @@
       "file": "out/films/gandihuang-first-film.mp4",
       "bytes": 2168110,
       "modified": "2026-08-17T01:32:18.585Z"
+    },
+    {
+      "film": "GegenFirstFilm",
+      "file": "out/films/gegen-first-film.mp4",
+      "bytes": 7860715,
+      "modified": "2026-10-09T17:25:26.244Z"
     },
     {
       "film": "GinsengFirstFilm",
@@ -343,6 +368,12 @@
       "modified": "2026-08-15T23:47:00.636Z"
     },
     {
+      "film": "TianmingjingFirstFilm",
+      "file": "out/films/tianmingjing-first-film.mp4",
+      "bytes": 4794532,
+      "modified": "2026-10-18T03:21:34.558Z"
+    },
+    {
       "film": "TusiziFirstFilm",
       "file": "out/films/tusizi-first-film.mp4",
       "bytes": 2025100,
@@ -445,23 +476,47 @@
       "modified": "2026-09-27T16:13:45.910Z"
     }
   ],
-  "topicCount": 2,
-  "topicMasterCount": 1,
+  "topicCount": 3,
+  "topicMasterCount": 2,
   "topicMissingMasters": [
     "pangxie"
   ],
   "topicMasters": [
     {
+      "topic": "dang-gui",
+      "file": "out/topics/dang-gui.mp4",
+      "bytes": 33343921,
+      "modified": "2026-10-18T03:32:59.264Z"
+    },
+    {
       "topic": "tu-que",
-      "file": "out/topics/tu-que-h.mp4",
-      "bytes": 31327423,
-      "modified": "2026-10-07T14:07:02.289Z"
+      "file": "out/topics/tu-que.mp4",
+      "bytes": 14128675,
+      "modified": "2026-10-10T09:50:58.632Z"
     }
   ],
-  "askEpisodeCount": 5,
-  "askMasterCount": 5,
+  "askEpisodeCount": 10,
+  "askMasterCount": 10,
   "askMissingMasters": [],
   "askMasters": [
+    {
+      "episode": "baihe",
+      "file": "out/asks/baihe.mp4",
+      "bytes": 10161245,
+      "modified": "2026-10-10T04:00:18.139Z"
+    },
+    {
+      "episode": "baiji",
+      "file": "out/asks/baiji.mp4",
+      "bytes": 21793285,
+      "modified": "2026-10-18T03:19:49.696Z"
+    },
+    {
+      "episode": "baijiang",
+      "file": "out/asks/baijiang.mp4",
+      "bytes": 11030915,
+      "modified": "2026-10-10T03:57:27.262Z"
+    },
     {
       "episode": "dazao-ye",
       "file": "out/asks/dazao-ye.mp4",
@@ -481,6 +536,12 @@
       "modified": "2026-10-08T14:27:49.158Z"
     },
     {
+      "episode": "oushijing",
+      "file": "out/asks/oushijing.mp4",
+      "bytes": 9630582,
+      "modified": "2026-10-09T17:44:36.539Z"
+    },
+    {
       "episode": "tianxiong",
       "file": "out/asks/tianxiong.mp4",
       "bytes": 18493967,
@@ -491,6 +552,12 @@
       "file": "out/asks/wangbuliuxing.mp4",
       "bytes": 9230625,
       "modified": "2026-10-08T14:32:00.545Z"
+    },
+    {
+      "episode": "xuchangqing",
+      "file": "out/asks/xuchangqing.mp4",
+      "bytes": 24178058,
+      "modified": "2026-10-10T03:54:31.763Z"
     }
   ]
 }

@@ -6,6 +6,8 @@ import { AskFilm } from "../ask-film";
 import { AskSeriesCover } from "./series-cover-film";
 import { content as baihe } from "./baihe.content";
 import { voice as baiheVoice } from "./baihe.voice";
+import { content as baiji } from "./baiji.content";
+import { voice as baijiVoice } from "./baiji.voice";
 import { content as baijiang } from "./baijiang.content";
 import { voice as baijiangVoice } from "./baijiang.voice";
 import { content as dazaoYe } from "./dazao-ye.content";
@@ -35,6 +37,15 @@ export const AskCompositions: React.FC = () => (
       width={1080}
       height={1920}
       defaultProps={{ content: baihe, voice: baiheVoice }}
+    />
+    <Composition
+      id="AskBaiji"
+      component={AskFilm}
+      durationInFrames={baijiVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: baiji, voice: baijiVoice }}
     />
     <Composition
       id="AskBaijiang"

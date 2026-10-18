@@ -1,0 +1,156 @@
+# 《一句话的旅行》· 当归，为什么叫「当归」
+#
+# 上一期（pangxie）的 `end.next` 预告的就是这一期，id 也早已定在 longformCompId 的注释里。
+# 规则见 docs/longform.md；考据底稿见 .workbuddy-ai/memory/2026-10-10.md。
+#
+# 这一期的问题：一味药，为什么叫「当归」？
+# 语料里对这个问题有**两种互相对立的答案**，而且都写在《本草纲目》同一条里：
+#   1. 名字是招人回来的典故——《古今注》「古人相赠以芍药，相招以文无」，文无即当归。
+#   2. 名字来自药效——陈承「能使气血各有所归，恐当归之名必因此出也」。
+# 所以中段是「对质」。结案那句必须正面回掉封面问题：两种说法都记在书上，书上没有唯一的答案。
+#
+# 弃用：姜维「但有远志，不在当归」——《三国志》在语料里 0 命中，引文规则只许从语料复制。
+#
+# `at` 写旁白里的词，不写秒数。引文只能从语料复制，构建时逐字核对。
+
+id: dang-gui
+series: 一句话的旅行
+title: 当归与文无
+music: music/guzhen-lvxing.mp3
+musicVolume: 0.1
+voice: { name: zh-CN-YunjianNeural, rate: "-8%" }
+
+# 封面与标题必须是同一句话。
+cover:
+  question: 一味药，为什么叫「当归」
+  deck: 一句话追了一千年 · 两种说法都写在书上
+
+images:
+  caogao:
+    file: images/dried-angelica-slices-cc0.jpg
+    credit: "Photo: Fumikas Sagisavas / Wikimedia Commons, CC0 1.0"
+
+segments:
+  - chapter: 立案
+    narration: 明代的《本草纲目》，在“当归”这一条底下，先解释它的名字。李时珍引崔豹《古今注》：古人相赠以芍药，相招以文无。文无一名当归。
+    shots:
+      - type: page # 冷开场：第一帧就是书页
+        at: 0
+        book: 本草纲目
+        meta: 明 · 当归 · 释名
+        file: 013-本草纲目.txt
+        before: 时珍曰当归本非芹类特以花叶似芹故得芹名古人娶妻为嗣续也当归调血为女人要药有思夫之意故有当归之名正与唐诗胡麻好种无人种正是归时又不归之旨相同崔豹古今注云古人相赠以芍药相招以文无
+        target: 文无一名当归芍药一名将离故也
+        after: 承曰当归治妊妇产后恶血上冲仓猝取效气血昏乱者服之即定能使气血各有所归恐当归之名必因此出也
+        zoom: { from: 解释-0.3, to: 文无+0.5, scale: 1.12 }
+        marks:
+          - { text: 古人相赠以芍药相招以文无, at: 古人, to: 文无 }
+          - { text: 文无一名当归芍药一名将离故也, at: 引崔豹+0.2, to: 当归+0.4 }
+
+  - narration: 文无，就是当归。古人送别赠芍药，想念一个人，就寄一味文无——名字本身就是一句话：该回来了。
+    shots:
+      - type: photo
+        at: -0.4
+        image: caogao
+        zoom: [1.05, 1.22]
+        pan: [24, -30]
+        title: 文无
+        gloss: 当归的别名，取「相招」之意
+        titleAt: 文无
+      - type: columns
+        at: 古人送别
+        source: 《本草纲目》引《古今注》· 明
+        file: 013-本草纲目.txt
+        lines: [古人相赠以芍药相招以文无。, 文无一名当归芍药一名将离故也。]
+        emphasize: 0
+        emphasizeAt: 想念一个人
+      - type: photo
+        at: 名字本身
+        image: caogao
+        zoom: [1.18, 1.3]
+        pan: [-30, 20]
+        title: 该回来了
+        gloss: 相招以文无，就是喊人回来
+        titleAt: 该
+
+  - narration: 这个说法，语料里有五部书引它。另一条线更早——宋代的《证类本草》引陈承：当归能让气血各有所归，所以叫当归。
+    shots:
+      - type: dots
+        at: 这个说法-0.3
+        search: "文无一名当归|相招以文无|文无，当归也"
+        expect: 5
+        countLabel: 部古籍，逐字检索
+        hitLabel: 部书引过「相招以文无」
+        note: 检索式：文无一名当归　/　相招以文无　/　文无，当归也
+        hitAt: 五部
+      - type: columns
+        at: 另一条线
+        source: 《本草纲目》引陈承 · 明
+        file: 013-本草纲目.txt
+        lines: [能使气血各有所归。, 恐当归之名必因此出也。]
+        emphasize: 1
+        emphasizeAt: 陈承-0.2
+
+  - chapter: 追踪
+    narration: 到了明代，卢之颐把话挑明——名字就是照功用起的。可这句话的前半截，他自己也在引那句典故。
+    shots:
+      - type: lineage
+        at: -0.4
+        title: 同一味药的名字，按成书先后排开（连线示意先后，非考定的抄录关系）
+        burstAt: 明代
+        nodes:
+          - { name: 神农本草经, dyn: 汉, year: 200, key: true, at: 0 }
+          - { name: 古今注, dyn: 晋, year: 300, key: true, at: 功用 }
+          - { name: 证类本草, dyn: 北宋, year: 1082, key: true, at: 这-0.2 }
+          - { name: 本草纲目, dyn: 明, year: 1578, key: true, at: 明代 }
+          - { name: 本草乘雅半偈, dyn: 明, year: 1640, key: true, at: 卢之颐 }
+          - { name: 本经逢原, dyn: 清, year: 1695 }
+          - { name: 神农本草经赞, dyn: 清, year: 1849 }
+
+  - chapter: 对质
+    narration: 于是同一条药名下，摆着两种答案。一种说，名字是一句想人的话；一种说，名字是一句说药的话。两派各自都有书证，谁也没有驳倒谁。
+    shots:
+      - type: columns
+        at: -0.4
+        source: 《本草纲目》· 明（李时珍）
+        file: 013-本草纲目.txt
+        lines: [有思夫之意故有当归之名。, 古人相赠以芍药相招以文无。, 能使气血各有所归。]
+        emphasize: 2
+        emphasizeAt: 两种答案
+      - type: photo
+        at: 一种说-0.4
+        image: caogao
+        zoom: [1.3, 1.12]
+        pan: [10, -18]
+        title: 两种答案
+        gloss: 一句想人的话，一句说药的话
+        titleAt: 一句说药
+
+  - chapter: 结案
+    narration: 卢之颐的断语是：盖以功用为名矣。可他自己也先引了那句典故。
+    shots:
+      - type: page
+        at: -0.4
+        book: 本草乘雅半偈
+        meta: 明 · 卢之颐
+        file: 014-本草乘雅半偈.txt
+        before: 而行中有止止中有行此又上下相之妙收藏须晒干乘热裹纸封固瓮中则不蛀曰
+        target: 古人相招以文无文无当归也盖以功用为名矣
+        after: 味苦气温臭香色紫当入心为心之使药心之血分气分药也
+        zoom: { from: 卢之颐-0.2, to: 断语+0.6, scale: 1.12 }
+        marks:
+          - { text: 古人相招以文无, at: 引了那句-0.1, to: 典故+0.4 }
+          - { text: 盖以功用为名矣, at: 盖以, to: 为名矣+0.3 }
+
+  - narration: 一味药的名字，一半是功用，一半是人事。书上没有给出唯一的答案。
+    shots:
+      - type: verdict
+        at: -0.3
+        char: 归
+        seal: 结案
+        slamAt: 一半是功用
+
+end:
+  next: 下一期 · 大枣的叶子，为什么单占一行
+  sources: 引文照录：《本草纲目》《证类本草》《本草乘雅半偈》《古今注》（《纲目》引）等
+  disclaimer: 古籍记载仅供文化阅读，不构成功效说明
