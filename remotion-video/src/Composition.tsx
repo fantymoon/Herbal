@@ -86,6 +86,7 @@ import { BaiheFirstFilm } from "./finished/baihe-first-film";
 import { DanshenFirstFilm } from "./finished/danshen-first-film";
 import { BaizhiAngelicaFirstFilm } from "./finished/baizhi-angelica-first-film";
 import { TianmingjingFirstFilm } from "./finished/tianmingjing-first-film";
+import { FeilianFirstFilm } from "./finished/feilian-first-film";
 
 export const HerbalCompositions: React.FC = () => {
   return (
@@ -745,6 +746,14 @@ export const HerbalCompositions: React.FC = () => {
         id="TianmingjingFirstFilm"
         component={TianmingjingFirstFilm}
         durationInFrames={450}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="FeilianFirstFilm"
+        component={FeilianFirstFilm}
+        durationInFrames={540}
         fps={30}
         width={1080}
         height={1920}

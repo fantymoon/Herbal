@@ -2,7 +2,7 @@
   "book": "神农本草经",
   "source": "TCM-Ancient-Books-master/000-神农本草经.txt",
   "entryCount": 356,
-  "doneCount": 78,
+  "doneCount": 79,
   "entries": [
     {
       "name": "丹沙",
@@ -442,7 +442,8 @@
     {
       "name": "飞廉",
       "volume": "卷一 · 上经",
-      "status": "todo"
+      "status": "done",
+      "film": "FeilianFirstFilm"
     },
     {
       "name": "五味子",
