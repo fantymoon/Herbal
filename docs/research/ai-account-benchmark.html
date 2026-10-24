@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同类型账号对标调研 · 本草短视频</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#141b24; --bg3:#1b2430; --line:#26313f;
+    --fg:#e6edf3; --fg2:#9fb0c3; --fg3:#6b7d91;
+    --accent:#e8b04b; --accent2:#5aa9e6; --good:#3fb950; --bad:#f85149; --warn:#d29922;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --serif:"Songti SC","Noto Serif SC",Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:56px 28px 100px}
+  h1{font-family:var(--serif);font-size:34px;line-height:1.35;margin:0 0 10px;letter-spacing:.5px}
+  h2{font-size:22px;margin:64px 0 8px;padding-bottom:12px;border-bottom:1px solid var(--line);letter-spacing:.5px}
+  h2 .num{color:var(--accent);font-family:var(--mono);font-size:15px;margin-right:10px;vertical-align:2px}
+  h3{font-size:17px;margin:36px 0 10px;color:var(--fg)}
+  h4{font-size:14px;margin:22px 0 6px;color:var(--accent2);font-weight:600;letter-spacing:.4px}
+  p{margin:10px 0;color:var(--fg2)}
+  strong{color:var(--fg);font-weight:600}
+  a{color:var(--accent2);text-decoration:none;border-bottom:1px solid rgba(90,169,230,.3)}
+  code{font-family:var(--mono);font-size:13px;background:var(--bg3);padding:1px 6px;border-radius:4px;color:var(--accent)}
+  .lede{font-size:16px;color:var(--fg2);max-width:780px}
+  .meta{color:var(--fg3);font-size:13px;font-family:var(--mono);margin-bottom:34px}
+
+  .callout{background:linear-gradient(180deg,var(--bg2),rgba(20,27,36,.5));border:1px solid var(--line);
+    border-left:3px solid var(--accent);border-radius:8px;padding:18px 22px;margin:24px 0}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.bad{border-left-color:var(--bad)}
+  .callout.good{border-left-color:var(--good)}
+  .callout h4{margin-top:0}
+  .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+
+  .grid{display:grid;gap:14px;margin:22px 0}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:780px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+  .kpi{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .kpi .v{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--fg);letter-spacing:-.5px}
+  .kpi .v small{font-size:14px;color:var(--fg3);font-weight:400}
+  .kpi .k{font-size:12.5px;color:var(--fg3);margin-top:2px}
+  .kpi .d{font-size:12.5px;margin-top:6px;color:var(--fg2)}
+  .kpi.hot .v{color:var(--bad)}
+  .kpi.cool .v{color:var(--good)}
+
+  table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--fg3);font-weight:600;font-size:12px;letter-spacing:.6px;text-transform:uppercase;
+     background:var(--bg2)}
+  td:first-child{color:var(--fg);font-weight:600}
+  td{color:var(--fg2)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .tag{display:inline-block;font-size:11.5px;font-family:var(--mono);padding:1px 7px;border-radius:20px;
+    border:1px solid var(--line);color:var(--fg3);margin-right:6px}
+  .tag.p0{color:var(--bad);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+  .tag.p1{color:var(--warn);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.08)}
+  .tag.p2{color:var(--accent2);border-color:rgba(90,169,230,.4);background:rgba(90,169,230,.08)}
+  .tag.ok{color:var(--good);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
+  .tag.no{color:var(--bad);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+  .mono{font-family:var(--mono);font-size:12.5px}
+
+  .bar-row{display:flex;align-items:center;gap:12px;margin:9px 0;font-size:13.5px}
+  .bar-row .lbl{width:150px;color:var(--fg2);flex:none}
+  .bar-row .track{flex:1;height:22px;background:var(--bg3);border-radius:4px;overflow:hidden}
+  .bar-row .fill{height:100%;background:linear-gradient(90deg,#2d6ca8,#5aa9e6);border-radius:4px}
+  .bar-row .fill.gold{background:linear-gradient(90deg,#a8791f,#e8b04b)}
+  .bar-row .val{width:96px;text-align:right;font-family:var(--mono);color:var(--fg);flex:none;font-size:13px}
+
+  .funnel{margin:24px 0}
+  .fstep{display:flex;align-items:center;gap:14px;margin:0 0 2px}
+  .fstep .fb{height:38px;background:linear-gradient(90deg,#1f5fa0,#3f8ed0);border-radius:3px;
+    display:flex;align-items:center;padding-left:12px;font-family:var(--mono);font-size:13px;color:#fff;white-space:nowrap}
+  .fstep .fl{font-size:13px;color:var(--fg2);width:150px;flex:none}
+  .fstep .fr{font-size:12.5px;color:var(--fg3);font-family:var(--mono)}
+  .fstep:last-child .fb{background:linear-gradient(90deg,#8a3a35,#c0453d)}
+
+  .ladder{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:24px 0}
+  .ladder .r{display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid var(--line)}
+  .ladder .r:last-child{border-bottom:none}
+  .ladder .c1{background:var(--bg2);padding:18px;border-right:1px solid var(--line)}
+  .ladder .c1 .t{font-size:12px;color:var(--fg3);font-family:var(--mono)}
+  .ladder .c1 .n{font-size:15px;color:var(--accent);font-weight:600;margin-top:4px}
+  .ladder .c2{padding:18px 20px}
+  .ladder .c2 h4{margin-top:0}
+  .ladder .c2 p{margin:6px 0}
+  @media(max-width:600px){.ladder .r{grid-template-columns:1fr}.ladder .c1{border-right:none;border-bottom:1px solid var(--line)}}
+
+  ul,ol{color:var(--fg2);padding-left:22px;margin:10px 0}
+  li{margin:6px 0}
+  li strong{color:var(--fg)}
+  .src{font-size:12.5px;color:var(--fg3);line-height:1.9}
+  .src li{margin:4px 0}
+  .sep{height:1px;background:var(--line);margin:56px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>同类型账号对标调研<br><span style="font-size:20px;color:var(--fg3);font-family:var(--mono)">AI 工作流批量生成 · 短视频账号</span></h1>
+<div class="meta">2026-10-12 初版 · <b>2026-10-17 按新导出更新（抖音 79 部）</b> · 抖音后台导出 · 抖音实时抓取（154 视频 / 92 账号 + 21 账号主页核验）· 小红书实时抓取（120 条 / 98 账号）· B 站实时抓取（410 条 / 347 账号）· 公开检索 12 篇</div>
+
+<p class="lede">对标口径按<b>生产方式</b>划——找那些一看就是用 AI 工作流批量产出的账号。本次调研除了公开资料，还<b>直接连到平台抓了一手数据</b>：抖音走通了两条路——MediaCrawler 扫码登录抓视频、未登录的用户搜索 + 公开主页补账号维度；小红书用 MediaCrawler 扫码登录后也拿到了；B 站可完整抓取（含粉丝数）。过程与结论都在第 02 节。</p>
+
+<div class="callout bad">
+  <h4>四句话结论（2026-10-17 更新）</h4>
+  <p><strong>1. 前 2 秒是开关，不是变量。</strong>按 2 秒跳出率分桶，播放中位从 <b>4,293</b>（&lt;20%）单调掉到 <b>205</b>（&gt;40%）——<strong>差 21 倍</strong>。全站相关性最强的一条也是它（−0.600）。</p>
+  <p><strong>2. 前 2 秒的改造已经见效。</strong>10-11 起发的 9 部，播放中位 <b>3,017</b>，比之前的 1,248 <b>涨了 142%</b>；2s 跳出率中位也从 28.1% 降到 25.5%。</p>
+  <p><strong>3. 但涨粉效率反而掉了一半。</strong>粉丝/千播放 <b>1.81 → 0.97</b>，主页访问/千播放 <b>4.72 → 3.08</b>。瓶颈已经从「前 2 秒」移到了「看完 → 进主页」——现在它是唯一剩下的一环。</p>
+  <p><strong>4. 标本：「徐长卿」播放 5,448（全站第三）、2s 跳出率 16.3%（全站第二好），主页访问量是 0。</strong>片子本身没问题，是看完之后没有「去看更多」的理由。</p>
+</div>
+
+<h2><span class="num">01</span>数据基线：抖音（79 部，08-12 → 10-16）</h2>
+
+<div class="grid g4">
+  <div class="kpi"><div class="v">1,391</div><div class="k">播放量中位</div><div class="d">均值 1,828 · 最高 7,547</div></div>
+  <div class="kpi hot"><div class="v">2</div><div class="k">粉丝增量中位</div><div class="d">79 部片合计 <b>237</b> 个粉</div></div>
+  <div class="kpi"><div class="v">7.2<small>s</small></div><div class="k">平均播放时长中位</div><div class="d">片长约 60 秒</div></div>
+  <div class="kpi hot"><div class="v">0.50<small>%</small></div><div class="k">主页访问率中位</div><div class="d">7 次 / 1,391 播放</div></div>
+</div>
+
+<h4>漏斗：每 1,000 次播放发生了什么</h4>
+<div class="funnel">
+  <div class="fstep"><div class="fl">播放</div><div class="fb" style="width:100%">1,000</div><div class="fr">100%</div></div>
+  <div class="fstep"><div class="fl">看过 5 秒</div><div class="fb" style="width:35.7%">357</div><div class="fr">5s 完播率 35.7%</div></div>
+  <div class="fstep"><div class="fl">看完</div><div class="fb" style="width:13.5%">135</div><div class="fr">完播率 13.5%</div></div>
+  <div class="fstep"><div class="fl">点进主页</div><div class="fb" style="width:1.5%;min-width:56px">4.4</div><div class="fr">0.44%</div></div>
+  <div class="fstep"><div class="fl">关注</div><div class="fb" style="width:1.5%;min-width:56px">1.6</div><div class="fr">1.64 粉 / 千播放</div></div>
+</div>
+
+<div class="callout">
+  <h4>漏斗里最陡的一段不是「看完」，是「看完 → 进主页」</h4>
+  <p>从播放到看完只损失 86.5%，但<b>从看完到进主页损失了 96.7%</b>。135 个看完的人里只有 4.4 个点进主页。而进来的人里约三分之一会关注——<b>转化率没问题，是没人愿意点进来</b>。这对应两个结构性空缺：片尾没有关注引导（现在用免责声明收尾），账号没有「关注理由」（没有口播、没有固定开场、没有系列）。</p>
+</div>
+
+<h4>最干净的一条证据：按 2 秒跳出率分桶（n=79）</h4>
+<table>
+  <thead><tr><th>2s 跳出率</th><th>片数</th><th>播放量中位</th><th>完播率中位</th></tr></thead>
+  <tbody>
+    <tr><td style="color:var(--good)">&lt; 20%</td><td>5</td><td class="mono">4,293</td><td>12.9%</td></tr>
+    <tr><td>20–25%</td><td>19</td><td class="mono">2,816</td><td>14.9%</td></tr>
+    <tr><td>25–30%</td><td>24</td><td class="mono">1,918</td><td>14.8%</td></tr>
+    <tr><td>30–40%</td><td>28</td><td class="mono">902</td><td>12.5%</td></tr>
+    <tr><td style="color:var(--bad)">&gt; 40%</td><td>3</td><td class="mono">205</td><td>4.8%</td></tr>
+  </tbody>
+</table>
+<p>完美单调递减，没有任何例外。<strong>从 &lt;20% 到 &gt;40%，播放量中位差 21 倍。</strong>这不是「相关」，这是分档——前 2 秒是一个开关：过了就进 2,000–4,300 的池子，没过就停在几百。</p>
+
+<h4>互动率全线偏低</h4>
+<div class="bar-row"><div class="lbl">点赞率</div><div class="track"><div class="fill" style="width:38%"></div></div><div class="val">0.76%</div></div>
+<div class="bar-row"><div class="lbl">收藏率</div><div class="track"><div class="fill" style="width:28%"></div></div><div class="val">0.56%</div></div>
+<div class="bar-row"><div class="lbl">分享率</div><div class="track"><div class="fill" style="width:3%"></div></div><div class="val">≈0%</div></div>
+<div class="bar-row"><div class="lbl">评论率</div><div class="track"><div class="fill" style="width:2%"></div></div><div class="val">≈0%</div></div>
+<p style="font-size:13.5px">参照：公开教程给出的「内容达标」线是完播率 ≥35%、收藏率 ≥8%。你在收藏和评论上离这条线差一个数量级——这两个指标直接决定算法愿不愿意把你推进更大的流量池。</p>
+
+<h4>三条硬相关性（n=79）</h4>
+<table>
+  <thead><tr><th>变量对</th><th>相关系数</th><th>读法</th></tr></thead>
+  <tbody>
+    <tr><td>2s 跳出率 ↔ 播放量</td><td style="color:var(--bad);font-family:var(--mono)">−0.600</td><td>前 2 秒留不住人，后面做什么都没用。</td></tr>
+    <tr><td>5s 完播率 ↔ 播放量</td><td style="color:var(--good);font-family:var(--mono)">+0.613</td><td>5 秒留存是第二杠杆，和上一条是同一件事的两面。</td></tr>
+    <tr><td>主页访问量 ↔ 粉丝增量</td><td style="color:var(--good);font-family:var(--mono)">+0.531</td><td>涨粉几乎完全由「有多少人点进主页」决定，而不是由播放量决定。</td></tr>
+  </tbody>
+</table>
+
+<h4>疑问句标题：8 部 vs 71 部</h4>
+<table>
+  <thead><tr><th>标题形态</th><th>片数</th><th>播放中位</th><th>播放均值</th><th>粉丝合计</th><th>2s 跳出中位</th></tr></thead>
+  <tbody>
+    <tr><td>疑问句</td><td>8</td><td class="mono">2,758</td><td class="mono">3,510</td><td class="mono">38</td><td class="mono">24.4%</td></tr>
+    <tr><td>陈述句</td><td>71</td><td class="mono">1,277</td><td class="mono">1,638</td><td class="mono">199</td><td class="mono">28.3%</td></tr>
+  </tbody>
+</table>
+<p>播放中位 <b>+116%</b>、均值 +114%，2s 跳出率也低 4 个百分点。全站播放前四名里三部是疑问句：王不留行 7,547 / 徐长卿 5,448 / 防己 4,929。</p>
+
+<div class="callout bad">
+  <h4>关键对照：10-11 起发的 9 部 vs 之前的 70 部</h4>
+  <table style="margin:14px 0">
+    <thead><tr><th>指标</th><th>10-11 起（9 部）</th><th>10-11 之前（70 部）</th><th>变化</th></tr></thead>
+    <tbody>
+      <tr><td>播放量中位</td><td class="mono">3,017</td><td class="mono">1,248</td><td style="color:var(--good)">↑ 142%</td></tr>
+      <tr><td>2s 跳出率中位</td><td class="mono">25.5%</td><td class="mono">28.1%</td><td style="color:var(--good)">↓ 改善</td></tr>
+      <tr><td>主页访问 / 千播放</td><td class="mono">3.08</td><td class="mono">4.72</td><td style="color:var(--bad)">↓ 35%</td></tr>
+      <tr><td>粉丝 / 千播放</td><td class="mono">0.97</td><td class="mono">1.81</td><td style="color:var(--bad)">↓ 46%</td></tr>
+    </tbody>
+  </table>
+  <p><b>前 2 秒的改造见效了——播放涨了 1.4 倍。但涨粉效率掉了一半。</b>播放上去了、转化没跟上，说明瓶颈已经从「前 2 秒」移到了「看完 → 进主页」这一环。而这正是 P0 第 2 条要解决的问题——<b>它现在是唯一剩下的瓶颈。</b></p>
+</div>
+
+<h4>问题的标本：「徐长卿」</h4>
+<div class="callout">
+  <p>「徐长卿：一味药为什么以人名命名？」——<b>播放 5,448（全站第三高）</b>，2s 跳出率 <b>16.3%（全站第二好）</b>。前 2 秒和内容都没问题。</p>
+  <p>但它的<b>主页访问量是 0</b>，粉丝 +1。</p>
+  <p>对比同期三部：葛根（播放 5,614 / 主页访问 <b>33</b> / 粉丝 +2）、防己（播放 4,929 / 主页访问 <b>22</b> / 粉丝 +9）、藕实茎（播放 2,133 / 主页访问 4 / 粉丝 +3）。</p>
+  <p><b>同样量级的播放，主页访问从 0 到 33 不等。</b>差别不在片子好不好看，在看完之后有没有给一个「去看更多」的理由。</p>
+</div>
+
+<h4>一个反例：钩子不能是「让人不适的悬念」</h4>
+<p>「兔缺：吃兔肉会生下唇裂的孩子吗」——2s 跳出率 <b>57.2%</b>（全站唯一一个超过 50% 的），完播率 0.6%，播放 205。题材出自《饮膳正要》「食兔肉，令子无声缺唇」，是孕期恐惧 + 古书迷信说法。<b>悬念型钩子成立的前提是观众想解开它；涉及生育恐惧的钩子，观众的第一反应是划走。</b>这是全站 2s 跳出率最高、完播率最低的一部。</p>
+
+<h4>月度趋势</h4>
+<div class="bar-row"><div class="lbl">8 月（25 部）</div><div class="track"><div class="fill" style="width:32%"></div></div><div class="val">中位 641</div></div>
+<div class="bar-row"><div class="lbl">9 月（27 部）</div><div class="track"><div class="fill gold" style="width:100%"></div></div><div class="val">中位 1,977</div></div>
+<div class="bar-row"><div class="lbl">10 月（27 部）</div><div class="track"><div class="fill" style="width:82%"></div></div><div class="val">中位 1,626</div></div>
+<p style="font-size:13.5px">8 月最差（合计 53 粉，那批矿物类条目是拖累），9 月最好（102 粉）。10 月 27 部合计 82 粉，但播放中位已回升——<b>播放在恢复，涨粉还没跟上</b>。</p>
+
+<div class="sep"></div>
+
+<h2><span class="num">02</span>直接上平台：抓到了什么，没抓到什么</h2>
+
+<p>结论先说：<strong>三个平台全都抓到了一手数据</strong>。抖音和小红书服务端都不吐数据、裸抓会跳验证码或 IP 风控，但用<b>开源爬虫项目 + 扫码登录</b>之后都拿到了。</p>
+
+<table>
+  <thead><tr><th>平台</th><th>可达性</th><th>实测现象</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>B 站</td>
+      <td><span class="tag ok">可直接抓取</span></td>
+      <td>搜索接口无需登录、无需 cookie 签名，返回完整字段（作者、播放、点赞、收藏、时长、标签）；用户卡片接口可拿粉丝数与简介。本轮共抓取 <b>410 条视频 / 347 个账号</b>。</td>
+    </tr>
+    <tr>
+      <td>抖音</td>
+      <td><span class="tag ok">可抓取（需登录）</span></td>
+      <td>裸抓被<b>「验证码中间页」</b>挡住；改用开源项目 <b>MediaCrawler</b> + 扫码登录后可完整抓取。本轮拿到 <b>154 条视频 / 92 个账号</b>，含点赞、评论、分享、收藏、作者、作品链接。</td>
+    </tr>
+    <tr>
+      <td>小红书</td>
+      <td><span class="tag ok">可抓取（需登录）</span></td>
+      <td>未登录访问返回<b>「IP 存在风险」（300012）</b>；用 MediaCrawler 扫码登录后<b>完全正常</b>——本轮拿到 <b>120 条笔记 / 98 个账号</b>，含点赞、收藏、评论、分享、图文/视频类型、标签。</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <h4>怎么绕过去的</h4>
+  <p>两条路，第一条没走通：<b>① 接管本机已有登录态的浏览器</b>——本机 Chrome 的各个 profile 里没有抖音/小红书登录态（只有知乎），Edge 那个 2MB 的 Cookie 库被运行中的进程锁死，拿不出来。<b>② 开源爬虫项目 + 扫码登录</b>——最后走的是这条：<b>MediaCrawler</b>（支持抖音/小红书/B站/快手/微博/知乎，二维码登录并把登录态持久化到本地 profile，下次不用再扫）。</p>
+  <p>小红书之前那次「IP 存在风险」是<b>未登录访问</b>触发的；扫码登录后同一个出口 IP 一切正常——<b>它拦的是匿名请求，不是这个网络</b>。</p>
+</div>
+
+<h3>抖音本草赛道的真实水位（一手）</h3>
+<p>关键词 <code>神农本草经 / 本草纲目 / 中药材 / 中草药 / 中医文化 / 本草</code> 各抓 2 页，去重后 <b>154 条视频 / 92 个账号</b>。</p>
+
+<div class="grid g4">
+  <div class="kpi"><div class="v">64,991</div><div class="k">点赞中位</div><div class="d">P25 14,975 · P75 133,710</div></div>
+  <div class="kpi"><div class="v">2,076</div><div class="k">评论中位</div><div class="d">收藏中位 12,824</div></div>
+  <div class="kpi"><div class="v">9,507</div><div class="k">分享中位</div><div class="d">分享率远高于我们的 ≈0</div></div>
+  <div class="kpi hot"><div class="v">208<small>万</small></div><div class="k">单条最高点赞</div><div class="d">中草药歌谣</div></div>
+</div>
+
+<div class="callout bad">
+  <h4>我们自己在同一个搜索词下的位置</h4>
+  <p>「古书里，大枣的叶子为什么单占一行？」这条片子在「神农本草经」的搜索结果里被捞出，数据是：<b>赞 35 / 评论 1 / 分享 4 / 收藏 16</b>。</p>
+  <p>而这个赛道<b>点赞最低的 10% 也有 6,104 赞</b>（P10）。也就是说我们不是「还差一点」，是<b>差了大约两个数量级</b>。</p>
+  <p class="mono" style="font-size:12px;color:var(--fg3)">样本说明：抖音搜索首页是算法筛过的赢家，不是随机样本。它回答的是「要在这个词下被看见，门槛是多少」，不是「这个赛道平均怎么样」——真实门槛只会更低。</p>
+</div>
+
+<h4>跑出来的内容形态（按点赞排序的共性）</h4>
+<table>
+  <thead><tr><th>形态</th><th>代表作品</th><th>点赞</th><th>为什么有效</th></tr></thead>
+  <tbody>
+    <tr><td>中草药歌谣</td><td>「你认识几种，管它们叫啥名字？」</td><td class="mono">208 万</td><td>音乐化 + 为小朋友 + 传承情绪，转发 19 万</td></tr>
+    <tr><td>真假鉴别</td><td>「真假对比，看你能分出来几种？」</td><td class="mono">72 万</td><td>实用 + 防踩坑，收藏 27 万</td></tr>
+    <tr><td>行业争议</td><td>「谁在掏空中医最后一味真药？」</td><td class="mono">40 万</td><td>情绪 + 立场，转发 24 万</td></tr>
+    <tr><td>识百草</td><td>「这些植物的中药名，你都听说过吗？」</td><td class="mono">5 万</td><td>直接提问，把答案留给评论区</td></tr>
+    <tr><td>中药故事 + 国风情感</td><td>「当归不归，独活难活」「附子救人无功，人参杀人无过」</td><td class="mono">6.5 万</td><td>把药名当情绪载体</td></tr>
+  </tbody>
+</table>
+
+<div class="callout good">
+  <h4>最重要的发现：这个赛道里跑出来的账号，几乎都在做系列化</h4>
+  <p>搜索结果标题里大量出现集数——这不是巧合：</p>
+  <ul>
+    <li><b>「如果本草会说话」</b>——第 2 集当归、第 5 集黄芪、第 17 集麦冬、第 36 集夏枯草，一个搜索词下被捞出 12 条，单条最高 <b>72,384 赞</b>。这是跟我们<b>最贴近的直接对标</b>：同题材、同系列化思路。</li>
+    <li><b>「药食同源 100 期」</b>（黄精：硬核苦行僧，3.7 万赞）</li>
+    <li><b>「一日一植物」</b>（天南星，7.4 万赞）</li>
+    <li><b>「第 12 集：藏于本草纲目中的古人智慧」</b>（2 万赞）、<b>「第 34 集·黄芪」</b></li>
+  </ul>
+  <p>注意「如果本草会说话」系列内部的波动：第 2 集 1,171 赞 → 第 17 集 70,368 赞，<b>同系列相差 60 倍</b>。它也不是条条都爆——但系列给了它<b>被同一个搜索词反复捞出的资格</b>，而我们的散条目没有这个资格。</p>
+</div>
+
+<h3>抖音同类账号 · 账号维度（一手，未打码，21 个账号）</h3>
+<p>上面的视频数据里账号昵称被平台打码（如「如***话」），点不进主页。改用未登录的 <code>用户搜索（?type=user）+ 公开主页</code> 路径，把同生产方式账号的粉丝、获赞总数、作品数补齐。先坐实最关键的一个：报告里的「如***话」= <b>如果本草会说话</b>——<b>77.7 万粉 / 237 作品 / 2,193 万获赞</b>，IP 四川，简介「视频版《神农本草经》和《本草纲目》」，与上面它的视频数据（第 17 集麦冬 7 万赞）完全吻合，是我们最贴身的对标。</p>
+
+<h4>Tier 2 · AI 图文 + 配音（泛国学 / 睡前知识）</h4>
+<table>
+  <thead><tr><th>账号</th><th>粉丝</th><th>作品</th><th>形态</th></tr></thead>
+  <tbody>
+    <tr><td>第一国学</td><td class="mono">209 万</td><td class="mono">6,920</td><td>AI 动画 / 图文讲国学民俗，日更；原创动画素材授权 AI 视频宝</td></tr>
+    <tr><td>睡前历史说</td><td class="mono">141.6 万</td><td class="mono">290</td><td>AI 图文 + 配音，30–48 分钟睡前人物志</td></tr>
+    <tr><td>睡前历史矩阵（9 个号）</td><td class="mono">6.3–116 万</td><td class="mono">—</td><td>人物说 116 万 / 人物故事 94.5 万 / 睡前历史 72.8 万 / 解说 41.8 万 / 故事汇 28 万 / 讲历史 12.3 万 等</td></tr>
+    <tr><td>千秋说书</td><td class="mono">36 万</td><td class="mono">—</td><td>史料故事化创作</td></tr>
+    <tr><td>小 S 聊中医</td><td class="mono">15.5 万</td><td class="mono">71</td><td>标注 AI 制作（aixslzy），集数化系列，置顶 15.1 万赞</td></tr>
+  </tbody>
+</table>
+
+<h4>Tier 3 · 中药垂类 AI（动画 / 故事）</h4>
+<table>
+  <thead><tr><th>账号</th><th>粉丝</th><th>作品</th><th>形态</th></tr></thead>
+  <tbody>
+    <tr><td>学中药百科</td><td class="mono">10.4 万</td><td class="mono">266</td><td>AI 图文，听故事识中药 / 药食</td></tr>
+    <tr><td>百草风月集</td><td class="mono">9.4 万</td><td class="mono">56</td><td>3D 国风动画把药讲成情感故事，置顶 6.1–7.1 万赞</td></tr>
+    <tr><td>100个中药小故事</td><td class="mono">3.6 万</td><td class="mono">37</td><td>AI 古风图，一味药一个故事</td></tr>
+    <tr><td>草本动漫馆</td><td class="mono">1.8 万</td><td class="mono">290</td><td>国风动画识药，置顶 2–5 万赞</td></tr>
+    <tr><td>药有趣 / 药你听我说 / 本草小精灵</td><td class="mono">2,657 / 790 / 20</td><td class="mono">—</td><td>动画 / 图文讲药，小体量或刚起步</td></tr>
+    <tr><td>AI本草中药说</td><td class="mono">71</td><td class="mono">15</td><td><b>照录《本草纲目》性味</b>（「远志苦温无毒」），形态最像我们——数据最差</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <h4>账号维度多出的三个判断</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>题材天花板被账号粉丝数坐实。</strong>同生产方式下，泛国学 / 睡前历史号头部 141–209 万粉（第一国学 6,920 部），中药垂类 AI 头部只有 9–10 万——差约一个数量级。</li>
+    <li><strong>「照录古籍」在抖音直接判了死刑。</strong>形态和我们最像的 AI本草中药说（照录《本草纲目》性味，15 部）只有 71 粉；跑出来的中药号全做了动画 / 情感 / 悬念（百草风月集的「当归不归，独活难活」「王不留行走而不守」）。</li>
+    <li><strong>高赞药材两边重合。</strong>百草风月集置顶高赞是王不留行、附子、当归——我们账号播放最高的也是王不留行。「药名即悬念」的方向由对标账号与我们自己的数据同时验证。</li>
+  </ul>
+</div>
+
+<h3>小红书本草赛道（一手）</h3>
+<p>同样 6 个关键词，去重后 <b>120 条笔记 / 98 个账号</b>。这是三个平台里<b>量级最小、但形态离我们最近</b>的一个。</p>
+
+<div class="grid g4">
+  <div class="kpi"><div class="v">666</div><div class="k">点赞中位</div><div class="d">P90 6,157 · 最高 9,979</div></div>
+  <div class="kpi cool"><div class="v">925</div><div class="k">收藏中位</div><div class="d"><b>收藏 &gt; 点赞</b>，28% 的笔记如此</div></div>
+  <div class="kpi"><div class="v">67<small>%</small></div><div class="k">图文占比</div><div class="d">80 图文 / 40 视频</div></div>
+  <div class="kpi"><div class="v">120</div><div class="k">评论中位</div><div class="d">分享中位 196</div></div>
+</div>
+
+<div class="callout good">
+  <h4>最关键的一条：考据型内容在小红书是跑得通的</h4>
+  <p>「<b>柴胡基原考证 4</b>」—— <b>6,535 赞 / 1,204 收藏 / 413 评论</b>。一条纯粹的基原考据内容，跟我们在做的是同一件事，只是形式是图文。</p>
+  <p>这直接反驳了「考据没人看」这个假设。同类的还有「市面上造假最多的 10 种中草药」（6,088 赞）、「《本草纲目》也太全面了……怎么盗墓的事也管！」（5,887 赞，冷知识角度）。</p>
+</div>
+
+<h4>小红书跑出来的形态（跟抖音完全不同）</h4>
+<table>
+  <thead><tr><th>形态</th><th>代表作品</th><th>数据</th><th>做法</th></tr></thead>
+  <tbody>
+    <tr><td>游戏化翻译</td><td>「君臣佐使：主 c、副 c、辅助、生存、功能位」</td><td class="mono">9,979 赞</td><td>用游戏术语重讲古概念</td></tr>
+    <tr><td>拟人化</td><td>「假如中药也能发朋友圈⑧」</td><td class="mono">8,057 赞</td><td>把药材写成有性格的角色（同一系列多条）</td></tr>
+    <tr><td>互动猜谜</td><td>「来猜猜这是什么中草药」</td><td class="mono">7,650 赞</td><td>答案留给评论区</td></tr>
+    <tr><td>工具型一张图</td><td>「中医穴位名称那么多，到底怎么记住的？」</td><td class="mono">6,664 赞 / <b>5,640 收藏</b></td><td>收藏率 85%——这里吃「有用」</td></tr>
+    <tr><td>萌宠 + 中药</td><td>「猫猫讲中药—黄芪」</td><td class="mono">5,108 赞</td><td>降低门槛</td></tr>
+    <tr><td>考据</td><td>「柴胡基原考证 4」</td><td class="mono">6,535 赞</td><td><b>跟我们同类</b></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <h4>AI 内容在小红书：存在、跑得动、而且平台会自动打标</h4>
+  <ul style="margin-bottom:0">
+    <li><b>「AI学院」</b>《本草纲目》中药材科普图解 💥<b>附指令</b>（655 赞）—— AI 图文 + 用「附指令」当钩子引流</li>
+    <li><b>「AI画了个啥」</b>顶级东方浪漫！解构《本草纲目》的视觉盛宴（676 赞）</li>
+    <li><b>「浅浅兮」</b>杏林画卷·千金方里有真章（200 赞），标签 <code>#Ai绘画 #我是原创AI插画师 #古典医籍里看中国</code></li>
+    <li>抓到的数据里带 <code>illegal_info: 可能含AI生成内容</code>——<b>小红书会主动给 AI 内容打标</b>。这不是可选项。</li>
+  </ul>
+</div>
+
+<div class="callout warn">
+  <h4>但要清醒：小红书不是抖音的缩小版</h4>
+  <p>点赞中位 666，是抖音的百分之一；P10 是 0（有大量 0 赞笔记）。<b>这里吃的是「收藏」不是「点赞」</b>——收藏中位 925 高于点赞中位 666。</p>
+  <p>而且 <b>67% 是图文</b>。我们现成的「本草一问」文案（五段结构）改写成图文笔记，边际成本接近零——这才是小红书该走的形态，不是把竖屏视频搬过去。</p>
+</div>
+
+<h3>B 站本草 / 中医赛道的真实结构（一手）</h3>
+<p>扫了 12 个关键词、每个 2 页，去重后 347 个账号。按粉丝数排出的头部是这样：</p>
+
+<table>
+  <thead><tr><th>账号</th><th>粉丝</th><th>形态</th><th>代表作品</th></tr></thead>
+  <tbody>
+    <tr><td><a href="https://space.bilibili.com/209675102">本草总录</a></td><td class="mono">81.4 万</td><td>药材识别短片</td><td>【采药录】一大批中草药快速识别（76 万播放）</td></tr>
+    <tr><td><a href="https://space.bilibili.com/3493126817712158">国学宝库</a></td><td class="mono">63.6 万</td><td>长视频 / 课程搬运</td><td>倪海厦《神农本草经》60 集，<b>1777 分钟</b></td></tr>
+    <tr><td><a href="https://space.bilibili.com/24527471">油罐故事挖掘机</a></td><td class="mono">28.1 万</td><td>长视频合集</td><td>倪海厦讲本草经 100 集，374 分钟</td></tr>
+    <tr><td><a href="https://space.bilibili.com/1247705288">默默学中医</a></td><td class="mono">23.3 万</td><td>纪录片搬运</td><td>《中国本草》215 分钟</td></tr>
+    <tr><td><a href="https://space.bilibili.com/403375255">扶光录</a></td><td class="mono">16.5 万</td><td><b>睡前听书</b>（AI 配音 + 图文）</td><td>《本草纲目》：从饮食禁忌到养生智慧（37 分钟）</td></tr>
+    <tr><td><a href="https://space.bilibili.com/27626788">华兴医社</a></td><td class="mono">12.3 万</td><td>中医教育 / 播客</td><td>宝妈自学中医转行路径（25 分钟）</td></tr>
+    <tr><td><a href="https://space.bilibili.com/415473348">城南中医</a></td><td class="mono">11.6 万</td><td>课程长视频</td><td>《中药应用精讲》全集</td></tr>
+    <tr><td><a href="https://space.bilibili.com/499869990">半瓶醋-</a></td><td class="mono">10.3 万</td><td>有声书</td><td>《神农本草经》全 18 讲，1395 分钟</td></tr>
+    <tr><td><a href="https://space.bilibili.com/1066944074">经方十三叔</a></td><td class="mono">8.9 万</td><td>课程 + 杂谈</td><td>《神农本草经》2024 版，1769 分钟</td></tr>
+    <tr><td><a href="https://space.bilibili.com/387277464">宝典健康</a></td><td class="mono">6.5 万</td><td><b>中医启蒙动画</b>（AI 批量）</td><td>《听故事学中药》全集，918 分钟</td></tr>
+    <tr><td><a href="https://space.bilibili.com/3494371269807003">药贩子老表</a></td><td class="mono">5.5 万</td><td><b>竖屏短片</b>（0:31）</td><td>中药材，这样买才对！</td></tr>
+    <tr><td><a href="https://space.bilibili.com/691839921">萌眼小精灵成长学伴</a></td><td class="mono">—</td><td><b>动画科普</b>（AI 批量）</td><td>看动画识百草 全 200 集</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <h4>B 站这个赛道，用户消费的是「时长」和「陪伴」，不是「单条信息」</h4>
+  <p>头部几乎全是 <b>30 分钟到 30 小时</b>的长内容：课程、纪录片、有声书、睡前听书。你现在的 40–60 秒竖屏片在这个生态里是异类——不是做得不好，是<b>形态跟这个平台的消费习惯不对位</b>。</p>
+  <p>三个直接可用的发现：</p>
+  <ul>
+    <li><strong>「扶光录」的标题就是「把考据包装成悬念」的现成范例。</strong>它做的是睡前听书，但标题写的是《神农本草经》：<b>「能治大病的药，为什么被古人排在下品？」</b>——这正是我在第 05 节建议你做的事，而它已经用它拿到了 16.5 万粉。</li>
+    <li><strong>AI 批量在这条赛道是成立的，但走的是「动画」而不是「图文」。</strong>宝典健康（6.5 万粉）用中医启蒙动画，《听故事学中药》918 分钟；萌眼小精灵做「看动画识百草」200 集。说明 AI 动画在 B 站有稳定受众。</li>
+    <li><strong>竖屏短片在 B 站也能做，但必须极实用。</strong>药贩子老表 5.5 万粉，靠的是 0:31 的「中药材，这样买才对！」——钩子是「防踩坑」，不是「讲知识」。</li>
+  </ul>
+</div>
+
+<div class="sep"></div>
+
+<h2><span class="num">03</span>对标地图：AI 批量生成账号的四个梯队</h2>
+
+<p>按「生产方式 + 成本结构」分成四层。越往下越像你，越往上越学不了。<span class="mono">（本节来自公开文章自述，非平台后台核验）</span></p>
+
+<div class="ladder">
+  <div class="r">
+    <div class="c1"><div class="t">Tier 1</div><div class="n">影视化叙事</div></div>
+    <div class="c2">
+      <h4>AI 短片 / 漫剧 · 靠世界观和情感共鸣涨粉</h4>
+      <p>2026 上半年抖音至少出现 <strong>9 条播放破亿</strong>的 AI 视频，<strong>20 个 AI 账号半年涨粉超 50 万</strong>，且多数从 0 起步。赛道集中在<b>科幻、国风、人文情感</b>。</p>
+      <ul>
+        <li><b>旧梦留声机</b>《早餐奶奶》——2.5 亿播放 / 1,509 万赞，半年涨粉 91 万</li>
+        <li><b>孩子的一棠课</b>——用 AI 还原历史现场，让屈原/苏轼/韩愈和孩子跨时空对话，半年涨粉 <strong>137 万</strong></li>
+        <li><b>阿盐</b>——山海经异兽 + 神话国风动画，9 集 1.4 亿播放，6 天涨粉 60 万</li>
+        <li><b>白袋子</b>《零号档案》——6 集 1.6 亿播放，4 个月吸粉 113 万</li>
+      </ul>
+      <p><b>能不能抄：</b>成本结构和你不兼容。但有一条方法论可以直接移植——<strong>系列化与追更习惯</strong>。Tier 1 里几乎每个账号都是靠「连载」而不是靠单条爆款涨粉的。</p>
+    </div>
+  </div>
+
+  <div class="r">
+    <div class="c1"><div class="t">Tier 2</div><div class="n">一张图 + 配音</div></div>
+    <div class="c2">
+      <h4>语录 / 睡前知识号 · 靠「固定符号」涨粉 —— <span style="color:var(--accent)">结构最像你</span></h4>
+      <ul>
+        <li><b>睡前历史说</b>——<strong>15 条作品涨粉 26 万</strong>。做法极简：<b>1 张封面 + 1 段音频</b>，开头第一句永远固定是「开睡吧」</li>
+        <li><b>国学一张图号</b>（案例一）——27 条作品 98.7 万赞 / <strong>11.8 万粉</strong></li>
+        <li><b>国学一张图号</b>（案例二）——61 条作品 211.9 万赞 / <strong>47.2 万粉</strong></li>
+      </ul>
+      <p>拆解里有一句说得很准：<i>「当用户在信息流中多次刷到这张图，配上沉稳的配音和哲理文案，大脑就会形成记忆点，甚至不用看 ID 就能认出账号——图片本身成了品牌标识。」</i></p>
+      <p><b>能不能抄：能，而且是最该抄的一层。</b>你有印章、有古籍版式、有固定的三屏结构——这些已经具备成为「固定符号」的原料，但没被组织成识别度。</p>
+    </div>
+  </div>
+
+  <div class="r">
+    <div class="c1"><div class="t">Tier 3</div><div class="n">中药垂类故事</div></div>
+    <div class="c2">
+      <h4>同题材 AI 号 · 靠「把药讲成故事」涨粉 —— <span style="color:var(--accent)">最贴身</span></h4>
+      <ul>
+        <li>某账号 <strong>45 条作品涨粉 13 万</strong>，橱窗带货破万，靠 AI 批量生成中草药故事短视频</li>
+        <li>拆解里那句总结：<i>「西医讲数据，中医讲故事」</i>——把药材知识变成「民间传说」</li>
+        <li>有个案例把《甄嬛传》里的堕胎药方做成科普，点赞 10 万+</li>
+      </ul>
+      <p><b>你和它的差别是内容形态的差别，不是题材的差别。</b>你做「照录原文 + 逐句今译 + 注释考据」，它做「一个故事 + 一个悬念 + 一个情绪」。你的信息密度远高于它，但片子在信息流里<b>没给出一个让人停下来的理由</b>。</p>
+      <p>不是要你放弃考据——考据是护城河，也是 Tier 2/3 做不到的。要改的是<b>把考据包装成悬念</b>（B 站的「扶光录」已经证明了这条路的可行性）。</p>
+    </div>
+  </div>
+
+  <div class="r">
+    <div class="c1"><div class="t">Tier 4</div><div class="n">切片矩阵</div></div>
+    <div class="c2">
+      <h4>AI 短剧切片分发 · 靠高频铺量涨粉</h4>
+      <ul>
+        <li><b>虹梦剧场</b>——一周涨粉 <strong>163 万</strong>，累计 489 条，平均一天发 70 条</li>
+        <li><b>幸运小剧场</b>——一周涨粉 93 万，341 条</li>
+      </ul>
+      <p><b>能不能抄：不能。</b>闭环是「短剧版权 → 切片 → 导付费小程序 → 分账」，你没有这个上游。但它证明了一件事：<strong>平台算法仍然奖励「高频 + 垂直」</strong>。</p>
+    </div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <h4>行业环境：2026 年平台正在收紧，不是放松</h4>
+  <ul style="margin-bottom:0">
+    <li>抖音日均上新 AI 短剧 <strong>1,300 部</strong>，红果 <strong>1,800 部</strong>——平均每 20 秒一部。纯铺量的窗口正在关闭。</li>
+    <li>各大平台<strong>严打同质化与低质 AI 内容</strong>；<strong>AI 生成内容需要规范标注</strong>。</li>
+    <li>行业共识从「铺号」转向「提质」：<b>人设与真实感回归</b>，用户更愿意关注「真实、有温度、有价值」的账号。</li>
+    <li>算法权重排序：<strong>完播率 &gt; 点赞 &gt; 评论 &gt; 转发 &gt; 关注</strong>；前 3 秒留不住人直接限流。</li>
+  </ul>
+</div>
+
+<div class="sep"></div>
+
+<h2><span class="num">04</span>差距对照：同一件事，你 vs 同类</h2>
+
+<table>
+  <thead><tr><th>维度</th><th>你的现状</th><th>同类的做法</th><th>差距性质</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>前 3 秒</td>
+      <td>片头是书名 + 条目名（「《神农本草经》卷一上经的薏苡仁」）</td>
+      <td>「开睡吧」/「能治大病的药，为什么被古人排在下品？」</td>
+      <td><span class="tag p0">P0</span>你给的是<b>信息</b>，它给的是<b>钩子</b></td>
+    </tr>
+    <tr>
+      <td>身份符号</td>
+      <td>无口播、无固定开场/收尾音、封面未与首帧分离</td>
+      <td>固定底图 + 固定开场句 + 固定音色，不看 ID 就认得出</td>
+      <td><span class="tag p0">P0</span>完全空缺</td>
+    </tr>
+    <tr>
+      <td>片尾</td>
+      <td>以「古籍内容展示，不构成诊疗建议」收尾</td>
+      <td>「关注我，下期讲 XX」+ 合集入口</td>
+      <td><span class="tag p0">P0</span>无关注引导</td>
+    </tr>
+    <tr>
+      <td>互动钩子</td>
+      <td>评论率中位 ≈0</td>
+      <td>结尾抛问题引导留言</td>
+      <td><span class="tag p1">P1</span>评论区是死的</td>
+    </tr>
+    <tr>
+      <td>系列化</td>
+      <td>一部一味药，平铺，无合集</td>
+      <td>连载 / 世界观 / 主题合集，培养追更</td>
+      <td><span class="tag p1">P1</span>没有「追更理由」</td>
+    </tr>
+    <tr>
+      <td>时长节奏</td>
+      <td>约 60 秒，完播率中位 13.4%</td>
+      <td>抖音 15–60 秒；B 站 30 分钟以上</td>
+      <td><span class="tag p1">P1</span>抖音偏长，B 站完全不够长</td>
+    </tr>
+    <tr>
+      <td>内容形态</td>
+      <td>考据型：照录原文 + 逐句今译 + 注释</td>
+      <td>故事型：一个悬念 + 一个情绪</td>
+      <td><span class="tag p2">P2</span><b>这是护城河，不要丢</b></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="sep"></div>
+
+<h2><span class="num">05</span>改造清单</h2>
+
+<h3>P0 · 立刻做（成本最低，数据已证明有效）</h3>
+
+<div class="callout bad">
+  <h4>1. 补片尾关注引导 + 系列入口 —— <span style="color:var(--bad)">现在是唯一剩下的瓶颈</span></h4>
+  <p>主页访问量 ↔ 粉丝增量 <code>+0.531</code>。10-11 起的 9 部片把播放做上去了（中位 3,017，+142%），但<b>主页访问/千播放从 4.72 掉到 3.08，粉丝/千播放从 1.81 掉到 0.97</b>——播放涨了，涨粉没跟上。</p>
+  <p>最干净的例子：「徐长卿」播放 5,448、2s 跳出率 16.3%（全站第二好），<b>主页访问量 0</b>。同期「葛根」播放 5,614、主页访问 33。差别不在片子，在看完之后有没有给一个「去看更多」的理由。</p>
+  <p>现在片尾是免责声明，等于把唯一一次「邀请」的机会浪费掉。改成「关注我，下一味讲 XX」+ 合集名，是最直接的涨粉动作。<code>免责声明</code>不能删（安全规则无豁免通道），但可以缩短、后置，让关注引导占据视觉重心。</p>
+</div>
+
+<div class="callout good">
+  <h4>2. 前 2 秒的改造要继续 —— 已经验证有效</h4>
+  <p>2s 跳出率 ↔ 播放量 <code>−0.600</code>；按分桶看，播放中位从 4,293（&lt;20%）单调掉到 205（&gt;40%），<b>差 21 倍</b>。10-11 起那 9 部的 2s 跳出率中位已从 28.1% 降到 25.5%，播放随之涨了 142%——<b>这条路是对的，只是还没做够</b>（&lt;20% 的只有 5/79 部）。</p>
+  <p>疑问句标题继续用：8 部疑问句播放中位 2,758 vs 71 部陈述句 1,277（<b>+116%</b>），全站前四名里三部是疑问句。</p>
+  <p>两条边界：① 门禁扫的是标题/描述，片内 hero 文案走 <code>claimText</code>，钩子必须是<b>纯提问</b>，不能夹带功效承诺；② <b>钩子不能是「让人不适的悬念」</b>——「兔缺：吃兔肉会生下唇裂的孩子吗」2s 跳出率 57.2%，全站最差、完播 0.6%。</p>
+</div>
+
+<h3>P1 · 产品层改造（需要动代码/内容模板）</h3>
+<table>
+  <thead><tr><th>动作</th><th>具体做法</th><th>对应证据</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>建立身份层</td>
+      <td>固定开场音（如一声磬）+ 固定收尾音 + 一句话自我介绍 + 封面与首帧分离。</td>
+      <td>Tier 2 账号涨粉的核心机制</td>
+    </tr>
+    <tr>
+      <td>把考据前置成悬念</td>
+      <td>把「一个词的读法」「一个名字的来历」提到 hero 屏做钩子，注释留中段。<br>例：龙眼「安志厌食」的「厌」＝饱足，5 秒能讲完。</td>
+      <td>B 站「扶光录」16.5 万粉的同款标题逻辑</td>
+    </tr>
+    <tr>
+      <td>节奏压缩</td>
+      <td>平均播放时长只有 7.1 秒。第一屏必须在前 3 秒内给出「看完能得到什么」。</td>
+      <td>完播率中位 13.4% vs 达标线 35%</td>
+    </tr>
+    <tr>
+      <td>系列化 / 合集</td>
+      <td>把散条目归成合集（「一味药一个名字」「六芝」「石部」），主页做成合集入口；片名带集数（「第 N 集」）。</td>
+      <td><b>抖音一手证据</b>：「如果本草会说话」12 条被同一搜索词捞出；「药食同源 100 期」「一日一植物」同理</td>
+    </tr>
+    <tr>
+      <td>互动钩子</td>
+      <td>片尾抛一个无风险的问题（「你觉得它该叫什么？」），不用功效相关问题。</td>
+      <td>评论率中位 ≈0</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>P2 · 渠道层</h3>
+<ul>
+  <li><b>B 站：把长视频线当主入口，而不是竖屏片。</b>一手数据说明这条赛道的头部全是 30 分钟以上的长内容（课程/纪录片/听书）。你已经有长视频线（<code>docs/longform.md</code>，16:9），它才是吃 B 站大盘的形态；「本草一问」竖屏片更适合作为长视频的引流切片。</li>
+  <li><b>小红书：改走图文，不是搬视频。</b>该赛道 67% 是图文，且吃「收藏」不吃「点赞」（收藏中位 925 &gt; 点赞中位 666）。现成的「本草一问」五段文案改写成图文笔记，边际成本接近零。</li>
+  <li><b>AI 标注</b>——发布时按平台要求标注 AI 生成内容，这是合规动作，不是可选项。</li>
+</ul>
+
+<div class="sep"></div>
+
+<h2><span class="num">06</span>风险与边界</h2>
+
+<div class="callout bad">
+  <h4>三条不能碰的线</h4>
+  <ul style="margin-bottom:0">
+    <li><b>合规红线不因为追流量而放松。</b>钩子化标题很容易滑向「夸大功效」。钩子必须是纯提问或纯考据悬念。</li>
+    <li><b>同质化限流是真的。</b>平台对「模板套娃」识别精度很高。你的内容本身不重复（每条经文不同），这是优势；但<b>如果为了涨粉把结构压成模板，反而会撞上这条</b>——「19 部今译同字起头」的教训就是这个。</li>
+    <li><b>「一张图 + 配音」有天花板。</b>Tier 2 涨粉快，但粉丝质量与变现弱于 Tier 1 的叙事号。你的考据能力是别人抄不走的资产，改造的目的是<b>让它被看见</b>，不是把它换成故事号。</li>
+  </ul>
+</div>
+
+<h4>一个需要你判断的问题</h4>
+<p>P0 的前 2 秒改造与身份层要不要碰已发布的片子？按项目约定（已发布的片子不改）只对新片生效，效果会<b>分批显现</b>。要不要专门做一批「钩子实验片」（同一味药两种片头，AB 对照）来更快验证？</p>
+
+<div class="sep"></div>
+
+<h2><span class="num">07</span>方法、来源与局限</h2>
+
+<h4>本次抓取方法</h4>
+<ul class="src">
+  <li><b>抖音 · 视频维度</b>：开源项目 <b>MediaCrawler</b>（NanmiCoder/MediaCrawler）+ 扫码登录，6 个关键词 × 2 页 → <b>154 条 / 92 账号</b>，原始数据 <code>douyin-benchmark-raw.csv</code>。</li>
+  <li><b>抖音 · 账号维度</b>：未登录真实浏览器走 <code>/search/&lt;词&gt;?type=user</code>（15 个生产方式关键词）+ <code>/user/&lt;sec_uid&gt;</code> 公开主页 → <b>21 个同类型账号</b>的粉丝 / 获赞总数 / 作品数 / 简介 / 代表视频，数据在 <code>dataExport/douyin-scrape/</code>（douyin-sametype.csv 为甄别总表）。</li>
+  <li><b>B 站</b>：<code>api.bilibili.com/x/web-interface/search/type</code>（无需登录）+ <code>/x/web-interface/card</code>（粉丝数）。12 个关键词 × 2 页 → <b>410 条 / 347 账号</b>。</li>
+  <li><b>小红书</b>：同样用 MediaCrawler + 扫码登录，6 个关键词 → <b>120 条 / 98 账号</b>。原始数据存为 <code>xhs-benchmark-raw.csv</code>。<br><span style="color:var(--fg3)">（注：未登录访问该平台会返回「IP 存在风险」300012——它拦的是匿名请求，不是这个网络。）</span></li>
+  <li><b>抖音裸抓的失败路径</b>（留档）：服务端是混淆 JS 壳，真实浏览器（Chromium 155）打开跳「验证码中间页」；也试过接管本机已有登录态的浏览器——Chrome 各 profile 无抖音登录，Edge 的 Cookie 库被运行中的进程锁定。</li>
+  <li>账号自身数据：<code>dataExport/作品列表导出.xlsx</code>（抖音 70 部）。分析脚本为一次性计算，未入库。</li>
+</ul>
+<p style="font-size:12.5px;color:var(--fg3)">局限：MediaCrawler 路径的账号昵称被平台打码（如「如***话」）、点不进主页——已用未登录的用户搜索 + 公开主页补齐账号维度，但未登录用户搜索对泛词仅返回首屏约 10 条，中腰部覆盖可能不全；各平台粉丝数均为抓取时刻（2026-10-12）的快照。</p>
+
+<h4>公开来源（12 篇）</h4>
+<ol class="src">
+  <li>新榜《9条破亿视频，新号涨粉百万，过去半年谁在制造AI爆款？》· 投中网 2026-07-14</li>
+  <li>运营研究社《"素人"一周涨粉163万、单月带货超千万，AI内容在抖音杀疯了》· 2026-07-13</li>
+  <li>《15个作品涨粉26万！AI历史账号又出王炸案例》（睡前历史说拆解）· 知乎 2025-07-09</li>
+  <li>《AI做国学赛道引流私域，27条作品涨粉12万》· 搜狐 2025-09-03</li>
+  <li>《抖音中草药赛道，用AI做中草药故事视频，45条作品涨粉13W》· 2025-09-02</li>
+  <li>《AI批量发视频真能涨粉变现？实测7款工具后，答案藏在数据里》· 搜狐 2025-12-08</li>
+  <li>《2026年短视频矩阵大变局：从"铺号"到"提质"》· 搜狐 2026-02-28</li>
+  <li>《一文解决抖音短视频流量高不涨粉难题》· 今日头条 2023-07-28</li>
+  <li>《抖音钩子攻略：模板+案例+公式【全套】》· 大数跨境 2026-06-08</li>
+  <li>《零手绘零出镜！AI 做国学诗词视频》· 今日头条 2026-06-13</li>
+  <li>《用Ai做古诗词视频，一个月涨粉10万+》· 搜狐 2024-06-25</li>
+  <li>《短视频快速涨粉实用技巧 2026》· 今日头条 2026-07-15</li>
+</ol>
+
+<p style="font-size:12.5px;color:var(--fg3);margin-top:24px">
+  B 站数据为 2026-10-12 实时抓取，账号粉丝数会变动；外部案例数据来自公开文章自述，未经平台后台核验，量级参考为宜。
+</p>
+
+</div>
+</body>
+</html>

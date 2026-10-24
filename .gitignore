@@ -26,3 +26,11 @@ remotion-video/.longform-work
 # Regenerable synthesis transcripts, same class as .topic-work / .ask-work.
 remotion-video/.voice-work
 remotion-video/.topic-work-en
+
+# 第三方语料，下载来考察过，**没有任何代码读它们**：合计约 7.7 GB / 3.2 万文件。
+# 不入库是体积原因，不是价值判断。产品语料只有 TCM-Ancient-Books-master/ 一处
+# （它入库，progress.json 与每一句 今译 都从它派生）；要引用这里某一部书之前，
+# 先把那部书挪进产品语料那条通道，而不是就地按路径读。
+chinese-poetry-master/
+daizhigev20-master/
+古籍藏书(12亿汉字)/
