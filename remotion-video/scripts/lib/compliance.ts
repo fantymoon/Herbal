@@ -40,13 +40,27 @@ export type Violation = {
    * Only `NEGOTIABLE_RULES` can ever appear here — a safety rule has no waiver path.
    */
   waived?: string;
+  /**
+   * Wording. `npm run check` prints these and never fails on them.
+   *
+   * A machine can prove a box overflows or that a 产地 is not in the 经文 it cites. It cannot
+   * prove a sentence reads as health advice, and the attempt is not neutral: when the 今译
+   * rule accepted exactly one five-character opener, all 19 films opened identically —
+   * safety bought with variety. Whether the 文案 is good is the author's call; the gate's
+   * job stops at the frame. So these findings stay visible (they are the record of what the
+   * film says) but they do not decide `ok` / `FAIL`, and no `deviations` entry is needed to
+   * silence them.
+   */
+  advisory?: true;
 };
 
 /** A finding that is reported but does not fail the run. */
 export const isWaived = (violation: Violation): boolean => violation.waived !== undefined;
+/** A wording finding: printed for the author, never a verdict. */
+export const isAdvisory = (violation: Violation): boolean => violation.advisory === true;
 /** Findings that do fail the run. */
 export const hardViolations = (violations: Violation[]): Violation[] =>
-  violations.filter((v) => !isWaived(v));
+  violations.filter((v) => !isWaived(v) && !isAdvisory(v));
 
 export const BANNED_THERAPEUTIC_WORDS = [
   "治疗",
@@ -224,7 +238,8 @@ export const applyDeviations = (content: FilmContent, violations: Violation[]): 
 /** Rules that live in the content module. */
 export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Violation[] => {
   const violations: Violation[] = [];
-  const add = (rule: string, detail: string) => violations.push({ rule, detail });
+  const add = (rule: string, detail: string, advisory = false) =>
+    violations.push(advisory ? { rule, detail, advisory: true } : { rule, detail });
 
   for (const field of unfinishedFields(content)) {
     add("unfinished", `${field} is still a TODO placeholder`);
@@ -240,13 +255,16 @@ export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Vi
   if (content.historicalNote.trim().length === 0) {
     add("commentary", "historicalNote is empty");
   } else {
-    // Three semantic requirements, not a fixed string — see `hasHistoricalFrame`.
+    // Three semantic requirements, not a fixed string — see `hasHistoricalFrame`. This is
+    // wording, so it is advisory: whether the note frames the claim is a reading, and the
+    // author does that reading.
     const missing = missingFrameParts(content.historicalNote);
     if (missing.length > 0) {
       add(
         "commentary",
         `historicalNote does not frame the claim as history — missing ${missing.join("; ")}. ` +
           `For example: "${REQUIRED_NOTE}"`,
+        true,
       );
     }
   }
@@ -258,6 +276,7 @@ export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Vi
       "efficacy-frame",
       `quotes 主…… but the 今译 never attributes it to the book — any of ` +
         `${FRAME_MARKERS.join(" / ")} + 主… would do, and the wording is yours to choose`,
+      true,
     );
   }
 
@@ -267,10 +286,15 @@ export const checkContent = (content: FilmContent, knownPhotos: Set<string>): Vi
   // form rather than a behaviour: under `reading: "copy"` two of the three never reach a
   // screen, while the `hook` and the closing `facts` — which always do — were scanned by
   // nobody. `claimText` is the blocks the renderer draws and did not copy out of the book.
+  //
+  // Advisory as of 2026-10-24. A word list catches the blunt cases and nothing else: the
+  // platform's own penalty was against a whole film reading as efficacy advice, which no
+  // list decides. The findings are still printed — a screen that literally says 「治疗」 is
+  // worth seeing before it goes up — but the author reads the copy, so the author decides.
   for (const line of claimText(content)) {
     const shown = line.length > 24 ? `${line.slice(0, 24)}…` : line;
     for (const word of claimWordingProblems(line)) {
-      add("banned-wording", `the screen shows 「${shown}」 containing "${word}"`);
+      add("banned-wording", `the screen shows 「${shown}」 containing "${word}"`, true);
     }
   }
 

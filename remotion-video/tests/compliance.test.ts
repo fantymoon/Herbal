@@ -196,17 +196,28 @@ test("a deviation with no reason waives nothing", () => {
   );
 });
 
-test("naming a safety rule does not soften the finding it names", () => {
-  // Belt and braces on top of the rule-name check: the waiver is applied by rule name,
-  // so a name that is not negotiable cannot mark anything, however it got declared.
+test("wording is a note: reported, never waivable, never a verdict", () => {
+  // Wording rules stopped being verdicts on 2026-10-24 — a word list cannot decide whether a
+  // sentence reads as health advice, and the 19-of-19 identical 今译 openers are what happens
+  // when a gate tries. What has to survive is the other half: `deviations` still cannot mark
+  // them, so a film cannot silence the note by naming the rule it broke.
   const broken: FilmContent = {
     ...compliantContent,
     translation: "主治心腹五种邪气，增益脾气。",
     deviations: [{ rule: "banned-wording", why: "想保留原文用字" }],
   };
-  const hard = rulesOf(hardViolations(checkNewFilm(compliantFilmFile, broken, knownPhotos)));
-  assert.ok(hard.includes("banned-wording"), "a banned claim is not a budget question");
-  assert.ok(hard.includes("efficacy-frame"), "and neither is the historical frame");
+  const findings = checkNewFilm(compliantFilmFile, broken, knownPhotos);
+  const wording = findings.filter((v) => v.rule === "banned-wording" || v.rule === "efficacy-frame");
+  assert.ok(wording.length > 0, "the wording is still reported");
+  assert.ok(
+    wording.every((v) => v.advisory === true),
+    "wording findings are notes, so they cannot fail a film",
+  );
+  assert.deepEqual(findings.filter(isWaived), [], "and no deviation can mark one waived");
+  assert.ok(
+    rulesOf(hardViolations(findings)).includes("deviation"),
+    "naming a non-negotiable rule is itself a finding",
+  );
 });
 
 test("the gate rejects an unfinished scaffold", () => {

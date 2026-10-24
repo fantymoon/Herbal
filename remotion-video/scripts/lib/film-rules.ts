@@ -88,10 +88,18 @@ export const ledgerProblems = (
   }
   const drift = translationDrift(content, copy);
   if (drift !== null) problems.push(`upload/films/${kebab}.md ${drift}`);
-  // The copy is what the platforms read, and it used to be the only prose in the repo that
-  // no rule looked at.
-  for (const problem of checkLedgerCopy(copy)) {
-    problems.push(`upload/films/${kebab}.md ${problem}`);
-  }
   return problems;
 };
+
+/**
+ * The upload copy, which is the part the platforms act on — the channel's penalty was applied
+ * against a title and a description, not a frame — and which used to be the only prose in the
+ * repo no rule looked at.
+ *
+ * A note rather than a finding since 2026-10-24. `checkLedgerCopy` is a word list, and a word
+ * list cannot tell whether a sentence reads as health advice; the platform's judgement was
+ * about a whole film's stance, which is the author's call to make and re-make. Printing it
+ * still costs nothing and puts the sentence in front of the person who writes the next one.
+ */
+export const ledgerCopyNotes = (kebab: string, copy: string): string[] =>
+  checkLedgerCopy(copy).map((problem) => `upload/films/${kebab}.md ${problem}`);

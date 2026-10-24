@@ -27,9 +27,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkNewFilm, hardViolations, isDraft, isWaived } from "./lib/compliance.ts";
+import { checkNewFilm, hardViolations, isAdvisory, isDraft, isWaived } from "./lib/compliance.ts";
 import { findEntries, readCorpus, type Sutra } from "./lib/corpus.ts";
-import { factProblems, ledgerProblems, musicProblems } from "./lib/film-rules.ts";
+import { factProblems, ledgerCopyNotes, ledgerProblems, musicProblems } from "./lib/film-rules.ts";
 import { isFrozen } from "./lib/frozen-films.ts";
 import { readFilmId, readKnownPhotos, toKebab } from "./lib/film-files.ts";
 import { loadContent } from "./lib/film-content.ts";
@@ -44,7 +44,6 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const finishedDir = path.join(repo, "src", "finished");
 const filmsDir = path.join(repo, "src", "films");
 const uploadDir = path.join(repo, "upload", "films");
-const outDir = path.join(repo, "out", "films");
 const corpusFile = path.join(repo, "..", "TCM-Ancient-Books-master", "000-神农本草经.txt");
 
 /**
@@ -106,20 +105,15 @@ for (const file of all) {
   const frozen = isFrozen(file);
   const ledgerPath = path.join(uploadDir, `${kebab}.md`);
   const copy = fs.existsSync(ledgerPath) ? fs.readFileSync(ledgerPath, "utf8") : null;
-  // What makes a film untouchable is that a platform has it. Two signals, and both are
-  // needed, because each covers what the other cannot see.
+  // What makes a film untouchable is that a platform has it, and the only committed evidence
+  // of that is the date `npm run stats` merged into 数据回填 from the platform's own export.
+  // It answers the same on every machine and it exists in CI, where there is no `out/`.
   //
-  // The export is one: `npm run stats` merges it into 数据回填, and a row means the platform
-  // has data for the film. It works in CI, where there is no `out/`.
-  //
-  // The master is the other, and it is the stronger one in this workflow: the creator
-  // publishes as soon as a film renders, so a master in `out/` is a film that is already up.
-  // Treating it as unpublished because the next export has not landed is how a style change
-  // gets rendered over a film that is live — which is exactly what happened to 蒲黄.
-  //
-  // A draft cannot abuse the master signal: the gate refuses to render one, so no draft has
-  // a master to hide behind.
-  const live = (copy !== null && publishedOn(copy) !== null) || fs.existsSync(path.join(outDir, `${kebab}.mp4`));
+  // A master in `out/` is deliberately not a signal — see the note on `publishedOn` in
+  // `lib/ledger.ts`. Rendering is not publishing, and a gitignored file on one disk is not a
+  // record of what went up. The overwrite guard it used to provide belongs to `verify`, which
+  // renders to `out/_verify/` whenever a master already exists.
+  const live = copy !== null && publishedOn(copy) !== null;
   const { content, error } = await loadContent(source, filmsDir);
   const violations = checkNewFilm(source, content, knownPhotos);
   const repeats = content ? findRepeatsIn(visibleText(content)) : findRepeats(source);
@@ -154,7 +148,7 @@ for (const file of all) {
     }
     console.log(
       `${frozen ? "frozen" : "live"} ${file}: ` +
-        `${frozen ? `${violations.length} known compliance gap(s)` : `${violations.length} gap(s)`}, ` +
+        `${frozen ? `${hardViolations(violations).length} known compliance gap(s)` : `${hardViolations(violations).length} gap(s)`}, ` +
         `${facts.length} fact(s), ${repeats.length} repeated phrase(s) — not re-judged`,
     );
     // Printed without `--verbose`, for the films published *after* the ledgers began: a film
@@ -206,6 +200,13 @@ for (const file of all) {
   // prints the film's own reason on the waived line, so "27s because the 经文 is 90
   // characters" is visible in the gate's output instead of being inferred from absence.
   const waived = violations.filter(isWaived);
+  // Wording: printed, never a verdict. The gate's job stops at the frame — what the sentence
+  // says is the author's call. Keeping them out of `problems` is what makes `ok` mean "this
+  // film can be made", not "this film is good".
+  const notes = [
+    ...violations.filter(isAdvisory).map((v) => `[${v.rule}] ${v.detail}`),
+    ...(copy !== null ? ledgerCopyNotes(kebab, copy) : []),
+  ];
   const problems = [
     ...hardViolations(violations).map((v) => `${file}: [${v.rule}] ${v.detail}`),
     ...(repeats.length > 0 ? [formatRepeats(file, repeats)] : []),
@@ -227,6 +228,12 @@ for (const file of all) {
     }
   } else {
     console.log(`ok   ${file}${waived.length > 0 ? ` (${waived.length} declared deviation(s))` : ""}`);
+  }
+  if (notes.length > 0) {
+    console.log(`     ${notes.length} note(s) on the wording — not a failure${args.verbose ? ":" : " (--verbose lists them)"}`);
+    if (args.verbose) {
+      for (const note of notes) console.log(`       ${note}`);
+    }
   }
   if (args.verbose) {
     for (const line of readingReport(content)) {
