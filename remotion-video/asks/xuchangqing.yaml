@@ -1,0 +1,79 @@
+# 本草一问 · 07 · 徐长卿
+#
+# 这一集回答一个问题：一味药为什么以一个人的名字命名。
+#
+# 答案在《本草纲目》的释名里，而且是李时珍自己下的断语：
+# 「徐长卿，人名也，常以此药治邪病，人遂以名之。」
+#
+# 但这一集真正的意思在另一头：《本经》给它的别名是「鬼督邮」——督邮是汉代的官。
+# 于是这味药有两个名字，一个来自一个人，一个来自一个官衔。
+# 「考」屏的三条对读就沿着这条线走：名字一直没定下来，两个名字还互相混。
+#
+# 「书」屏读的是别名那三个字（read 必须同时是旁白与引文的连续子串，ask:build 两头都核）。
+#
+# 配图说明：iNaturalist 把 `Cynanchum paniculatum`、`Vincetoxicum pycnostelma` 都归到
+# 同一个 taxon（`Vincetoxicum bungei`，id 1638659），所以 `--check` 的 ⚠ 在这里是
+# 同物异名造成的假警报，不是配错——查 `api.inaturalist.org/v1/taxa?q=Cynanchum+paniculatum`
+# 返回的就是 1638659。形态也对得上《纲目》的「叶似柳，两叶相当」：细长对生的叶，
+# 加普草科典型的蓇葖果。credits.json 记的是 iNat 自己的名字，片内署名照它显示，不遮掩。
+
+id: xuchangqing
+entry: 徐长卿
+collection: 名字古怪的药
+deck: 名字古怪的药 · 04
+question: "徐长卿：一味药\n为什么以人名命名？"
+accent: "#4a6b5a"                 # 草部青
+music: music/kongyin-gujian.mp3
+next: 败酱——「疸痔」还是「疽痔」？
+disclaimer: 古籍内容展示，不构成诊疗建议
+
+segments:
+  # 问：全幅实物照 + 大字问题。第 0 帧即封面。
+  - role: ask
+    narration: 《神农本草经》里有一味药，名字是一个人的名字：徐长卿。
+    photos:
+      - file: xuchangqing-plant.jpg
+        caption: 徐长卿
+
+  # 物：它今天是什么、你在哪见过它。
+  - role: object
+    narration: 徐长卿是夹竹桃科的草本，叶子细长像柳叶，两两相对。古书就是这么记它的。
+    photos:
+      - file: xuchangqing-pods.jpg
+        caption: 结的果，细长而尖
+      - file: xuchangqing-leaves.jpg
+        caption: 叶似柳，两叶相当
+      - file: xuchangqing-habitat.jpg
+        caption: 生在草坡上
+
+  # 书：竖排原文，读到哪个字哪个字朱红。
+  - role: book
+    narration: 《神农本草经》给徐长卿记了一个别名——鬼督邮。督邮，是汉代的一个官。
+    read: 鬼督邮
+    quote:
+      text: 味辛，温。主鬼物、百精、蛊毒，疫疾，邪恶气，温疟。久服，强悍、轻身。一名鬼督邮。生山谷。
+      source: 《神农本草经》卷一 · 上经
+
+  # 考：跨书对读。名字一直没定下来，最后一条给出时珍的断语。
+  - role: study
+    narration: 陶弘景注《本草经》时也犯难：另有一条「石下长卿」，别名也叫徐长卿。到明代，李时珍给了答案——徐长卿，人名也。他还补了一句：这味药和鬼督邮，两个名字古人一直在混。
+    evidence:
+      - text: 此又名徐长卿，恐是误尔，方家无用。
+        source: 《证类本草》· 宋（引陶隐居）
+        note: 另有一条「石下长卿」，别名也叫徐长卿
+      - text: 徐长卿，人名也，常以此药治邪病，人遂以名之。
+        source: 《本草纲目》释名 · 明（李时珍）
+        note: 名字的来历：用这味药的那个人
+      - text: 徐长卿之乱鬼督邮，其苗不同，其功同也。
+        source: 《本草纲目》集解 · 明（李时珍）
+        note: 两个名字互相混，李时珍把它们拆开
+
+  # 收：盖印 + 下集预告 + 小字免责。
+  - role: closing
+    narration: 一个名字来自一个人，另一个来自一个官衔。下一味，败酱。
+
+sources:
+  - 《神农本草经》卷一·上经（汉）
+  - 《本草经集注》（梁·陶弘景）
+  - 《证类本草》（宋·唐慎微）
+  - 《本草纲目》草部（明·李时珍）

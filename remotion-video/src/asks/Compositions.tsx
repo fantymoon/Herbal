@@ -18,6 +18,8 @@ import { content as juyou } from "./juyou.content";
 import { voice as juyouVoice } from "./juyou.voice";
 import { content as oushijing } from "./oushijing.content";
 import { voice as oushijingVoice } from "./oushijing.voice";
+import { content as tianmingjing } from "./tianmingjing.content";
+import { voice as tianmingjingVoice } from "./tianmingjing.voice";
 import { content as tianxiong } from "./tianxiong.content";
 import { voice as tianxiongVoice } from "./tianxiong.voice";
 import { content as wangbuliuxing } from "./wangbuliuxing.content";
@@ -91,6 +93,15 @@ export const AskCompositions: React.FC = () => (
       width={1080}
       height={1920}
       defaultProps={{ content: oushijing, voice: oushijingVoice }}
+    />
+    <Composition
+      id="AskTianmingjing"
+      component={AskFilm}
+      durationInFrames={tianmingjingVoice.totalFrames}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultProps={{ content: tianmingjing, voice: tianmingjingVoice }}
     />
     <Composition
       id="AskTianxiong"
